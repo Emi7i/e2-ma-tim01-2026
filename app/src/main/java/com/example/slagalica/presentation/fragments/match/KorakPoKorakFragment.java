@@ -63,7 +63,7 @@ public class KorakPoKorakFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_korak_po_korak, container, false);
+        return inflater.inflate(R.layout.fragment_game_korak_po_korak, container, false);
     }
 
     @Override
