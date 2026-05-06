@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_match_screen"
+    android:padding="10dp">
+
+    <RelativeLayout
+        android:id="@+id/asocijacijeTopBar"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:background="@drawable/bg_match_top_bar"
+        android:paddingHorizontal="12dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageButton
+            android:id="@+id/btnAsocijacijeMenu"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_centerVertical="true"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/ic_menu_sort_by_size" />
+
+        <TextView
+            android:id="@+id/tvAsocijacijeTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="Asocijacije"
+            android:textColor="@color/black"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/btnAsocijacijeProfile"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/ic_menu_myplaces" />
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/asocijacijeInfoRow"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/asocijacijeTopBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/tvAsocijacijePlayerOne"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_match_status_box"
+            android:gravity="center"
+            android:text="Igrač 1"
+            android:textColor="@color/black"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvAsocijacijeTimer"
+            android:layout_width="92dp"
+            android:layout_height="56dp"
+            android:layout_marginHorizontal="10dp"
+            android:background="@drawable/bg_match_timer_box"
+            android:gravity="center"
+            android:text="02:00"
+            android:textColor="@color/black"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvAsocijacijePlayerTwo"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_match_status_box"
+            android:gravity="center"
+            android:text="Igrač 2"
+            android:textColor="@color/black"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/asocijacijeBoardRow"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="14dp"
+        android:orientation="horizontal"
+        android:weightSum="4"
+        app:layout_constraintTop_toBottomOf="@id/asocijacijeInfoRow"
+        app:layout_constraintBottom_toTopOf="@id/finalSolutionContainer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:id="@+id/asocijacijeColumnA"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="4dp" />
+
+        <LinearLayout
+            android:id="@+id/asocijacijeColumnB"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="4dp" />
+
+        <LinearLayout
+            android:id="@+id/asocijacijeColumnC"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="4dp" />
+
+        <LinearLayout
+            android:id="@+id/asocijacijeColumnD"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="4dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/finalSolutionContainer"
+        android:layout_width="0dp"
+        android:layout_height="78dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginHorizontal="52dp"
+        android:layout_marginBottom="12dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/bg_asocijacije_final_closed"
+        android:padding="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <EditText
+            android:id="@+id/etAsocijacijeFinalSolution"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            android:hint="KONAČNO REŠENJE"
+            android:inputType="text"
+            android:paddingHorizontal="8dp"
+            android:textColor="@color/black"
+            android:textColorHint="@color/black" />
+
+        <Button
+            android:id="@+id/btnAsocijacijeFinalSubmit"
+            android:layout_width="70dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="8dp"
+            android:text="OK" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
