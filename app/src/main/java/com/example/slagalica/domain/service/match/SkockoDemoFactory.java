@@ -10,7 +10,7 @@ import java.util.List;
 public class SkockoDemoFactory {
 
     public SkockoTabla createDemoTabla() {
-        List<String> secret = Arrays.asList("💥", "♠", "★", "♦");
+        List<String> secret = Arrays.asList("★", "♠", "💥", "♠");
 
         List<SkockoPokusaj> attempts = new ArrayList<>();
         for (int i = 0; i < 7; i++) {

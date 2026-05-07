@@ -19,12 +19,6 @@
             android:name=".presentation.activities.AppActivity"
             android:exported="false" />
         <activity
-            android:name=".presentation.activities.AsocijacijeActivity"
-            android:exported="false" />
-        <activity
-            android:name=".presentation.activities.SkockoActivity"
-            android:exported="false" />
-        <activity
             android:name=".presentation.activities.MainActivity"
             android:exported="true">
             <intent-filter>

@@ -19,11 +19,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.slagalica.R;
 import com.example.slagalica.domain.model.match.games.Asocijacija;
 import com.example.slagalica.domain.model.match.games.AsocijacijaKolona;
 import com.example.slagalica.domain.model.match.games.AsocijacijaPolje;
+import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 import com.example.slagalica.repository.impl.AsocijacijeRepository;
 import com.example.slagalica.repository.impl.stub.StubAsocijacijeRepository;
 
@@ -32,12 +34,9 @@ import java.util.List;
 
 public class AsocijacijeFragment extends Fragment {
 
+    private MatchViewModel matchViewModel;
     private AsocijacijeRepository asocijacijeRepository;
     private Asocijacija asocijacija;
-
-    private TextView tvPlayerOne;
-    private TextView tvPlayerTwo;
-    private TextView tvTimer;
 
     private LinearLayout finalSolutionContainer;
     private EditText etFinalSolution;
@@ -53,27 +52,33 @@ public class AsocijacijeFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_match_asocijacije, container, false);
+        return inflater.inflate(R.layout.fragment_game_asocijacije, container, false);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        matchViewModel = new ViewModelProvider(requireActivity()).get(MatchViewModel.class);
+        matchViewModel.setGameActive(true);
+
         asocijacijeRepository = new StubAsocijacijeRepository();
         asocijacija = asocijacijeRepository.getAsocijacija();
 
         bindViews(view);
-        bindHeader();
-        setupTopBar(view);
         renderColumns();
         setupFinalSolution();
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (matchViewModel != null) {
+            matchViewModel.setGameActive(false);
+        }
+    }
+
     private void bindViews(View view) {
-        tvPlayerOne = view.findViewById(R.id.tvAsocijacijePlayerOne);
-        tvPlayerTwo = view.findViewById(R.id.tvAsocijacijePlayerTwo);
-        tvTimer = view.findViewById(R.id.tvAsocijacijeTimer);
 
         finalSolutionContainer = view.findViewById(R.id.finalSolutionContainer);
         etFinalSolution = view.findViewById(R.id.etAsocijacijeFinalSolution);
@@ -84,23 +89,6 @@ public class AsocijacijeFragment extends Fragment {
         columnContainers.add(view.findViewById(R.id.asocijacijeColumnB));
         columnContainers.add(view.findViewById(R.id.asocijacijeColumnC));
         columnContainers.add(view.findViewById(R.id.asocijacijeColumnD));
-    }
-
-    private void bindHeader() {
-        tvPlayerOne.setText(asocijacija.getPlayerOneName());
-        tvPlayerTwo.setText(asocijacija.getPlayerTwoName());
-        tvTimer.setText(asocijacija.getTimerText());
-    }
-
-    private void setupTopBar(View view) {
-        ImageButton btnMenu = view.findViewById(R.id.btnAsocijacijeMenu);
-        ImageButton btnProfile = view.findViewById(R.id.btnAsocijacijeProfile);
-
-        btnMenu.setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Ovde kasnije ide meni", Toast.LENGTH_SHORT).show());
-
-        btnProfile.setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Ovde kasnije ide profil", Toast.LENGTH_SHORT).show());
     }
 
     private void renderColumns() {
@@ -156,7 +144,7 @@ public class AsocijacijeFragment extends Fragment {
             textView.setBackgroundResource(R.drawable.bg_asocijacije_field_open);
             textView.setText(field.getText());
         } else {
-            textView.setBackgroundResource(R.drawable.bg_asocijacije_field_closed);
+            textView.setBackgroundResource(R.drawable.game_field_background);
             textView.setText(label + (position + 1));
         }
     }
@@ -273,7 +261,7 @@ public class AsocijacijeFragment extends Fragment {
             etFinalSolution.setEnabled(false);
             btnFinalSubmit.setEnabled(false);
         } else {
-            finalSolutionContainer.setBackgroundResource(R.drawable.bg_asocijacije_solution_open);
+            finalSolutionContainer.setBackgroundResource(R.drawable.bg_asocijacije_solution_closed);
             etFinalSolution.setEnabled(true);
             btnFinalSubmit.setEnabled(true);
         }

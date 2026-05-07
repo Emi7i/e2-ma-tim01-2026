@@ -18,11 +18,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.slagalica.R;
 import com.example.slagalica.domain.model.match.games.SkockoPolje;
 import com.example.slagalica.domain.model.match.games.SkockoPokusaj;
 import com.example.slagalica.domain.model.match.games.SkockoTabla;
+import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 import com.example.slagalica.repository.impl.SkockoRepository;
 import com.example.slagalica.repository.impl.stub.StubSkockoRepository;
 
@@ -31,12 +33,10 @@ import java.util.List;
 
 public class SkockoFragment extends Fragment {
 
+    private MatchViewModel matchViewModel;
     private SkockoRepository skockoRepository;
     private SkockoTabla skockoTabla;
 
-    private TextView tvPlayerOne;
-    private TextView tvPlayerTwo;
-    private TextView tvTimer;
     private TextView tvGameState;
 
     private LinearLayout skockoInputContainer;
@@ -62,28 +62,34 @@ public class SkockoFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_match_skocko, container, false);
+        return inflater.inflate(R.layout.fragment_game_skocko, container, false);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        matchViewModel = new ViewModelProvider(requireActivity()).get(MatchViewModel.class);
+        matchViewModel.setGameActive(true);
+
         skockoRepository = new StubSkockoRepository();
         skockoTabla = skockoRepository.getSkockoTabla();
 
         bindViews(view);
-        bindHeader();
-        setupTopBar(view);
         setupSymbolButtons();
         renderAll();
         updateGameState();
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (matchViewModel != null) {
+            matchViewModel.setGameActive(false);
+        }
+    }
+
     private void bindViews(View view) {
-        tvPlayerOne = view.findViewById(R.id.tvSkockoPlayerOne);
-        tvPlayerTwo = view.findViewById(R.id.tvSkockoPlayerTwo);
-        tvTimer = view.findViewById(R.id.tvSkockoTimer);
         tvGameState = view.findViewById(R.id.tvSkockoGameState);
 
         skockoInputContainer = view.findViewById(R.id.skockoInputContainer);
@@ -100,23 +106,6 @@ public class SkockoFragment extends Fragment {
 
         btnDelete = view.findViewById(R.id.btnSkockoDelete);
         btnSubmit = view.findViewById(R.id.btnSkockoSubmit);
-    }
-
-    private void bindHeader() {
-        tvPlayerOne.setText(skockoTabla.getPlayerOneName());
-        tvPlayerTwo.setText(skockoTabla.getPlayerTwoName());
-        tvTimer.setText(skockoTabla.getTimerText());
-    }
-
-    private void setupTopBar(View view) {
-        ImageButton btnMenu = view.findViewById(R.id.btnSkockoMenu);
-        ImageButton btnProfile = view.findViewById(R.id.btnSkockoProfile);
-
-        btnMenu.setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Ovde kasnije ide meni", Toast.LENGTH_SHORT).show());
-
-        btnProfile.setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Ovde kasnije ide profil", Toast.LENGTH_SHORT).show());
     }
 
     private void setupSymbolButtons() {
@@ -356,7 +345,7 @@ public class SkockoFragment extends Fragment {
                 guessView.setTextColor(ContextCompat.getColor(requireContext(), R.color.black));
             } else {
                 guessView.setText(symbol);
-                guessView.setBackgroundResource(R.drawable.bg_skocko_guess_filled);
+                guessView.setBackgroundResource(R.drawable.game_field_background);
                 applySymbolColor(guessView, symbol);
             }
 
@@ -403,7 +392,7 @@ public class SkockoFragment extends Fragment {
                 guessView.setTextColor(ContextCompat.getColor(requireContext(), R.color.black));
             } else {
                 guessView.setText(symbol);
-                guessView.setBackgroundResource(R.drawable.bg_skocko_guess_filled);
+                guessView.setBackgroundResource(R.drawable.game_field_background);
                 applySymbolColor(guessView, symbol);
             }
 
