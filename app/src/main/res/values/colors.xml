@@ -9,4 +9,13 @@
     <color name="border_dark">#2E2E2E</color>
     <color name="asocijacije_blue">#9ECDF2</color>
     <color name="asocijacije_green">#B3E5B3</color>
+
+    <color name="skocko_active_blue">#B9DDF8</color>
+    <color name="skocko_guess_fill">#EDEDED</color>
+    <color name="skocko_feedback_exact">#2ECC71</color>
+    <color name="skocko_feedback_partial">#F1C40F</color>
+    <color name="skocko_feedback_empty">#D0D0D0</color>
+    <color name="skocko_panel_bg">#CFE8FA</color>
+    <color name="skocko_symbol_button_bg">#9ECDF2</color>
+    <color name="skocko_solution_green">#B8E6B8</color>
 </resources>

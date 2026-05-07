@@ -11,6 +11,7 @@ import com.example.slagalica.R;
 public class MainActivity extends AppCompatActivity {
 
     private Button btnOpenAsocijacije;
+    private Button btnOpenSkocko;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -18,10 +19,16 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         btnOpenAsocijacije = findViewById(R.id.btnOpenAsocijacije);
+        btnOpenSkocko = findViewById(R.id.btnOpenSkocko);
 
         btnOpenAsocijacije.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, AsocijacijeActivity.class);
-            intent.putExtra(AsocijacijeActivity.EXTRA_GAME_TYPE, AsocijacijeActivity.GAME_TYPE_ASOCIJACIJE);
+            startActivity(intent);
+        });
+
+
+        btnOpenSkocko.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, SkockoActivity.class);
             startActivity(intent);
         });
     }

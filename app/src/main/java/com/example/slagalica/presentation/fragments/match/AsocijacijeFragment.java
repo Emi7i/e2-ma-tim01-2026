@@ -269,11 +269,11 @@ public class AsocijacijeFragment extends Fragment {
 
     private void applyFinalState() {
         if (asocijacija.isFinalSolved()) {
-            finalSolutionContainer.setBackgroundResource(R.drawable.bg_asocijacije_final_open);
+            finalSolutionContainer.setBackgroundResource(R.drawable.bg_asocijacije_solution_open);
             etFinalSolution.setEnabled(false);
             btnFinalSubmit.setEnabled(false);
         } else {
-            finalSolutionContainer.setBackgroundResource(R.drawable.bg_asocijacije_final_closed);
+            finalSolutionContainer.setBackgroundResource(R.drawable.bg_asocijacije_solution_open);
             etFinalSolution.setEnabled(true);
             btnFinalSubmit.setEnabled(true);
         }

@@ -1,6 +1,6 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="@color/asocijacije_green" />
-    <corners android:radius="12dp" />
+    <solid android:color="@color/skocko_symbol_button_bg" />
+    <corners android:radius="24dp" />
     <stroke
         android:width="2dp"
         android:color="@color/border_dark" />
