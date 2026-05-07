@@ -13,4 +13,9 @@
     <string name="register_password_input">Password</string>
     <string name="register_repeat_password_input">Repeat password</string>
     <string name="register_button">Register</string>
+    <string name="register_login_link">Already have an account? Log in</string>
+    <string name="toolbar_app_name">Slagalica</string>
+    <string name="left_drawer_home">Home</string>
+    <string name="left_drawer_my_profile">My profile</string>
+    <string name="left_drawer_notifications">Notifications</string>
 </resources>
