@@ -30,7 +30,6 @@ public class AppActivity extends AppCompatActivity {
         binding = ActivityAppBinding.inflate(getLayoutInflater());
         EdgeToEdge.enable(this);
         setContentView(binding.getRoot());
-        int extraBottom = getResources().getDimensionPixelSize(R.dimen.bottom_navigation_space);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(

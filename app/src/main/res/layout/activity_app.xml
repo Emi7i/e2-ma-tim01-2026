@@ -9,6 +9,22 @@
     android:background="@color/background"
     tools:context=".presentation.activities.AppActivity">
 
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar2"
+        android:layout_width="match_parent"
+        android:background="@color/red"
+        android:layout_height="?attr/actionBarSize">
+
+        <TextView
+            android:id="@+id/toolbarTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="@string/toolbar_app_name"
+            android:textAppearance="?attr/textAppearanceTitleLarge" />
+
+    </com.google.android.material.appbar.MaterialToolbar>
+
     <com.example.slagalica.presentation.views.GameHeaderView
         android:id="@+id/gameHeader"
         android:layout_width="match_parent"
