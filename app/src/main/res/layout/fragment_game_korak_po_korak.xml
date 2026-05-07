@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:padding="@dimen/screen_padding"
     tools:context=".presentation.fragments.match.KorakPoKorakFragment">
 
     <LinearLayout
@@ -180,6 +181,8 @@
         android:id="@+id/answer"
         android:layout_width="350dp"
         style="@style/GameField"
+        android:layout_height="0dp"
+        android:layout_weight="0.5"
         android:layout_gravity="center"
         android:text="answer" />
 

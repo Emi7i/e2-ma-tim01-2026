@@ -3,6 +3,7 @@
     <dimen name="spacing_md">16dp</dimen>
     <dimen name="spacing_lg">26dp</dimen>
     <dimen name="screen_padding">24dp</dimen>
+    <dimen name="bottom_navigation_space">48dp</dimen>
     <dimen name="input_min_height">48dp</dimen>
     <dimen name="input_width">300dp</dimen>
     <dimen name="text_xs">10sp</dimen>

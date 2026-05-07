@@ -75,9 +75,17 @@
             android:text="@string/register_repeat_password_input" />
 
         <Button
-            android:id="@+id/button2"
+            android:id="@+id/registerButton"
             style="@style/AuthButton"
+            android:layout_marginBottom="@dimen/spacing_lg"
+
             android:text="@string/register_button" />
 
+        <Button
+            android:id="@+id/loginLink"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:text="@string/register_login_link" />
     </LinearLayout>
 </ScrollView>

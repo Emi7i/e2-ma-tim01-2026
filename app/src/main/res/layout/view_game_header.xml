@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingLeft="@dimen/screen_padding"
+    android:paddingRight="@dimen/screen_padding"
+    >
+
+    <TextView
+        android:id="@+id/player1Stars"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+
+        style="@style/GameField"
+        android:layout_marginEnd="30dp"
+
+        android:text="20" />
+
+    <TextView
+        android:id="@+id/timer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+
+        style="@style/GameField"
+        android:layout_marginEnd="30dp"
+
+        android:text="46s" />
+
+    <TextView
+        android:id="@+id/player2Stars"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+
+        style="@style/GameField"
+
+        android:text="25" />
+</LinearLayout>
