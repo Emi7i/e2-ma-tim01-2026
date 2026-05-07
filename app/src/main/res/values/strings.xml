@@ -1,3 +1,21 @@
 <resources>
     <string name="app_name">Slagalica</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="login_hint_username">Username or email</string>
+    <string name="login_hint_password">Password</string>
+    <string name="login_button">Log in</string>
+    <string name="login_register_link">Don\'t have an account? Register</string>
+    <string name="register_title">Register</string>
+    <string name="register_hint_username">Username</string>
+    <string name="register_hint_email">Email</string>
+    <string name="register_button_region">Region</string>
+    <string name="register_password_input">Password</string>
+    <string name="register_repeat_password_input">Repeat password</string>
+    <string name="register_button">Register</string>
+    <string name="register_login_link">Already have an account? Log in</string>
+    <string name="toolbar_app_name">Slagalica</string>
+    <string name="left_drawer_home">Home</string>
+    <string name="left_drawer_my_profile">My profile</string>
+    <string name="left_drawer_notifications">Notifications</string>
 </resources>

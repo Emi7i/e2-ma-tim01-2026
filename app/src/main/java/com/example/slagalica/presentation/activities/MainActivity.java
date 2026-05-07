@@ -8,6 +8,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.slagalica.R;
 
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class MainActivity extends AppCompatActivity {
 
     private Button btnOpenAsocijacije;
@@ -16,20 +19,16 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        btnOpenAsocijacije = findViewById(R.id.btnOpenAsocijacije);
-        btnOpenSkocko = findViewById(R.id.btnOpenSkocko);
+        if (isLoggedIn()) {
+            startActivity(new Intent(this, AppActivity.class));
+        } else {
+            startActivity(new Intent(this, AuthActivity.class));
+        }
+        finish();
+    }
 
-        btnOpenAsocijacije.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, AsocijacijeActivity.class);
-            startActivity(intent);
-        });
-
-
-        btnOpenSkocko.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, SkockoActivity.class);
-            startActivity(intent);
-        });
+    private boolean isLoggedIn(){
+        return false; // will probably check phone storage to check if user is logged in or something
     }
 }

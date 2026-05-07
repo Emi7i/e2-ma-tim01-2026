@@ -1,0 +1,16 @@
+<resources>
+    <dimen name="spacing_sm">8dp</dimen>
+    <dimen name="spacing_md">16dp</dimen>
+    <dimen name="spacing_lg">26dp</dimen>
+    <dimen name="screen_padding">24dp</dimen>
+    <dimen name="bottom_navigation_space">48dp</dimen>
+    <dimen name="input_min_height">48dp</dimen>
+    <dimen name="input_width">300dp</dimen>
+    <dimen name="text_xs">10sp</dimen>
+    <dimen name="text_sm">12sp</dimen>
+    <dimen name="text_md">14sp</dimen>
+    <dimen name="text_lg">16sp</dimen>
+    <dimen name="text_xl">20sp</dimen>
+    <dimen name="text_xxl">24sp</dimen>
+    <dimen name="text_display">32sp</dimen>
+</resources>

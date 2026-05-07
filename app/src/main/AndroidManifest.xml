@@ -13,6 +13,18 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Slagalica">
         <activity
+            android:name=".presentation.activities.AuthActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.activities.AppActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.activities.AsocijacijeActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presentation.activities.SkockoActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.activities.MainActivity"
             android:exported="true">
             <intent-filter>
@@ -21,8 +33,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".presentation.activities.AsocijacijeActivity" />
-        <activity android:name=".presentation.activities.SkockoActivity" />
     </application>
 
 </manifest>
