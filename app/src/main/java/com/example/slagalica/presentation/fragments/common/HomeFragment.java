@@ -14,6 +14,7 @@ import com.example.slagalica.R;
 import com.example.slagalica.databinding.FragmentHomeBinding;
 import com.example.slagalica.presentation.fragments.match.KoZnaZnaFragment;
 import com.example.slagalica.presentation.fragments.match.KorakPoKorakFragment;
+import com.example.slagalica.presentation.fragments.match.SpojniceFragment;
 
 import dagger.hilt.android.AndroidEntryPoint;
 
@@ -27,7 +28,7 @@ public class HomeFragment extends Fragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         binding = FragmentHomeBinding.inflate(inflater, container, false);
@@ -41,6 +42,9 @@ public class HomeFragment extends Fragment {
         // Temporary access to all games from home
         binding.koZnaZna.setOnClickListener(v -> {
             FragmentTransition.to(new KoZnaZnaFragment(), requireActivity(), true, R.id.appContainer);
+        });
+        binding.spojnice.setOnClickListener(v -> {
+            FragmentTransition.to(new SpojniceFragment(), requireActivity(), true, R.id.appContainer);
         });
         binding.korakPoKorak.setOnClickListener(v -> {
             FragmentTransition.to(new KorakPoKorakFragment(), requireActivity(), true, R.id.appContainer);
