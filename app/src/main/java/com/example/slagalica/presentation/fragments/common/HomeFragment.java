@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 
 import com.example.slagalica.R;
 import com.example.slagalica.databinding.FragmentHomeBinding;
+import com.example.slagalica.presentation.fragments.match.KoZnaZnaFragment;
 import com.example.slagalica.presentation.fragments.match.KorakPoKorakFragment;
 
 import dagger.hilt.android.AndroidEntryPoint;
@@ -38,6 +39,9 @@ public class HomeFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         // Temporary access to all games from home
+        binding.koZnaZna.setOnClickListener(v -> {
+            FragmentTransition.to(new KoZnaZnaFragment(), requireActivity(), true, R.id.appContainer);
+        });
         binding.korakPoKorak.setOnClickListener(v -> {
             FragmentTransition.to(new KorakPoKorakFragment(), requireActivity(), true, R.id.appContainer);
         });
