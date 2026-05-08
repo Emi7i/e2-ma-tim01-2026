@@ -37,7 +37,9 @@
             android:layout_width="@dimen/input_width"
             android:layout_height="wrap_content"
             android:inputType="text"
-            android:text="45 x 2"
+            android:focusable="false"
+            android:clickable="false"
+            android:cursorVisible="false"
             tools:ignore="TextFields" />
 
         <Button
@@ -45,7 +47,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            app:icon="@drawable/ic_backspace"/>
+            app:icon="@drawable/ic_backspace"
+            app:iconGravity="textStart"/>
 
     </LinearLayout>
 
