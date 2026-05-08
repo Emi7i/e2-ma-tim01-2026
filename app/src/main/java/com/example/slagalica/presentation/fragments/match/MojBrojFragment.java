@@ -1,28 +1,28 @@
-package com.example.slagalica.presentation.fragments.common;
+package com.example.slagalica.presentation.fragments.match;
 
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.example.slagalica.R;
-import com.example.slagalica.databinding.FragmentHomeBinding;
-import com.example.slagalica.presentation.fragments.match.KorakPoKorakFragment;
-import com.example.slagalica.presentation.fragments.match.MojBrojFragment;
+import com.example.slagalica.databinding.FragmentMojBrojBinding;
+import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 
 import dagger.hilt.android.AndroidEntryPoint;
 
 @AndroidEntryPoint
-public class HomeFragment extends Fragment {
+public class MojBrojFragment extends Fragment {
+    MatchViewModel matchViewModel;
+    FragmentMojBrojBinding binding;
 
-    FragmentHomeBinding binding;
-
-    public HomeFragment() {
+    public MojBrojFragment() {
         // Required empty public constructor
     }
 
@@ -30,7 +30,7 @@ public class HomeFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        binding = FragmentHomeBinding.inflate(inflater, container, false);
+        binding = FragmentMojBrojBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
 
@@ -38,20 +38,13 @@ public class HomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Temporary access to all games from home
-        binding.korakPoKorak.setOnClickListener(v -> {
-            FragmentTransition.to(new KorakPoKorakFragment(), requireActivity(), true, R.id.appContainer);
-        });
-
-        binding.mojBroj.setOnClickListener(v -> {
-            FragmentTransition.to(new MojBrojFragment(), requireActivity(), true, R.id.appContainer);
-        });
+        matchViewModel = new ViewModelProvider(requireActivity()).get(MatchViewModel.class);
+        matchViewModel.setGameActive(true);
     }
 
     @Override
     public void onDestroyView() {
-
         super.onDestroyView();
-        binding=null;
+        matchViewModel.setGameActive(false);
     }
 }
