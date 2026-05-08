@@ -28,16 +28,12 @@ public class MojBrojFragment extends Fragment {
     MojBrojViewModel gameViewModel;
     FragmentGameMojBrojBinding binding;
     List<String> tokens = new ArrayList<>();
+    List<Button> numpadButtons;
 
-
-    public MojBrojFragment() {
-        // Required empty public constructor
-    }
+    public MojBrojFragment() {}
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentGameMojBrojBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
@@ -52,6 +48,13 @@ public class MojBrojFragment extends Fragment {
 
         binding.goalNumber.setText(String.valueOf(gameViewModel.getGoalNumber()));
 
+        numpadButtons = List.of(
+                binding.digit1, binding.digit2, binding.digit3, binding.digit4,
+                binding.doubleDigit1, binding.doubleDigit2,
+                binding.plus, binding.minus, binding.divide, binding.product,
+                binding.leftParen, binding.rightParen
+        );
+
         setupListeners();
         observeViewModel();
     }
@@ -62,44 +65,32 @@ public class MojBrojFragment extends Fragment {
         matchViewModel.setGameActive(false);
     }
 
-    private void observeViewModel(){
+    private void observeViewModel() {
         gameViewModel.getIsCorrect().observe(getViewLifecycleOwner(), isCorrect -> {
-            if(isCorrect) finishGame();
+            if (isCorrect) finishGame();
         });
     }
 
-    private void finishGame(){
+    private void finishGame() {
         binding.opponentNumber.setText(String.valueOf(gameViewModel.getOpponentNumber()));
         binding.myNumber.setText(String.valueOf(gameViewModel.getMyNumber()));
         binding.opponentAnswer.setText(String.valueOf(gameViewModel.getOpponentAnswer()));
         binding.myAnswer.setEnabled(false);
         binding.backspaceButton.setEnabled(false);
         binding.opponentLayout.setVisibility(View.VISIBLE);
-        // TODO: disable digits...
-        
+        binding.confirmButton.setVisibility(View.INVISIBLE);
+        for (Button btn : numpadButtons) btn.setEnabled(false);
     }
 
-    private void setupListeners(){
+    private void setupListeners() {
         EditText input = binding.myAnswer;
-
 
         View.OnClickListener appendListener = v -> {
             tokens.add(((Button) v).getText().toString());
             updateDisplay(input, tokens);
         };
 
-        binding.digit1.setOnClickListener(appendListener);
-        binding.digit2.setOnClickListener(appendListener);
-        binding.digit3.setOnClickListener(appendListener);
-        binding.digit4.setOnClickListener(appendListener);
-        binding.doubleDigit1.setOnClickListener(appendListener);
-        binding.doubleDigit2.setOnClickListener(appendListener);
-        binding.plus.setOnClickListener(appendListener);
-        binding.minus.setOnClickListener(appendListener);
-        binding.divide.setOnClickListener(appendListener);
-        binding.product.setOnClickListener(appendListener);
-        binding.leftParen.setOnClickListener(appendListener);
-        binding.rightParen.setOnClickListener(appendListener);
+        for (Button btn : numpadButtons) btn.setOnClickListener(appendListener);
 
         binding.backspaceButton.setOnClickListener(v -> {
             if (!tokens.isEmpty()) {
@@ -108,9 +99,7 @@ public class MojBrojFragment extends Fragment {
             }
         });
 
-        binding.confirmButton.setOnClickListener(v -> {
-            gameViewModel.checkAnswer(tokens);
-        });
+        binding.confirmButton.setOnClickListener(v -> gameViewModel.checkAnswer(tokens));
     }
 
     private void updateDisplay(EditText input, List<String> tokens) {
