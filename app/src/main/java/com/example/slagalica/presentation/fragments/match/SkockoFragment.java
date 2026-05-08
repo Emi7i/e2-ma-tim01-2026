@@ -21,6 +21,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.slagalica.R;
+import com.example.slagalica.databinding.FragmentGameSkockoBinding;
 import com.example.slagalica.domain.model.match.games.SkockoPolje;
 import com.example.slagalica.domain.model.match.games.SkockoPokusaj;
 import com.example.slagalica.domain.model.match.games.SkockoTabla;
@@ -34,25 +35,10 @@ import java.util.List;
 public class SkockoFragment extends Fragment {
 
     private MatchViewModel matchViewModel;
+    private FragmentGameSkockoBinding binding;
+
     private SkockoRepository skockoRepository;
     private SkockoTabla skockoTabla;
-
-    private TextView tvGameState;
-
-    private LinearLayout skockoInputContainer;
-    private LinearLayout rowPlayerTwoAttempt;
-    private LinearLayout rowFinalSolution;
-    private LinearLayout rightFeedbackRows;
-
-    private TextView symStar;
-    private TextView symSpade;
-    private TextView symClub;
-    private TextView symHeart;
-    private TextView symDiamond;
-    private TextView symQuestion;
-
-    private Button btnDelete;
-    private Button btnSubmit;
 
     public SkockoFragment() {
     }
@@ -62,7 +48,8 @@ public class SkockoFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_game_skocko, container, false);
+        binding = FragmentGameSkockoBinding.inflate(inflater, container, false);
+        return binding.getRoot();
     }
 
     @Override
@@ -75,7 +62,6 @@ public class SkockoFragment extends Fragment {
         skockoRepository = new StubSkockoRepository();
         skockoTabla = skockoRepository.getSkockoTabla();
 
-        bindViews(view);
         setupSymbolButtons();
         renderAll();
         updateGameState();
@@ -87,37 +73,19 @@ public class SkockoFragment extends Fragment {
         if (matchViewModel != null) {
             matchViewModel.setGameActive(false);
         }
-    }
-
-    private void bindViews(View view) {
-        tvGameState = view.findViewById(R.id.tvSkockoGameState);
-
-        skockoInputContainer = view.findViewById(R.id.skockoInputContainer);
-        rowPlayerTwoAttempt = view.findViewById(R.id.rowPlayerTwoAttempt);
-        rowFinalSolution = view.findViewById(R.id.rowFinalSolution);
-        rightFeedbackRows = view.findViewById(R.id.rightFeedbackRows);
-
-        symStar = view.findViewById(R.id.symStar);
-        symSpade = view.findViewById(R.id.symSpade);
-        symClub = view.findViewById(R.id.symClub);
-        symHeart = view.findViewById(R.id.symHeart);
-        symDiamond = view.findViewById(R.id.symDiamond);
-        symQuestion = view.findViewById(R.id.symExplosion);
-
-        btnDelete = view.findViewById(R.id.btnSkockoDelete);
-        btnSubmit = view.findViewById(R.id.btnSkockoSubmit);
+        binding = null;
     }
 
     private void setupSymbolButtons() {
-        symStar.setOnClickListener(v -> appendSymbol("★"));
-        symSpade.setOnClickListener(v -> appendSymbol("♠"));
-        symClub.setOnClickListener(v -> appendSymbol("♣"));
-        symHeart.setOnClickListener(v -> appendSymbol("♥"));
-        symDiamond.setOnClickListener(v -> appendSymbol("♦"));
-        symQuestion.setOnClickListener(v -> appendSymbol("💥"));
+        binding.symStar.setOnClickListener(v -> appendSymbol("★"));
+        binding.symSpade.setOnClickListener(v -> appendSymbol("♠"));
+        binding.symClub.setOnClickListener(v -> appendSymbol("♣"));
+        binding.symHeart.setOnClickListener(v -> appendSymbol("♥"));
+        binding.symDiamond.setOnClickListener(v -> appendSymbol("♦"));
+        binding.symExplosion.setOnClickListener(v -> appendSymbol("💥"));
 
-        btnDelete.setOnClickListener(v -> removeLastSymbol());
-        btnSubmit.setOnClickListener(v -> submitCurrentRow());
+        binding.btnSkockoDelete.setOnClickListener(v -> removeLastSymbol());
+        binding.btnSkockoSubmit.setOnClickListener(v -> submitCurrentRow());
     }
 
     private void appendSymbol(String symbol) {
@@ -249,23 +217,23 @@ public class SkockoFragment extends Fragment {
     }
 
     private void renderUpperSection() {
-        skockoInputContainer.removeAllViews();
-        rightFeedbackRows.removeAllViews();
+        binding.skockoInputContainer.removeAllViews();
+        binding.rightFeedbackRows.removeAllViews();
 
         for (int i = 0; i < 6; i++) {
             SkockoPokusaj attempt = skockoTabla.getAttempts().get(i);
-            skockoInputContainer.addView(createGuessRow(attempt, i));
-            rightFeedbackRows.addView(createFeedbackRow(attempt));
+            binding.skockoInputContainer.addView(createGuessRow(attempt, i));
+            binding.rightFeedbackRows.addView(createFeedbackRow(attempt));
         }
     }
 
     private void renderLowerPlayerTwoAttempt() {
-        rowPlayerTwoAttempt.removeAllViews();
-        rowPlayerTwoAttempt.addView(createLowerGuessRow(skockoTabla.getAttempts().get(6), 6));
+        binding.rowPlayerTwoAttempt.removeAllViews();
+        binding.rowPlayerTwoAttempt.addView(createLowerGuessRow(skockoTabla.getAttempts().get(6), 6));
     }
 
     private void renderLowerFinalSolution() {
-        rowFinalSolution.removeAllViews();
+        binding.rowFinalSolution.removeAllViews();
 
         LinearLayout row = new LinearLayout(requireContext());
         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -304,7 +272,7 @@ public class SkockoFragment extends Fragment {
             row.addView(cell);
         }
 
-        rowFinalSolution.addView(row);
+        binding.rowFinalSolution.addView(row);
     }
 
     private LinearLayout createGuessRow(SkockoPokusaj attempt, int rowIndex) {
@@ -447,14 +415,14 @@ public class SkockoFragment extends Fragment {
 
     private void updateGameState() {
         if (skockoTabla.isSolved()) {
-            tvGameState.setText("Pobednik: " + skockoTabla.getWinnerName());
+            binding.tvSkockoGameState.setText("Pobednik: " + skockoTabla.getWinnerName());
         } else if (skockoTabla.isFinished()) {
-            tvGameState.setText("Niko nije pogodio | Kombinacija prikazana");
+            binding.tvSkockoGameState.setText("Niko nije pogodio | Kombinacija prikazana");
         } else if (skockoTabla.getCurrentPlayer() == 1) {
-            tvGameState.setText("Na potezu: " + skockoTabla.getPlayerOneName()
+            binding.tvSkockoGameState.setText("Na potezu: " + skockoTabla.getPlayerOneName()
                     + " | pokušaj " + (skockoTabla.getCurrentRow() + 1) + " / 6");
         } else {
-            tvGameState.setText("Na potezu: " + skockoTabla.getPlayerTwoName() + " | pokušaj 1 / 1");
+            binding.tvSkockoGameState.setText("Na potezu: " + skockoTabla.getPlayerTwoName() + " | pokušaj 1 / 1");
         }
     }
 

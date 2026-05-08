@@ -22,6 +22,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.slagalica.R;
+import com.example.slagalica.databinding.FragmentGameAsocijacijeBinding;
 import com.example.slagalica.domain.model.match.games.Asocijacija;
 import com.example.slagalica.domain.model.match.games.AsocijacijaKolona;
 import com.example.slagalica.domain.model.match.games.AsocijacijaPolje;
@@ -35,12 +36,10 @@ import java.util.List;
 public class AsocijacijeFragment extends Fragment {
 
     private MatchViewModel matchViewModel;
+    private FragmentGameAsocijacijeBinding binding;
+
     private AsocijacijeRepository asocijacijeRepository;
     private Asocijacija asocijacija;
-
-    private LinearLayout finalSolutionContainer;
-    private EditText etFinalSolution;
-    private Button btnFinalSubmit;
 
     private final List<LinearLayout> columnContainers = new ArrayList<>();
 
@@ -52,7 +51,8 @@ public class AsocijacijeFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_game_asocijacije, container, false);
+        binding = FragmentGameAsocijacijeBinding.inflate(inflater, container, false);
+        return binding.getRoot();
     }
 
     @Override
@@ -65,7 +65,7 @@ public class AsocijacijeFragment extends Fragment {
         asocijacijeRepository = new StubAsocijacijeRepository();
         asocijacija = asocijacijeRepository.getAsocijacija();
 
-        bindViews(view);
+        bindViews();
         renderColumns();
         setupFinalSolution();
     }
@@ -76,19 +76,15 @@ public class AsocijacijeFragment extends Fragment {
         if (matchViewModel != null) {
             matchViewModel.setGameActive(false);
         }
+        binding = null;
     }
 
-    private void bindViews(View view) {
-
-        finalSolutionContainer = view.findViewById(R.id.finalSolutionContainer);
-        etFinalSolution = view.findViewById(R.id.etAsocijacijeFinalSolution);
-        btnFinalSubmit = view.findViewById(R.id.btnAsocijacijeFinalSubmit);
-
+    private void bindViews() {
         columnContainers.clear();
-        columnContainers.add(view.findViewById(R.id.asocijacijeColumnA));
-        columnContainers.add(view.findViewById(R.id.asocijacijeColumnB));
-        columnContainers.add(view.findViewById(R.id.asocijacijeColumnC));
-        columnContainers.add(view.findViewById(R.id.asocijacijeColumnD));
+        columnContainers.add(binding.asocijacijeColumnA);
+        columnContainers.add(binding.asocijacijeColumnB);
+        columnContainers.add(binding.asocijacijeColumnC);
+        columnContainers.add(binding.asocijacijeColumnD);
     }
 
     private void renderColumns() {
@@ -231,8 +227,8 @@ public class AsocijacijeFragment extends Fragment {
     private void setupFinalSolution() {
         applyFinalState();
 
-        btnFinalSubmit.setOnClickListener(v -> {
-            String enteredText = etFinalSolution.getText().toString().trim();
+        binding.btnAsocijacijeFinalSubmit.setOnClickListener(v -> {
+            String enteredText = binding.etAsocijacijeFinalSolution.getText().toString().trim();
 
             if (enteredText.isEmpty()) {
                 Toast.makeText(requireContext(), "Unesi konačno rešenje", Toast.LENGTH_SHORT).show();
@@ -244,9 +240,9 @@ public class AsocijacijeFragment extends Fragment {
                 renderColumns();
                 applyFinalState();
 
-                etFinalSolution.setText(asocijacija.getFinalSolution());
-                etFinalSolution.setEnabled(false);
-                btnFinalSubmit.setEnabled(false);
+                binding.etAsocijacijeFinalSolution.setText(asocijacija.getFinalSolution());
+                binding.etAsocijacijeFinalSolution.setEnabled(false);
+                binding.btnAsocijacijeFinalSubmit.setEnabled(false);
 
                 Toast.makeText(requireContext(), "Tačno konačno rešenje!", Toast.LENGTH_SHORT).show();
             } else {
@@ -257,13 +253,13 @@ public class AsocijacijeFragment extends Fragment {
 
     private void applyFinalState() {
         if (asocijacija.isFinalSolved()) {
-            finalSolutionContainer.setBackgroundResource(R.drawable.bg_asocijacije_solution_open);
-            etFinalSolution.setEnabled(false);
-            btnFinalSubmit.setEnabled(false);
+            binding.finalSolutionContainer.setBackgroundResource(R.drawable.bg_asocijacije_solution_open);
+            binding.etAsocijacijeFinalSolution.setEnabled(false);
+            binding.btnAsocijacijeFinalSubmit.setEnabled(false);
         } else {
-            finalSolutionContainer.setBackgroundResource(R.drawable.bg_asocijacije_solution_closed);
-            etFinalSolution.setEnabled(true);
-            btnFinalSubmit.setEnabled(true);
+            binding.finalSolutionContainer.setBackgroundResource(R.drawable.bg_asocijacije_solution_closed);
+            binding.etAsocijacijeFinalSolution.setEnabled(true);
+            binding.btnAsocijacijeFinalSubmit.setEnabled(true);
         }
     }
 
