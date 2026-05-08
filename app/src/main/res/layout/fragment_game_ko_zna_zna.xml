@@ -7,22 +7,6 @@
     android:background="@android:color/white"
     tools:context=".presentation.fragments.match.KoZnaZnaFragment">
 
-    <!-- Header -->
-    <include
-        android:id="@+id/header"
-        layout="@layout/component_game_header"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <!-- Stats / Timer Bar -->
-    <include
-        android:id="@+id/statsBar"
-        layout="@layout/component_game_stats_bar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/header" />
-
     <!-- Main Content Area -->
     <ScrollView
         android:id="@+id/scrollView"
@@ -31,8 +15,7 @@
         android:fillViewport="true"
         android:paddingHorizontal="24dp"
         android:paddingVertical="8dp"
-        app:layout_constraintBottom_toTopOf="@id/footer"
-        app:layout_constraintTop_toBottomOf="@id/statsBar">
+        app:layout_constraintBottom_toTopOf="@id/footer">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -46,7 +29,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="180dp"
                 android:gravity="center"
-                android:text="Pitanje"
                 android:textSize="20sp"/>
 
             <!-- Answers Grid -->
@@ -59,34 +41,30 @@
 
                 <Button
                     android:id="@+id/answer1"
-                    style="@style/GameField"
+                    style="@style/GameField.Clickable"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:text="1993"/>
+                    android:layout_marginBottom="12dp"/>
 
                 <Button
                     android:id="@+id/answer2"
-                    style="@style/GameField"
+                    style="@style/GameField.Clickable"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:text="1235" />
+                    android:layout_marginBottom="12dp" />
 
                 <Button
                     android:id="@+id/answer3"
-                    style="@style/GameField"
+                    style="@style/GameField.Clickable"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:text="3424" />
+                    android:layout_marginBottom="12dp" />
 
                 <Button
                     android:id="@+id/answer4"
-                    style="@style/GameField"
+                    style="@style/GameField.Clickable"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="sta" />
+                    android:layout_height="wrap_content" />
 
             </LinearLayout>
 
@@ -100,32 +78,19 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="24dp"
-        app:layout_constraintBottom_toTopOf="@id/homeIndicator"
-        app:layout_constraintTop_toBottomOf="@id/scrollView">
+        app:layout_constraintBottom_toTopOf="@id/scrollView">
 
         <Button
             android:id="@+id/nextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:drawableEnd="@android:drawable/ic_media_next"
-            android:drawablePadding="8dp"
             android:paddingHorizontal="32dp"
-            android:paddingVertical="12dp"
-            android:text="nez"
+            android:text="@string/next"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="footer"/>
+            app:layout_constraintTop_toTopOf="parent"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <!-- Mobile Home Indicator -->
-    <View
-        android:id="@+id/homeIndicator"
-        android:layout_width="128dp"
-        android:layout_height="6dp"
-        android:layout_marginBottom="16dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -18,4 +18,5 @@
     <string name="left_drawer_home">Home</string>
     <string name="left_drawer_my_profile">My profile</string>
     <string name="left_drawer_notifications">Notifications</string>
+    <string name="next">Dalje</string>
 </resources>
