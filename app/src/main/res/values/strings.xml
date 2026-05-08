@@ -24,4 +24,5 @@
     <string name="divide">÷</string>
     <string name="left_paren">(</string>
     <string name="right_paren">)</string>
+    <string name="confirm">Confirm</string>
 </resources>

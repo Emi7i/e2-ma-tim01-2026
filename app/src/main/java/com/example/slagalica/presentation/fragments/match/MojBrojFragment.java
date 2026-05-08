@@ -15,6 +15,7 @@ import android.widget.EditText;
 
 import com.example.slagalica.databinding.FragmentGameMojBrojBinding;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
+import com.example.slagalica.presentation.viewmodels.MojBrojViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,7 @@ import dagger.hilt.android.AndroidEntryPoint;
 @AndroidEntryPoint
 public class MojBrojFragment extends Fragment {
     MatchViewModel matchViewModel;
+    MojBrojViewModel gameViewModel;
     FragmentGameMojBrojBinding binding;
     List<String> tokens = new ArrayList<>();
 
@@ -45,9 +47,13 @@ public class MojBrojFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         matchViewModel = new ViewModelProvider(requireActivity()).get(MatchViewModel.class);
+        gameViewModel = new ViewModelProvider(this).get(MojBrojViewModel.class);
         matchViewModel.setGameActive(true);
 
+        binding.goalNumber.setText(String.valueOf(gameViewModel.getGoalNumber()));
+
         setupListeners();
+        observeViewModel();
     }
 
     @Override
@@ -56,8 +62,25 @@ public class MojBrojFragment extends Fragment {
         matchViewModel.setGameActive(false);
     }
 
+    private void observeViewModel(){
+        gameViewModel.getIsCorrect().observe(getViewLifecycleOwner(), isCorrect -> {
+            if(isCorrect) finishGame();
+        });
+    }
+
+    private void finishGame(){
+        binding.opponentNumber.setText(String.valueOf(gameViewModel.getOpponentNumber()));
+        binding.myNumber.setText(String.valueOf(gameViewModel.getMyNumber()));
+        binding.opponentAnswer.setText(String.valueOf(gameViewModel.getOpponentAnswer()));
+        binding.myAnswer.setEnabled(false);
+        binding.backspaceButton.setEnabled(false);
+        binding.opponentLayout.setVisibility(View.VISIBLE);
+        // TODO: disable digits...
+        
+    }
+
     private void setupListeners(){
-        EditText input = binding.myNumber;
+        EditText input = binding.myAnswer;
 
 
         View.OnClickListener appendListener = v -> {
@@ -83,6 +106,10 @@ public class MojBrojFragment extends Fragment {
                 tokens.remove(tokens.size() - 1);
                 updateDisplay(input, tokens);
             }
+        });
+
+        binding.confirmButton.setOnClickListener(v -> {
+            gameViewModel.checkAnswer(tokens);
         });
     }
 
