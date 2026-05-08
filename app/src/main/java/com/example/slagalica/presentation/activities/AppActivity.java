@@ -58,6 +58,9 @@ public class AppActivity extends AppCompatActivity {
 
         if (savedInstanceState == null) {
             FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
+            
+            // Load profile fragment into right drawer
+            FragmentTransition.to(new ProfileFragment(), this, false, R.id.rightDrawer);
         }
 
         // Toolbar
@@ -67,9 +70,9 @@ public class AppActivity extends AppCompatActivity {
             binding.main.openDrawer(GravityCompat.START);
         });
 
-        // Profile button
+        // Profile button - opens profile drawer
         binding.profileButton.setOnClickListener(v -> {
-            FragmentTransition.to(new ProfileFragment(), this, true, R.id.appContainer);
+            binding.main.openDrawer(GravityCompat.END);
         });
 
         // Drawer links

@@ -27,11 +27,11 @@
                 android:layout_marginBottom="32dp">
 
                 <ImageButton
-                    android:id="@+id/backButton"
+                    android:id="@+id/closeDrawerButton"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@android:drawable/ic_menu_revert"
+                    app:srcCompat="@drawable/ic_arrow_back"
                     android:contentDescription="@string/back" />
 
                 <View
@@ -76,20 +76,14 @@
                 android:gravity="center"
                 android:layout_marginBottom="32dp">
 
-                <FrameLayout
+                <ImageView
+                    android:id="@+id/profileAvatar"
                     android:layout_width="128dp"
                     android:layout_height="128dp"
-                    android:layout_marginBottom="16dp">
-
-                    <ImageView
-                        android:id="@+id/profileAvatar"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="@drawable/profile_icon"
-                        android:scaleType="centerCrop"
-                        android:contentDescription="@string/profile_avatar" />
-
-                </FrameLayout>
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/circular_profile_with_border"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="@string/profile_avatar" />
 
                 <TextView
                     android:id="@+id/usernameText"
@@ -222,7 +216,6 @@
                 android:orientation="vertical"
                 android:gravity="center"
                 android:padding="24dp"
-                android:background="@drawable/dashed_border"
                 android:layout_marginBottom="32dp">
 
                 <View

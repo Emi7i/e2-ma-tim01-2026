@@ -20,15 +20,15 @@ public class PieChartDrawable extends Drawable {
 
     public PieChartDrawable(Context context) {
         paintBackground = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paintBackground.setColor(ContextCompat.getColor(context, R.color.red));
+        paintBackground.setColor(ContextCompat.getColor(context, R.color.purple_light));
         paintBackground.setStyle(Paint.Style.FILL);
 
         paintForeground = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paintForeground.setColor(ContextCompat.getColor(context, R.color.green));
+        paintForeground.setColor(ContextCompat.getColor(context, R.color.blue_light));
         paintForeground.setStyle(Paint.Style.FILL);
 
         paintBorder = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paintBorder.setColor(ContextCompat.getColor(context, R.color.red));
+        paintBorder.setColor(ContextCompat.getColor(context, R.color.gray_dark));
         paintBorder.setStyle(Paint.Style.STROKE);
         paintBorder.setStrokeWidth(8f);
 

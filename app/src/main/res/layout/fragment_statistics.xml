@@ -27,11 +27,11 @@
                 android:layout_marginBottom="24dp">
 
                 <ImageButton
-                    android:id="@+id/backButton"
+                    android:id="@+id/closeDrawerButton"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@android:drawable/ic_menu_revert"
+                    app:srcCompat="@drawable/ic_arrow_back"
                     android:contentDescription="@string/back" />
 
                 <TextView
@@ -55,13 +55,20 @@
                 android:background="@color/light_gray"
                 android:layout_marginBottom="24dp">
 
-                <ImageView
-                    android:id="@+id/avatar"
+                <FrameLayout
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:background="@drawable/profile_icon"
-                    android:scaleType="centerCrop"
-                    android:contentDescription="@string/profile_avatar" />
+                    android:background="@drawable/circular_profile_background">
+
+                    <ImageView
+                        android:id="@+id/avatar"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/profile_icon"
+                        android:scaleType="centerCrop"
+                        android:contentDescription="@string/profile_avatar" />
+
+                </FrameLayout>
 
                 <TextView
                     android:id="@+id/username"
@@ -275,7 +282,8 @@
                 <FrameLayout
                     android:layout_width="150dp"
                     android:layout_height="150dp"
-                    android:layout_marginBottom="16dp">
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/circular_profile_background">
 
                     <View
                         android:id="@+id/pieChart"
@@ -290,6 +298,7 @@
                         android:layout_gravity="center">
 
                         <TextView
+                            android:id="@+id/winrateText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="55%"

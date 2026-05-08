@@ -1,9 +1,12 @@
 package com.example.slagalica.presentation.fragments.profile;
 
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
+import androidx.core.view.GravityCompat;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -40,11 +43,14 @@ public class ProfileFragment extends Fragment {
 
     private void setupClickListeners() {
         binding.statisticsButton.setOnClickListener(v -> {
-            FragmentTransition.to(new StatisticsFragment(), requireActivity(), true, R.id.appContainer);
+            // Switch to statistics fragment in the drawer
+            FragmentTransition.to(new StatisticsFragment(), requireActivity(), true, R.id.rightDrawer);
         });
 
-        binding.backButton.setOnClickListener(v -> {
-            requireActivity().getSupportFragmentManager().popBackStack();
+        binding.closeDrawerButton.setOnClickListener(v -> {
+            // Close profile drawer
+            androidx.drawerlayout.widget.DrawerLayout drawerLayout = requireActivity().findViewById(R.id.main);
+            drawerLayout.closeDrawer(GravityCompat.END);
         });
     }
 
