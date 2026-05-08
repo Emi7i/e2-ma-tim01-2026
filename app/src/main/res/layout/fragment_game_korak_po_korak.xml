@@ -177,7 +177,7 @@
             android:text="20" />
     </LinearLayout>
 
-    <TextView
+    <EditText
         android:id="@+id/answer"
         android:layout_width="350dp"
         style="@style/GameField"
