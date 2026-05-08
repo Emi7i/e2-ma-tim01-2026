@@ -29,6 +29,16 @@
                 android:text="@string/toolbar_app_name"
                 android:textAppearance="?attr/textAppearanceTitleLarge" />
 
+            <ImageButton
+                android:id="@+id/profileButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="end"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_myplaces"
+                android:contentDescription="@string/left_drawer_my_profile"
+                android:layout_marginEnd="8dp" />
+
         </com.google.android.material.appbar.MaterialToolbar>
 
         <com.example.slagalica.presentation.views.GameHeaderView

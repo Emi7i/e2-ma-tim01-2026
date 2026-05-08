@@ -19,4 +19,9 @@
     <string name="left_drawer_my_profile">My profile</string>
     <string name="left_drawer_notifications">Notifications</string>
     <string name="next">Dalje</string>
+    <!-- Profile -->
+    <string name="back">Nazad</string>
+    <string name="shop">Prodavnica</string>
+    <string name="profile_avatar">Profilna slika</string>
+    <string name="statistics">Statistika</string>
 </resources>

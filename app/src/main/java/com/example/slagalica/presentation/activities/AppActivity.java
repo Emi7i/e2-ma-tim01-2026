@@ -16,6 +16,7 @@ import com.example.slagalica.databinding.ActivityAppBinding;
 import com.example.slagalica.presentation.fragments.auth.LoginFragment;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
 import com.example.slagalica.presentation.fragments.common.HomeFragment;
+import com.example.slagalica.presentation.fragments.profile.ProfileFragment;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 
 import dagger.hilt.android.AndroidEntryPoint;
@@ -64,6 +65,11 @@ public class AppActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         binding.toolbar.setNavigationOnClickListener(v -> {
             binding.main.openDrawer(GravityCompat.START);
+        });
+
+        // Profile button
+        binding.profileButton.setOnClickListener(v -> {
+            FragmentTransition.to(new ProfileFragment(), this, true, R.id.appContainer);
         });
 
         // Drawer links
