@@ -13,7 +13,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 
-import com.example.slagalica.R;
 import com.example.slagalica.databinding.FragmentGameMojBrojBinding;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 
@@ -27,7 +26,7 @@ public class MojBrojFragment extends Fragment {
     MatchViewModel matchViewModel;
     FragmentGameMojBrojBinding binding;
     List<String> tokens = new ArrayList<>();
-    
+
 
     public MojBrojFragment() {
         // Required empty public constructor
