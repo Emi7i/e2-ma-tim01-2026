@@ -17,7 +17,7 @@
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:background="@color/red"
+            android:background="@color/background"
             android:layout_height="?attr/actionBarSize"
             app:navigationIcon="@drawable/ic_menu">
 
@@ -28,6 +28,15 @@
                 android:layout_gravity="center"
                 android:text="@string/toolbar_app_name"
                 android:textAppearance="?attr/textAppearanceTitleLarge" />
+
+            <ImageButton
+                android:id="@+id/profileButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="end"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/person_24dp_000000_fill0_wght400_grad0_opsz24"
+                android:layout_marginEnd="8dp" />
 
         </com.google.android.material.appbar.MaterialToolbar>
 
@@ -51,5 +60,14 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         app:headerLayout="@layout/view_drawer_left"/>
+
+    <!-- Right Drawer (Profile/Statistics) -->
+    <FrameLayout
+        android:id="@+id/rightDrawer"
+        android:paddingTop="30dp"
+        android:layout_width="320dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:background="@color/background" />
 
 </androidx.drawerlayout.widget.DrawerLayout>

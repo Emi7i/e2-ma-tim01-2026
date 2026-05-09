@@ -15,9 +15,7 @@
     <string name="register_button">Register</string>
     <string name="register_login_link">Already have an account? Log in</string>
     <string name="toolbar_app_name">Slagalica</string>
-    <string name="left_drawer_home">Home</string>
     <string name="left_drawer_my_profile">My profile</string>
-    <string name="left_drawer_notifications">Notifications</string>
     <string name="plus">+</string>
     <string name="minus">-</string>
     <string name="product">×</string>
@@ -25,4 +23,16 @@
     <string name="left_paren">(</string>
     <string name="right_paren">)</string>
     <string name="confirm">Confirm</string>
+    <string name="left_drawer_home">Početna</string>
+    <string name="left_drawer_friends">Prijatelji</string>
+    <string name="left_drawer_chat">Čet</string>
+    <string name="left_drawer_rank_list">Rank lista</string>
+    <string name="left_drawer_notifications">Notifikacije</string>
+    <string name="left_drawer_leave_match">Izadji iz partije</string>
+    <string name="next">Dalje</string>
+    <!-- Profile -->
+    <string name="back">Nazad</string>
+    <string name="shop">Prodavnica</string>
+    <string name="profile_avatar">Profilna slika</string>
+    <string name="statistics">Statistika</string>
 </resources>
