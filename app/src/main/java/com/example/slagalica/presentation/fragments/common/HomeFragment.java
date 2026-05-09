@@ -15,6 +15,7 @@ import com.example.slagalica.databinding.FragmentHomeBinding;
 import com.example.slagalica.presentation.fragments.match.KoZnaZnaFragment;
 import com.example.slagalica.presentation.fragments.match.AsocijacijeFragment;
 import com.example.slagalica.presentation.fragments.match.KorakPoKorakFragment;
+import com.example.slagalica.presentation.fragments.match.MojBrojFragment;
 import com.example.slagalica.presentation.fragments.match.SpojniceFragment;
 import com.example.slagalica.presentation.fragments.match.SkockoFragment;
 
@@ -50,6 +51,10 @@ public class HomeFragment extends Fragment {
         });
         binding.korakPoKorak.setOnClickListener(v -> {
             FragmentTransition.to(new KorakPoKorakFragment(), requireActivity(), true, R.id.appContainer);
+        });
+
+        binding.mojBroj.setOnClickListener(v -> {
+            FragmentTransition.to(new MojBrojFragment(), requireActivity(), true, R.id.appContainer);
         });
 
         binding.asocijacije.setOnClickListener(v -> {

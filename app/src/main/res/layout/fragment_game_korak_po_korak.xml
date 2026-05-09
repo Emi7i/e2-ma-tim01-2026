@@ -21,14 +21,13 @@
             android:layout_marginEnd="8dp"
             android:maxLines="1"
             android:scrollHorizontally="true"
-            android:text="Here nting at yes yesy esy eyse ys yes yes" />
+             />
 
         <TextView
             android:id="@+id/points1"
-            android:layout_width="0dp"
             style="@style/GameField"
-            android:layout_weight="1"
-            android:text="20" />
+            android:layout_width="0dp"
+            android:layout_weight="1" />
     </LinearLayout>
 
     <LinearLayout
@@ -44,15 +43,13 @@
             style="@style/GameField"
             android:layout_marginEnd="8dp"
             android:maxLines="1"
-            android:scrollHorizontally="true"
-            android:text="Heting at yes yesy esy eyse ys yes yes" />
+            android:scrollHorizontally="true" />
 
         <TextView
             android:id="@+id/points2"
-            android:layout_width="0dp"
             style="@style/GameField"
-            android:layout_weight="1"
-            android:text="20" />
+            android:layout_width="0dp"
+            android:layout_weight="1" />
     </LinearLayout>
 
     <LinearLayout
@@ -68,15 +65,13 @@
             style="@style/GameField"
             android:layout_marginEnd="8dp"
             android:maxLines="1"
-            android:scrollHorizontally="true"
-            android:text="Here ising at yes yesy esy eyse ys yes yes" />
+            android:scrollHorizontally="true"/>
 
         <TextView
             android:id="@+id/points3"
-            android:layout_width="0dp"
             style="@style/GameField"
-            android:layout_weight="1"
-            android:text="20" />
+            android:layout_width="0dp"
+            android:layout_weight="1" />
     </LinearLayout>
 
     <LinearLayout
@@ -92,15 +87,13 @@
             style="@style/GameField"
             android:layout_marginEnd="8dp"
             android:maxLines="1"
-            android:scrollHorizontally="true"
-            android:text="Here is somat yes yesy esy eyse ys yes yes" />
+            android:scrollHorizontally="true" />
 
         <TextView
             android:id="@+id/points4"
-            android:layout_width="0dp"
             style="@style/GameField"
-            android:layout_weight="1"
-            android:text="20" />
+            android:layout_width="0dp"
+            android:layout_weight="1" />
     </LinearLayout>
 
     <LinearLayout
@@ -116,15 +109,13 @@
             style="@style/GameField"
             android:layout_marginEnd="8dp"
             android:maxLines="1"
-            android:scrollHorizontally="true"
-            android:text="Here is at yes yesy esy eyse ys yes yes" />
+            android:scrollHorizontally="true" />
 
         <TextView
             android:id="@+id/points5"
-            android:layout_width="0dp"
             style="@style/GameField"
-            android:layout_weight="1"
-            android:text="20" />
+            android:layout_width="0dp"
+            android:layout_weight="1" />
     </LinearLayout>
 
     <LinearLayout
@@ -140,15 +131,13 @@
             style="@style/GameField"
             android:layout_marginEnd="8dp"
             android:maxLines="1"
-            android:scrollHorizontally="true"
-            android:text="Here is t yes yesy esy eyse ys yes yes" />
+            android:scrollHorizontally="true"/>
 
         <TextView
             android:id="@+id/points6"
-            android:layout_width="0dp"
             style="@style/GameField"
-            android:layout_weight="1"
-            android:text="20" />
+            android:layout_width="0dp"
+            android:layout_weight="1" />
 
 
     </LinearLayout>
@@ -166,25 +155,24 @@
             android:layout_marginEnd="8dp"
             android:layout_weight="7"
             android:maxLines="1"
-            android:scrollHorizontally="true"
-            android:text="Here is someg at yes yesy esy eyse ys yes yes" />
+            android:scrollHorizontally="true"/>
 
         <TextView
             android:id="@+id/points7"
             style="@style/GameField"
             android:layout_width="0dp"
-            android:layout_weight="1"
-            android:text="20" />
+            android:layout_weight="1" />
     </LinearLayout>
 
-    <TextView
+    <EditText
         android:id="@+id/answer"
         android:layout_width="350dp"
         style="@style/GameField"
         android:layout_height="0dp"
         android:layout_weight="0.5"
         android:layout_gravity="center"
-        android:text="answer" />
+        android:singleLine="true"
+        android:imeOptions="actionDone"/>
 
 
 </LinearLayout>
