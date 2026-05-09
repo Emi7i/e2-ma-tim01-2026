@@ -35,4 +35,7 @@
     <string name="shop">Prodavnica</string>
     <string name="profile_avatar">Profilna slika</string>
     <string name="statistics">Statistika</string>
+    <string name="moj_broj_stop">Zaustavi</string>
+    <string name="opponent">Protivnik</string>
+    <string name="backspace_text">Backspace</string>
 </resources>

@@ -4,6 +4,8 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.slagalica.domain.service.match.MojBrojService;
+
 import java.util.List;
 
 import javax.inject.Inject;
@@ -14,16 +16,21 @@ import lombok.Setter;
 
 @HiltViewModel
 public class MojBrojViewModel extends ViewModel {
+    private final MojBrojService gameService;
+
     @Inject
-    public MojBrojViewModel(){}
+    public MojBrojViewModel(MojBrojService mojBrojService){
+        this.gameService = mojBrojService;
+    }
+
 
     @Getter
-    private final int goalNumber = 314;
+    private int goalNumber = 0;
 
     @Getter
-    private final int[] singleDigits = {1, 2, 3, 4};
+    private int[] singleDigits = {};
     @Getter
-    private final int[] doubleDigits = {25, 50};
+    private int[] doubleDigits = {};
 
     @Getter @Setter
     private String opponentAnswer = "25 x 2";
@@ -32,10 +39,43 @@ public class MojBrojViewModel extends ViewModel {
     @Getter @Setter
     private int opponentNumber = 44;
 
+    private final MutableLiveData<Boolean> isGoalSpinning = new MutableLiveData<>(true);
+    private final MutableLiveData<Boolean> areOperandsSpinning = new MutableLiveData<>(true);
+
     private final MutableLiveData<Boolean> isCorrect = new MutableLiveData<>();
     public LiveData<Boolean> getIsCorrect() { return isCorrect; }
 
     public void checkAnswer(List<String> tokens) {
         isCorrect.setValue(true);
+    }
+
+    public LiveData<Boolean> getIsGoalSpinning(){
+        return isGoalSpinning;
+    }
+
+    public int generateGoalNumber(){
+        goalNumber = gameService.generateGoalNumber();
+        return goalNumber;
+    }
+
+
+    public int[] generateOperands(){
+        int[] numbers = gameService.generateOperands();
+        singleDigits = new int[]{numbers[0], numbers[1], numbers[2], numbers[3]};
+        doubleDigits = new int[]{numbers[4], numbers[5]};
+
+        return numbers;
+    }
+
+    public void stopGoalSpinning(){
+        isGoalSpinning.setValue(false);
+    }
+
+    public LiveData<Boolean> getAreOperandsSpinning(){
+        return areOperandsSpinning;
+    }
+
+    public void stopOperandsSpinning(){
+        areOperandsSpinning.setValue(false);
     }
 }
