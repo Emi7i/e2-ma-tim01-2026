@@ -101,6 +101,7 @@ public class AppActivity extends AppCompatActivity {
             }
         });
 
+        // Notifications button
         leftDrawer.findViewById(R.id.notifications).setOnClickListener(v -> {
             FragmentTransition.to(new NotificationsFragment(), this, true, R.id.appContainer);
             binding.main.closeDrawer(GravityCompat.START);
