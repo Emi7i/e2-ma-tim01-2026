@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.View;
 
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.GravityCompat;
@@ -77,10 +78,38 @@ public class AppActivity extends AppCompatActivity {
 
         // Drawer links
         View leftDrawer = binding.leftDrawer.getHeaderView(0);
-        leftDrawer.findViewById(R.id.home).setOnClickListener(v -> {
-            FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
-            binding.main.closeDrawer(GravityCompat.START);
+        
+        // Leave match button
+        leftDrawer.findViewById(R.id.leave_match).setOnClickListener(v -> {
+            showLeaveGameConfirmationDialog(() -> {
+                FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
+                binding.main.closeDrawer(GravityCompat.START);
+            });
         });
+        
+        // Home button
+        leftDrawer.findViewById(R.id.home).setOnClickListener(v -> {
+            if (matchViewModel.getIsGameActive().getValue() != null && matchViewModel.getIsGameActive().getValue()) {
+                showLeaveGameConfirmationDialog(() -> {
+                    FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
+                    binding.main.closeDrawer(GravityCompat.START);
+                });
+            } else {
+                FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
+                binding.main.closeDrawer(GravityCompat.START);
+            }
+        });
+    }
+
+    private void showLeaveGameConfirmationDialog(Runnable onConfirm) {
+        new AlertDialog.Builder(this)
+                .setTitle("Napusti igru")
+                .setMessage("Da li ste sigurni da zelite da napustite aktivnu igru?")
+                .setPositiveButton("Da", (dialog, which) -> {
+                    onConfirm.run();
+                })
+                .setNegativeButton("Ne", null)
+                .show();
     }
 
     // Helper method to make the view (activity) observe changes in VM
@@ -88,6 +117,11 @@ public class AppActivity extends AppCompatActivity {
         matchViewModel.getIsGameActive().observe(this, active -> {
             // When isGameActive changes in the VM, this line is triggered
             binding.gameHeader.setVisibility(active ? View.VISIBLE : View.GONE);
+            
+            // Show/hide leave match button based on game state
+            View leftDrawer = binding.leftDrawer.getHeaderView(0);
+            View leaveMatchButton = leftDrawer.findViewById(R.id.leave_match);
+            leaveMatchButton.setVisibility(active ? View.VISIBLE : View.GONE);
         });
     }
 
