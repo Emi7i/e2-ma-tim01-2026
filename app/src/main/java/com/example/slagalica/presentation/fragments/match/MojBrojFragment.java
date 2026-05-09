@@ -100,6 +100,8 @@ public class MojBrojFragment extends Fragment {
                 handler.post(spinOperandsRunnable);
             } else {
                 binding.stopSpinning.setVisibility(View.INVISIBLE);
+                binding.confirmButton.setVisibility(View.VISIBLE);
+                binding.backspaceButton.setEnabled(true);
                 handler.removeCallbacks(spinOperandsRunnable);
             }
         });
@@ -120,8 +122,11 @@ public class MojBrojFragment extends Fragment {
         EditText input = binding.myAnswer;
 
         View.OnClickListener appendListener = v -> {
-            tokens.add(((Button) v).getText().toString());
-            updateDisplay(input, tokens);
+            if(Boolean.FALSE.equals(gameViewModel.getAreOperandsSpinning().getValue()))
+            {
+                tokens.add(((Button) v).getText().toString());
+                updateDisplay(input, tokens);
+            }
         };
 
         for (Button btn : numpadButtons) btn.setOnClickListener(appendListener);
