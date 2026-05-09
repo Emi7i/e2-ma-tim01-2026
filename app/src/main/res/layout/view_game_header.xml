@@ -1,40 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:paddingLeft="@dimen/screen_padding"
-    android:paddingRight="@dimen/screen_padding"
-    >
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingHorizontal="24dp"
+    android:paddingVertical="16dp">
 
     <TextView
         android:id="@+id/player1Stars"
-        android:layout_width="wrap_content"
+        style="@style/GameField"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-
-        style="@style/GameField"
-        android:layout_marginEnd="30dp"
-
-        android:text="20" />
+        android:gravity="center"/>
 
     <TextView
         android:id="@+id/timer"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-
-        style="@style/GameField"
-        android:layout_marginEnd="30dp"
-
-        android:text="46s" />
+        android:gravity="center"
+        android:padding="8dp"
+        android:textColor="#2563EB"
+        android:textSize="14sp"
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/player2Stars"
-        android:layout_width="wrap_content"
+        style="@style/GameField"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:gravity="center" />
 
-        style="@style/GameField"
-
-        android:text="25" />
 </LinearLayout>

@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.View;
 
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.GravityCompat;
@@ -16,6 +17,7 @@ import com.example.slagalica.databinding.ActivityAppBinding;
 import com.example.slagalica.presentation.fragments.auth.LoginFragment;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
 import com.example.slagalica.presentation.fragments.common.HomeFragment;
+import com.example.slagalica.presentation.fragments.profile.ProfileFragment;
 import com.example.slagalica.presentation.fragments.common.NotificationsFragment;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 
@@ -58,6 +60,9 @@ public class AppActivity extends AppCompatActivity {
 
         if (savedInstanceState == null) {
             FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
+
+            // Load profile fragment into right drawer
+            FragmentTransition.to(new ProfileFragment(), this, false, R.id.rightDrawer);
         }
 
         // Toolbar
@@ -67,11 +72,33 @@ public class AppActivity extends AppCompatActivity {
             binding.main.openDrawer(GravityCompat.START);
         });
 
+        // Profile button - opens profile drawer
+        binding.profileButton.setOnClickListener(v -> {
+            binding.main.openDrawer(GravityCompat.END);
+        });
+
         // Drawer links
         View leftDrawer = binding.leftDrawer.getHeaderView(0);
+
+        // Leave match button
+        leftDrawer.findViewById(R.id.leave_match).setOnClickListener(v -> {
+            showLeaveGameConfirmationDialog(() -> {
+                FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
+                binding.main.closeDrawer(GravityCompat.START);
+            });
+        });
+
+        // Home button
         leftDrawer.findViewById(R.id.home).setOnClickListener(v -> {
-            FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
-            binding.main.closeDrawer(GravityCompat.START);
+            if (matchViewModel.getIsGameActive().getValue() != null && matchViewModel.getIsGameActive().getValue()) {
+                showLeaveGameConfirmationDialog(() -> {
+                    FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
+                    binding.main.closeDrawer(GravityCompat.START);
+                });
+            } else {
+                FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
+                binding.main.closeDrawer(GravityCompat.START);
+            }
         });
 
         leftDrawer.findViewById(R.id.notifications).setOnClickListener(v -> {
@@ -80,11 +107,27 @@ public class AppActivity extends AppCompatActivity {
         });
     }
 
+    private void showLeaveGameConfirmationDialog(Runnable onConfirm) {
+        new AlertDialog.Builder(this)
+                .setTitle("Napusti igru")
+                .setMessage("Da li ste sigurni da zelite da napustite aktivnu igru?")
+                .setPositiveButton("Da", (dialog, which) -> {
+                    onConfirm.run();
+                })
+                .setNegativeButton("Ne", null)
+                .show();
+    }
+
     // Helper method to make the view (activity) observe changes in VM
     private void observeViewModel(){
         matchViewModel.getIsGameActive().observe(this, active -> {
             // When isGameActive changes in the VM, this line is triggered
             binding.gameHeader.setVisibility(active ? View.VISIBLE : View.GONE);
+
+            // Show/hide leave match button based on game state
+            View leftDrawer = binding.leftDrawer.getHeaderView(0);
+            View leaveMatchButton = leftDrawer.findViewById(R.id.leave_match);
+            leaveMatchButton.setVisibility(active ? View.VISIBLE : View.GONE);
         });
     }
 
