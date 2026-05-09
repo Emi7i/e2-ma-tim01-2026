@@ -68,9 +68,10 @@
             <Button
                 android:id="@+id/backspaceButton"
                 android:layout_width="0dp"
-                android:layout_weight="1"
+                android:layout_weight="1.3"
                 android:enabled="false"
                 android:layout_height="@dimen/input_min_height"
+
                 app:icon="@drawable/ic_backspace"
                 app:iconGravity="textStart"
                 android:contentDescription="@string/backspace_text"
