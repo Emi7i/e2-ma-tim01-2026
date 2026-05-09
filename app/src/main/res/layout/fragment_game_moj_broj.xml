@@ -85,6 +85,16 @@
 
     </LinearLayout>
 
+    <Button
+        android:id="@+id/stopSpinning"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/moj_broj_stop"
+        app:layout_constraintTop_toTopOf="@id/opponentLayout"
+        app:layout_constraintBottom_toBottomOf="@id/opponentLayout"
+        app:layout_constraintStart_toStartOf="@id/opponentLayout"
+        app:layout_constraintEnd_toEndOf="@id/opponentLayout" />
+
     <LinearLayout
         android:id="@+id/opponentLayout"
         android:layout_width="@dimen/input_width"
@@ -132,32 +142,28 @@
             <Button
                 android:id="@+id/digit1"
                 android:layout_width="60dp"
-                android:layout_height="wrap_content"
-                android:text="1" />
+                android:layout_height="wrap_content" />
 
             <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
 
             <Button
                 android:id="@+id/digit2"
                 android:layout_width="60dp"
-                android:layout_height="wrap_content"
-                android:text="2" />
+                android:layout_height="wrap_content" />
 
             <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
 
             <Button
                 android:id="@+id/digit3"
                 android:layout_width="60dp"
-                android:layout_height="wrap_content"
-                android:text="3" />
+                android:layout_height="wrap_content" />
 
             <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
 
             <Button
                 android:id="@+id/digit4"
                 android:layout_width="60dp"
-                android:layout_height="wrap_content"
-                android:text="4" />
+                android:layout_height="wrap_content" />
 
         </LinearLayout>
 
@@ -172,8 +178,7 @@
                 android:id="@+id/doubleDigit1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="25" />
+                android:layout_weight="1" />
 
 
 
@@ -182,8 +187,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1.5"
-                android:layout_marginStart="10dp"
-                android:text="50" />
+                android:layout_marginStart="10dp" />
 
         </LinearLayout>
 

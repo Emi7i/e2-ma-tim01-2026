@@ -7,6 +7,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,6 +31,7 @@ public class MojBrojFragment extends Fragment {
     FragmentGameMojBrojBinding binding;
     List<String> tokens = new ArrayList<>();
     List<Button> numpadButtons;
+    private final Handler handler = new Handler(Looper.getMainLooper());
 
     public MojBrojFragment() {}
 
@@ -45,8 +48,6 @@ public class MojBrojFragment extends Fragment {
         matchViewModel = new ViewModelProvider(requireActivity()).get(MatchViewModel.class);
         gameViewModel = new ViewModelProvider(this).get(MojBrojViewModel.class);
         matchViewModel.setGameActive(true);
-
-        binding.goalNumber.setText(String.valueOf(gameViewModel.getGoalNumber()));
 
         numpadButtons = List.of(
                 binding.digit1, binding.digit2, binding.digit3, binding.digit4,
@@ -65,9 +66,42 @@ public class MojBrojFragment extends Fragment {
         matchViewModel.setGameActive(false);
     }
 
+    private final Runnable spinGoalRunnable = new Runnable() {
+        @Override
+        public void run() {
+            updateGoalWithRandomNumber();
+            handler.postDelayed(this, 100);
+        }
+    };
+
+    private final Runnable spinOperandsRunnable = new Runnable() {
+        @Override
+        public void run() {
+            updateOperandsWithRandomNumbers();
+            handler.postDelayed(this, 100);
+        }
+    };
+
     private void observeViewModel() {
         gameViewModel.getIsCorrect().observe(getViewLifecycleOwner(), isCorrect -> {
             if (isCorrect) finishGame();
+        });
+
+        gameViewModel.getIsGoalSpinning().observe(getViewLifecycleOwner(), isSpinning -> {
+            if (isSpinning) {
+                handler.post(spinGoalRunnable);
+            } else {
+                handler.removeCallbacks(spinGoalRunnable);
+            }
+        });
+
+        gameViewModel.getAreOperandsSpinning().observe(getViewLifecycleOwner(), isSpinning -> {
+            if (isSpinning) {
+                handler.post(spinOperandsRunnable);
+            } else {
+                binding.stopSpinning.setVisibility(View.INVISIBLE);
+                handler.removeCallbacks(spinOperandsRunnable);
+            }
         });
     }
 
@@ -100,9 +134,48 @@ public class MojBrojFragment extends Fragment {
         });
 
         binding.confirmButton.setOnClickListener(v -> gameViewModel.checkAnswer(tokens));
+
+        binding.stopSpinning.setOnClickListener(v -> stopSpinning());
+    }
+
+    private void stopSpinning(){
+        if(Boolean.TRUE.equals(gameViewModel.getIsGoalSpinning().getValue())){
+            // TODO: save goal to db...
+            gameViewModel.stopGoalSpinning();
+        }
+        else{
+            // TODO: save operands to db...
+            gameViewModel.stopOperandsSpinning();
+        }
     }
 
     private void updateDisplay(EditText input, List<String> tokens) {
         input.setText(String.join(" ", tokens));
+    }
+
+    private void updateGoalWithRandomNumber(){
+        gameViewModel.generateGoalNumber();
+        setGoalNumber();
+    }
+
+    private void updateOperandsWithRandomNumbers(){
+        gameViewModel.generateOperands();
+        setOperands();
+    }
+
+    private void setGoalNumber(){
+        binding.goalNumber.setText(String.valueOf(gameViewModel.getGoalNumber()));
+//        gameViewModel.stopGoalSpinning();
+    }
+
+    private void setOperands(){
+        binding.digit1.setText(String.valueOf(gameViewModel.getSingleDigits()[0]));
+        binding.digit2.setText(String.valueOf(gameViewModel.getSingleDigits()[1]));
+        binding.digit3.setText(String.valueOf(gameViewModel.getSingleDigits()[2]));
+        binding.digit4.setText(String.valueOf(gameViewModel.getSingleDigits()[3]));
+        binding.doubleDigit1.setText(String.valueOf(gameViewModel.getDoubleDigits()[0]));
+        binding.doubleDigit2.setText(String.valueOf(gameViewModel.getDoubleDigits()[1]));
+
+//        gameViewModel.stopDigitsSpinning();
     }
 }
