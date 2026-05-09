@@ -18,6 +18,7 @@ import com.example.slagalica.presentation.fragments.auth.LoginFragment;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
 import com.example.slagalica.presentation.fragments.common.HomeFragment;
 import com.example.slagalica.presentation.fragments.profile.ProfileFragment;
+import com.example.slagalica.presentation.fragments.common.NotificationsFragment;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 
 import dagger.hilt.android.AndroidEntryPoint;
@@ -59,7 +60,7 @@ public class AppActivity extends AppCompatActivity {
 
         if (savedInstanceState == null) {
             FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
-            
+
             // Load profile fragment into right drawer
             FragmentTransition.to(new ProfileFragment(), this, false, R.id.rightDrawer);
         }
@@ -78,7 +79,7 @@ public class AppActivity extends AppCompatActivity {
 
         // Drawer links
         View leftDrawer = binding.leftDrawer.getHeaderView(0);
-        
+
         // Leave match button
         leftDrawer.findViewById(R.id.leave_match).setOnClickListener(v -> {
             showLeaveGameConfirmationDialog(() -> {
@@ -86,7 +87,7 @@ public class AppActivity extends AppCompatActivity {
                 binding.main.closeDrawer(GravityCompat.START);
             });
         });
-        
+
         // Home button
         leftDrawer.findViewById(R.id.home).setOnClickListener(v -> {
             if (matchViewModel.getIsGameActive().getValue() != null && matchViewModel.getIsGameActive().getValue()) {
@@ -98,6 +99,11 @@ public class AppActivity extends AppCompatActivity {
                 FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
                 binding.main.closeDrawer(GravityCompat.START);
             }
+        });
+
+        leftDrawer.findViewById(R.id.notifications).setOnClickListener(v -> {
+            FragmentTransition.to(new NotificationsFragment(), this, true, R.id.appContainer);
+            binding.main.closeDrawer(GravityCompat.START);
         });
     }
 
@@ -117,7 +123,7 @@ public class AppActivity extends AppCompatActivity {
         matchViewModel.getIsGameActive().observe(this, active -> {
             // When isGameActive changes in the VM, this line is triggered
             binding.gameHeader.setVisibility(active ? View.VISIBLE : View.GONE);
-            
+
             // Show/hide leave match button based on game state
             View leftDrawer = binding.leftDrawer.getHeaderView(0);
             View leaveMatchButton = leftDrawer.findViewById(R.id.leave_match);

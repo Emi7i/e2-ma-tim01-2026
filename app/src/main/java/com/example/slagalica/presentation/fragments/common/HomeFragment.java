@@ -13,8 +13,10 @@ import android.view.ViewGroup;
 import com.example.slagalica.R;
 import com.example.slagalica.databinding.FragmentHomeBinding;
 import com.example.slagalica.presentation.fragments.match.KoZnaZnaFragment;
+import com.example.slagalica.presentation.fragments.match.AsocijacijeFragment;
 import com.example.slagalica.presentation.fragments.match.KorakPoKorakFragment;
 import com.example.slagalica.presentation.fragments.match.SpojniceFragment;
+import com.example.slagalica.presentation.fragments.match.SkockoFragment;
 
 import dagger.hilt.android.AndroidEntryPoint;
 
@@ -48,6 +50,14 @@ public class HomeFragment extends Fragment {
         });
         binding.korakPoKorak.setOnClickListener(v -> {
             FragmentTransition.to(new KorakPoKorakFragment(), requireActivity(), true, R.id.appContainer);
+        });
+
+        binding.asocijacije.setOnClickListener(v -> {
+            FragmentTransition.to(new AsocijacijeFragment(), requireActivity(), true, R.id.appContainer);
+        });
+
+        binding.skocko.setOnClickListener(v -> {
+            FragmentTransition.to(new SkockoFragment(), requireActivity(), true, R.id.appContainer);
         });
     }
 

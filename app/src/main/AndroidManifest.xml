@@ -13,9 +13,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Slagalica">
         <activity
-            android:name=".presentation.activities.GameActivity"
-            android:exported="false" />
-        <activity
             android:name=".presentation.activities.AuthActivity"
             android:exported="false" />
         <activity
