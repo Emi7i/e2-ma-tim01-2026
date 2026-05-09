@@ -19,7 +19,9 @@ import com.example.slagalica.databinding.FragmentGameMojBrojBinding;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 import com.example.slagalica.presentation.viewmodels.MojBrojViewModel;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 
 import dagger.hilt.android.AndroidEntryPoint;
@@ -33,6 +35,7 @@ public class MojBrojFragment extends Fragment {
     List<Button> operandButtons;
     List<Button> operatorButtons;
     private final Handler handler = new Handler(Looper.getMainLooper());
+    Deque<Button> usedOperandStack = new ArrayDeque<>();
 
     public MojBrojFragment() {}
 
@@ -128,11 +131,12 @@ public class MojBrojFragment extends Fragment {
 
         View.OnClickListener operandListener = v -> {
             if (Boolean.FALSE.equals(gameViewModel.getAreOperandsSpinning().getValue())) {
-                String value = ((Button) v).getText().toString();
-                if (!tokens.contains(value)) {
-                    tokens.add(value);
+                Button btn = (Button) v;
+                if (!usedOperandStack.contains(btn)) {
+                    tokens.add(btn.getText().toString());
+                    usedOperandStack.push(btn);
                     updateDisplay(input, tokens);
-                    v.setEnabled(false); // visually show it's been used
+                    btn.setEnabled(false);
                 }
             }
         };
@@ -150,10 +154,10 @@ public class MojBrojFragment extends Fragment {
         binding.backspaceButton.setOnClickListener(v -> {
             if (!tokens.isEmpty()) {
                 String removed = tokens.remove(tokens.size() - 1);
-                for (Button btn : operandButtons) {
-                    if (btn.getText().toString().equals(removed)) {
-                        btn.setEnabled(true);
-                        break;
+                if (!usedOperandStack.isEmpty()) {
+                    String topValue = usedOperandStack.peek().getText().toString();
+                    if (topValue.equals(removed)) {
+                        usedOperandStack.pop().setEnabled(true);
                     }
                 }
                 updateDisplay(input, tokens);
