@@ -30,7 +30,8 @@ public class MojBrojFragment extends Fragment {
     MojBrojViewModel gameViewModel;
     FragmentGameMojBrojBinding binding;
     List<String> tokens = new ArrayList<>();
-    List<Button> numpadButtons;
+    List<Button> operandButtons;
+    List<Button> operatorButtons;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
     public MojBrojFragment() {}
@@ -49,9 +50,12 @@ public class MojBrojFragment extends Fragment {
         gameViewModel = new ViewModelProvider(this).get(MojBrojViewModel.class);
         matchViewModel.setGameActive(true);
 
-        numpadButtons = List.of(
+        operandButtons = List.of(
                 binding.digit1, binding.digit2, binding.digit3, binding.digit4,
-                binding.doubleDigit1, binding.doubleDigit2,
+                binding.doubleDigit1, binding.doubleDigit2
+        );
+
+        operatorButtons = List.of(
                 binding.plus, binding.minus, binding.divide, binding.product,
                 binding.leftParen, binding.rightParen
         );
@@ -115,25 +119,43 @@ public class MojBrojFragment extends Fragment {
         binding.backspaceButton.setEnabled(false);
         binding.opponentLayout.setVisibility(View.VISIBLE);
         binding.confirmButton.setVisibility(View.INVISIBLE);
-        for (Button btn : numpadButtons) btn.setEnabled(false);
+        for (Button btn : operandButtons) btn.setEnabled(false);
+        for (Button btn : operatorButtons) btn.setEnabled(false);
     }
 
     private void setupListeners() {
         EditText input = binding.myAnswer;
 
-        View.OnClickListener appendListener = v -> {
-            if(Boolean.FALSE.equals(gameViewModel.getAreOperandsSpinning().getValue()))
-            {
+        View.OnClickListener operandListener = v -> {
+            if (Boolean.FALSE.equals(gameViewModel.getAreOperandsSpinning().getValue())) {
+                String value = ((Button) v).getText().toString();
+                if (!tokens.contains(value)) {
+                    tokens.add(value);
+                    updateDisplay(input, tokens);
+                    v.setEnabled(false); // visually show it's been used
+                }
+            }
+        };
+
+        View.OnClickListener operatorListener = v -> {
+            if (Boolean.FALSE.equals(gameViewModel.getAreOperandsSpinning().getValue())) {
                 tokens.add(((Button) v).getText().toString());
                 updateDisplay(input, tokens);
             }
         };
 
-        for (Button btn : numpadButtons) btn.setOnClickListener(appendListener);
+        for (Button btn : operandButtons) btn.setOnClickListener(operandListener);
+        for (Button btn : operatorButtons) btn.setOnClickListener(operatorListener);
 
         binding.backspaceButton.setOnClickListener(v -> {
             if (!tokens.isEmpty()) {
-                tokens.remove(tokens.size() - 1);
+                String removed = tokens.remove(tokens.size() - 1);
+                for (Button btn : operandButtons) {
+                    if (btn.getText().toString().equals(removed)) {
+                        btn.setEnabled(true);
+                        break;
+                    }
+                }
                 updateDisplay(input, tokens);
             }
         });
