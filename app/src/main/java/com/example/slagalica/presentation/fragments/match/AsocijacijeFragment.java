@@ -62,6 +62,11 @@ public class AsocijacijeFragment extends Fragment {
         matchViewModel = new ViewModelProvider(requireActivity()).get(MatchViewModel.class);
         matchViewModel.setGameActive(true);
 
+        android.widget.TextView toolbarTitle = requireActivity().findViewById(R.id.toolbarTitle);
+        if (toolbarTitle != null) {
+            toolbarTitle.setText("Asocijacije");
+        }
+
         asocijacijeRepository = new StubAsocijacijeRepository();
         asocijacija = asocijacijeRepository.getAsocijacija();
 

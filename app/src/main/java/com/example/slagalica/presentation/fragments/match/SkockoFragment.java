@@ -59,6 +59,11 @@ public class SkockoFragment extends Fragment {
         matchViewModel = new ViewModelProvider(requireActivity()).get(MatchViewModel.class);
         matchViewModel.setGameActive(true);
 
+        android.widget.TextView toolbarTitle = requireActivity().findViewById(R.id.toolbarTitle);
+        if (toolbarTitle != null) {
+            toolbarTitle.setText("Skočko");
+        }
+
         skockoRepository = new StubSkockoRepository();
         skockoTabla = skockoRepository.getSkockoTabla();
 
