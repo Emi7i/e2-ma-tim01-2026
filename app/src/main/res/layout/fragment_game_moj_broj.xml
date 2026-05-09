@@ -59,7 +59,6 @@
                 style="@style/GameField"
                 android:layout_width="0dp"
                 android:layout_weight="6"
-                android:layout_height="wrap_content"
                 android:clickable="false"
                 android:cursorVisible="false"
                 android:focusable="false"
@@ -71,9 +70,11 @@
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:enabled="false"
-                android:layout_height="wrap_content"
+                android:layout_height="@dimen/input_min_height"
                 app:icon="@drawable/ic_backspace"
-                app:iconGravity="textStart" />
+                app:iconGravity="textStart"
+                android:contentDescription="@string/backspace_text"
+                />
 
         </LinearLayout>
 
@@ -113,13 +114,13 @@
             android:id="@+id/opponentText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Protivnik" />
+            android:text="@string/opponent" />
 
         <TextView
             android:id="@+id/opponentAnswer"
             style="@style/GameField"
             android:layout_width="@dimen/input_width"
-            android:layout_height="wrap_content" />
+            android:layout_height="@dimen/input_min_height" />
 
     </LinearLayout>
 
@@ -144,28 +145,32 @@
             <Button
                 android:id="@+id/digit1"
                 android:layout_width="60dp"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content"
+                android:contentDescription="1st operand"/>
 
             <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
 
             <Button
                 android:id="@+id/digit2"
                 android:layout_width="60dp"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:contentDescription="2nd operand"/>
 
             <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
 
             <Button
                 android:id="@+id/digit3"
                 android:layout_width="60dp"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:contentDescription="3rd operand"/>
 
             <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
 
             <Button
                 android:id="@+id/digit4"
                 android:layout_width="60dp"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:contentDescription="4th operand"/>
 
         </LinearLayout>
 
@@ -180,7 +185,8 @@
                 android:id="@+id/doubleDigit1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1" />
+                android:layout_weight="1"
+                android:contentDescription="5th operand"/>
 
 
 
@@ -189,7 +195,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1.5"
-                android:layout_marginStart="10dp" />
+                android:layout_marginStart="10dp"
+                android:contentDescription="6th operand"/>
 
         </LinearLayout>
 
