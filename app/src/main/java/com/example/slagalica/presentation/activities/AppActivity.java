@@ -16,6 +16,7 @@ import com.example.slagalica.databinding.ActivityAppBinding;
 import com.example.slagalica.presentation.fragments.auth.LoginFragment;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
 import com.example.slagalica.presentation.fragments.common.HomeFragment;
+import com.example.slagalica.presentation.fragments.common.NotificationsFragment;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 
 import dagger.hilt.android.AndroidEntryPoint;
@@ -70,6 +71,11 @@ public class AppActivity extends AppCompatActivity {
         View leftDrawer = binding.leftDrawer.getHeaderView(0);
         leftDrawer.findViewById(R.id.home).setOnClickListener(v -> {
             FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
+            binding.main.closeDrawer(GravityCompat.START);
+        });
+
+        leftDrawer.findViewById(R.id.notifications).setOnClickListener(v -> {
+            FragmentTransition.to(new NotificationsFragment(), this, true, R.id.appContainer);
             binding.main.closeDrawer(GravityCompat.START);
         });
     }

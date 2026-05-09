@@ -2,12 +2,9 @@ package com.example.slagalica.presentation.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Button;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.example.slagalica.R;
 
@@ -15,6 +12,9 @@ import dagger.hilt.android.AndroidEntryPoint;
 
 @AndroidEntryPoint
 public class MainActivity extends AppCompatActivity {
+
+    private Button btnOpenAsocijacije;
+    private Button btnOpenSkocko;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

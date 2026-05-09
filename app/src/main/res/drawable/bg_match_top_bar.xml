@@ -1,0 +1,6 @@
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/top_bar_bg" />
+    <stroke
+        android:width="2dp"
+        android:color="@color/border_dark" />
+</shape>
