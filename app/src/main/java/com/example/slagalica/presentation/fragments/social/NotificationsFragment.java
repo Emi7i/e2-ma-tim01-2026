@@ -1,4 +1,4 @@
-package com.example.slagalica.presentation.fragments.common;
+package com.example.slagalica.presentation.fragments.social;
 
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -18,6 +18,13 @@ import androidx.fragment.app.Fragment;
 
 import com.example.slagalica.R;
 import com.example.slagalica.databinding.FragmentNotificationsBinding;
+import com.example.slagalica.domain.model.social.NotificationFilter;
+import com.example.slagalica.domain.model.social.NotificationItem;
+import com.example.slagalica.domain.service.social.NotificationsService;
+import com.example.slagalica.presentation.activities.AppActivity;
+import com.example.slagalica.presentation.fragments.common.FragmentTransition;
+import com.example.slagalica.repository.impl.NotificationsRepository;
+import com.example.slagalica.repository.impl.stub.StubNotificationsRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +36,8 @@ public class NotificationsFragment extends Fragment {
 
     private FragmentNotificationsBinding binding;
 
-    private final List<NotificationUiItem> allNotifications = new ArrayList<>();
+    private NotificationsRepository notificationsRepository;
+    private NotificationsService notificationsService;
     private NotificationFilter currentFilter = NotificationFilter.ALL;
 
     public NotificationsFragment() {
@@ -46,7 +54,13 @@ public class NotificationsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        seedNotifications();
+        ((AppActivity) requireActivity()).setToolbarTitle("Notifikacije");
+
+        notificationsRepository = new StubNotificationsRepository();
+        notificationsService = new NotificationsService(
+                new ArrayList<>(notificationsRepository.getNotifications())
+        );
+
         setupFilterButtons();
         renderNotifications();
     }
@@ -55,65 +69,6 @@ public class NotificationsFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
-    }
-
-    private void seedNotifications() {
-        allNotifications.clear();
-
-        allNotifications.add(new NotificationUiItem(
-                NotificationType.REWARD,
-                "Nagrada",
-                "Osvojili ste 5 tokena za plasman na rang listi.",
-                "Sistem",
-                "Danas u 11:05",
-                false,
-                true,
-                false
-        ));
-
-        allNotifications.add(new NotificationUiItem(
-                NotificationType.GAME_INVITE,
-                "Poziv u igru",
-                "Marko vas je pozvao u prijateljsku partiju.",
-                "Marko",
-                "Danas u 10:42",
-                false,
-                true,
-                true
-        ));
-
-        allNotifications.add(new NotificationUiItem(
-                NotificationType.CHAT,
-                "Nova poruka",
-                "Ivana vam je poslala poruku u čet.",
-                "Ivana",
-                "Juče u 22:18",
-                true,
-                true,
-                false
-        ));
-
-        allNotifications.add(new NotificationUiItem(
-                NotificationType.LEAGUE,
-                "Nova liga",
-                "Prešli ste u višu ligu. Čestitamo!",
-                "Sistem",
-                "Juče u 20:10",
-                false,
-                true,
-                false
-        ));
-
-        allNotifications.add(new NotificationUiItem(
-                NotificationType.RANKING,
-                "Rang lista",
-                "Završili ste ciklus na 3. mestu.",
-                "Sistem",
-                "24.04.2026. u 18:30",
-                true,
-                true,
-                false
-        ));
     }
 
     private void setupFilterButtons() {
@@ -147,7 +102,7 @@ public class NotificationsFragment extends Fragment {
     private void renderNotifications() {
         binding.notificationsContainer.removeAllViews();
 
-        List<NotificationUiItem> filtered = getFilteredNotifications();
+        List<NotificationItem> filtered = notificationsService.getFilteredNotifications(currentFilter);
 
         if (filtered.isEmpty()) {
             TextView emptyView = new TextView(requireContext());
@@ -158,28 +113,12 @@ public class NotificationsFragment extends Fragment {
             return;
         }
 
-        for (NotificationUiItem item : filtered) {
+        for (NotificationItem item : filtered) {
             binding.notificationsContainer.addView(createNotificationCard(item));
         }
     }
 
-    private List<NotificationUiItem> getFilteredNotifications() {
-        List<NotificationUiItem> filtered = new ArrayList<>();
-
-        for (NotificationUiItem item : allNotifications) {
-            if (currentFilter == NotificationFilter.ALL) {
-                filtered.add(item);
-            } else if (currentFilter == NotificationFilter.READ && item.isRead) {
-                filtered.add(item);
-            } else if (currentFilter == NotificationFilter.UNREAD && !item.isRead) {
-                filtered.add(item);
-            }
-        }
-
-        return filtered;
-    }
-
-    private LinearLayout createNotificationCard(NotificationUiItem item) {
+    private LinearLayout createNotificationCard(NotificationItem item) {
         LinearLayout card = new LinearLayout(requireContext());
         card.setOrientation(LinearLayout.VERTICAL);
         card.setBackgroundResource(R.drawable.bg_notification_card);
@@ -193,33 +132,33 @@ public class NotificationsFragment extends Fragment {
         card.setLayoutParams(cardParams);
 
         TextView titleView = new TextView(requireContext());
-        titleView.setText(item.title);
+        titleView.setText(item.getTitle());
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
         titleView.setTypeface(null, Typeface.BOLD);
         titleView.setTextColor(ContextCompat.getColor(requireContext(), R.color.black));
 
         TextView typeView = new TextView(requireContext());
-        typeView.setText(getTypeLabel(item.type));
+        typeView.setText(notificationsService.getTypeLabel(item.getType()));
         typeView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         typeView.setTextColor(0xFF666666);
 
         TextView senderView = new TextView(requireContext());
-        senderView.setText("Od: " + item.sender);
+        senderView.setText("Od: " + item.getSender());
         senderView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         senderView.setTextColor(0xFF666666);
 
         TextView timeView = new TextView(requireContext());
-        timeView.setText("Vreme: " + item.timestamp);
+        timeView.setText("Vreme: " + item.getTimestamp());
         timeView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         timeView.setTextColor(0xFF666666);
 
         TextView statusView = new TextView(requireContext());
-        statusView.setText(item.isRead ? "Status: Pročitano" : "Status: Nepročitano");
+        statusView.setText(notificationsService.getStatusLabel(item));
         statusView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-        statusView.setTextColor(item.isRead ? 0xFF2E7D32 : 0xFFC62828);
+        statusView.setTextColor(item.isRead() ? 0xFF2E7D32 : 0xFFC62828);
 
         TextView messageView = new TextView(requireContext());
-        messageView.setText(item.message);
+        messageView.setText(item.getMessage());
         messageView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         messageView.setTextColor(ContextCompat.getColor(requireContext(), R.color.black));
         messageView.setPadding(0, dp(8), 0, dp(10));
@@ -233,19 +172,19 @@ public class NotificationsFragment extends Fragment {
 
         List<com.google.android.material.button.MaterialButton> buttons = new ArrayList<>();
 
-        if (item.hasOpenAction) {
+        if (item.hasOpenAction()) {
             com.google.android.material.button.MaterialButton openButton = createActionButton("Otvori", true);
             openButton.setOnClickListener(v -> {
-                item.isRead = true;
+                notificationsService.markAsRead(item);
                 FragmentTransition.to(
                         NotificationTargetPlaceholderFragment.newInstance(
-                                item.title,
-                                item.message,
-                                getTypeLabel(item.type),
-                                item.sender,
-                                item.timestamp,
-                                item.isRead ? "Pročitano" : "Nepročitano",
-                                item.hasDecisionAction ? "Prihvati / Odbij" : "Otvori"
+                                item.getTitle(),
+                                item.getMessage(),
+                                notificationsService.getTypeLabel(item.getType()),
+                                item.getSender(),
+                                item.getTimestamp(),
+                                notificationsService.getStatusLabel(item),
+                                notificationsService.getAvailableActionsLabel(item)
                         ),
                         requireActivity(),
                         true,
@@ -255,10 +194,10 @@ public class NotificationsFragment extends Fragment {
             buttons.add(openButton);
         }
 
-        if (item.hasDecisionAction) {
+        if (item.hasDecisionAction()) {
             com.google.android.material.button.MaterialButton acceptButton = createActionButton("Prihvati", true);
             acceptButton.setOnClickListener(v -> {
-                item.isRead = true;
+                notificationsService.markAsRead(item);
                 Toast.makeText(requireContext(), "Poziv prihvaćen (GUI)", Toast.LENGTH_SHORT).show();
                 renderNotifications();
             });
@@ -266,7 +205,7 @@ public class NotificationsFragment extends Fragment {
 
             com.google.android.material.button.MaterialButton declineButton = createActionButton("Odbij", true);
             declineButton.setOnClickListener(v -> {
-                item.isRead = true;
+                notificationsService.markAsRead(item);
                 Toast.makeText(requireContext(), "Poziv odbijen (GUI)", Toast.LENGTH_SHORT).show();
                 renderNotifications();
             });
@@ -274,9 +213,9 @@ public class NotificationsFragment extends Fragment {
         }
 
         com.google.android.material.button.MaterialButton markButton =
-                createActionButton(item.isRead ? "Označi nepročitano" : "Označi pročitano", false);
+                createActionButton(item.isRead() ? "Označi nepročitano" : "Označi pročitano", false);
         markButton.setOnClickListener(v -> {
-            item.isRead = !item.isRead;
+            notificationsService.toggleRead(item);
             renderNotifications();
         });
         buttons.add(markButton);
@@ -292,6 +231,7 @@ public class NotificationsFragment extends Fragment {
         if (firstRow.getChildCount() > 0) {
             actionsContainer.addView(firstRow);
         }
+
         if (secondRow.getChildCount() > 0) {
             LinearLayout.LayoutParams row2Params = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -303,16 +243,16 @@ public class NotificationsFragment extends Fragment {
         }
 
         card.setOnClickListener(v -> {
-            item.isRead = true;
+            notificationsService.markAsRead(item);
             FragmentTransition.to(
                     NotificationTargetPlaceholderFragment.newInstance(
-                            item.title,
-                            item.message,
-                            getTypeLabel(item.type),
-                            item.sender,
-                            item.timestamp,
-                            item.isRead ? "Pročitano" : "Nepročitano",
-                            item.hasDecisionAction ? "Prihvati / Odbij" : "Otvori"
+                            item.getTitle(),
+                            item.getMessage(),
+                            notificationsService.getTypeLabel(item.getType()),
+                            item.getSender(),
+                            item.getTimestamp(),
+                            notificationsService.getStatusLabel(item),
+                            notificationsService.getAvailableActionsLabel(item)
                     ),
                     requireActivity(),
                     true,
@@ -369,71 +309,11 @@ public class NotificationsFragment extends Fragment {
         return button;
     }
 
-    private String getTypeLabel(NotificationType type) {
-        switch (type) {
-            case REWARD:
-                return "Tip: Nagrada";
-            case GAME_INVITE:
-                return "Tip: Poziv u igru";
-            case CHAT:
-                return "Tip: Čet";
-            case LEAGUE:
-                return "Tip: Liga";
-            case RANKING:
-                return "Tip: Rang lista";
-            default:
-                return "Tip: Ostalo";
-        }
-    }
-
     private int dp(int value) {
         return (int) TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_DIP,
                 value,
                 requireContext().getResources().getDisplayMetrics()
         );
-    }
-
-    private enum NotificationFilter {
-        ALL,
-        READ,
-        UNREAD
-    }
-
-    private enum NotificationType {
-        REWARD,
-        GAME_INVITE,
-        CHAT,
-        LEAGUE,
-        RANKING
-    }
-
-    private static class NotificationUiItem {
-        NotificationType type;
-        String title;
-        String message;
-        String sender;
-        String timestamp;
-        boolean isRead;
-        boolean hasOpenAction;
-        boolean hasDecisionAction;
-
-        NotificationUiItem(NotificationType type,
-                           String title,
-                           String message,
-                           String sender,
-                           String timestamp,
-                           boolean isRead,
-                           boolean hasOpenAction,
-                           boolean hasDecisionAction) {
-            this.type = type;
-            this.title = title;
-            this.message = message;
-            this.sender = sender;
-            this.timestamp = timestamp;
-            this.isRead = isRead;
-            this.hasOpenAction = hasOpenAction;
-            this.hasDecisionAction = hasDecisionAction;
-        }
     }
 }

@@ -18,7 +18,7 @@ import com.example.slagalica.presentation.fragments.auth.LoginFragment;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
 import com.example.slagalica.presentation.fragments.common.HomeFragment;
 import com.example.slagalica.presentation.fragments.profile.ProfileFragment;
-import com.example.slagalica.presentation.fragments.common.NotificationsFragment;
+import com.example.slagalica.presentation.fragments.social.NotificationsFragment;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 
 import dagger.hilt.android.AndroidEntryPoint;
@@ -130,6 +130,10 @@ public class AppActivity extends AppCompatActivity {
             View leaveMatchButton = leftDrawer.findViewById(R.id.leave_match);
             leaveMatchButton.setVisibility(active ? View.VISIBLE : View.GONE);
         });
+    }
+
+    public void setToolbarTitle(String title) {
+        binding.toolbarTitle.setText(title);
     }
 
 }

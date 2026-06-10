@@ -10,7 +10,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,6 +25,7 @@ import com.example.slagalica.databinding.FragmentGameAsocijacijeBinding;
 import com.example.slagalica.domain.model.match.games.Asocijacija;
 import com.example.slagalica.domain.model.match.games.AsocijacijaKolona;
 import com.example.slagalica.domain.model.match.games.AsocijacijaPolje;
+import com.example.slagalica.domain.service.match.AsocijacijeService;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 import com.example.slagalica.repository.impl.AsocijacijeRepository;
 import com.example.slagalica.repository.impl.stub.StubAsocijacijeRepository;
@@ -39,7 +39,7 @@ public class AsocijacijeFragment extends Fragment {
     private FragmentGameAsocijacijeBinding binding;
 
     private AsocijacijeRepository asocijacijeRepository;
-    private Asocijacija asocijacija;
+    private AsocijacijeService gameService;
 
     private final List<LinearLayout> columnContainers = new ArrayList<>();
 
@@ -62,13 +62,14 @@ public class AsocijacijeFragment extends Fragment {
         matchViewModel = new ViewModelProvider(requireActivity()).get(MatchViewModel.class);
         matchViewModel.setGameActive(true);
 
-        android.widget.TextView toolbarTitle = requireActivity().findViewById(R.id.toolbarTitle);
+        TextView toolbarTitle = requireActivity().findViewById(R.id.toolbarTitle);
         if (toolbarTitle != null) {
             toolbarTitle.setText("Asocijacije");
         }
 
         asocijacijeRepository = new StubAsocijacijeRepository();
-        asocijacija = asocijacijeRepository.getAsocijacija();
+        Asocijacija asocijacija = asocijacijeRepository.getAsocijacija();
+        gameService = new AsocijacijeService(asocijacija);
 
         bindViews();
         renderColumns();
@@ -93,7 +94,7 @@ public class AsocijacijeFragment extends Fragment {
     }
 
     private void renderColumns() {
-        List<AsocijacijaKolona> columns = asocijacija.getColumns();
+        List<AsocijacijaKolona> columns = gameService.getColumns();
 
         for (int i = 0; i < columns.size() && i < columnContainers.size(); i++) {
             LinearLayout container = columnContainers.get(i);
@@ -131,8 +132,8 @@ public class AsocijacijeFragment extends Fragment {
         applyFieldState(textView, field, column.getLabel(), position);
 
         textView.setOnClickListener(v -> {
-            if (!field.isOpened()) {
-                field.setOpened(true);
+            boolean opened = gameService.openField(column, field);
+            if (opened) {
                 applyFieldState(textView, field, column.getLabel(), position);
             }
         });
@@ -199,27 +200,34 @@ public class AsocijacijeFragment extends Fragment {
         }
 
         button.setOnClickListener(v -> {
-            String enteredText = editText.getText().toString().trim();
+            String enteredText = editText.getText().toString();
 
-            if (enteredText.isEmpty()) {
-                Toast.makeText(requireContext(),
+            if (enteredText.trim().isEmpty()) {
+                Toast.makeText(
+                        requireContext(),
                         "Unesi rešenje kolone " + column.getLabel(),
-                        Toast.LENGTH_SHORT).show();
+                        Toast.LENGTH_SHORT
+                ).show();
                 return;
             }
 
-            if (enteredText.equalsIgnoreCase(column.getSolution())) {
-                column.setSolved(true);
-                openAllFieldsInColumn(column);
-                renderColumns();
+            boolean success = gameService.submitColumnSolution(column, enteredText);
 
-                Toast.makeText(requireContext(),
+            if (success) {
+                renderColumns();
+                applyFinalState();
+
+                Toast.makeText(
+                        requireContext(),
                         "Tačno rešenje kolone " + column.getLabel(),
-                        Toast.LENGTH_SHORT).show();
+                        Toast.LENGTH_SHORT
+                ).show();
             } else {
-                Toast.makeText(requireContext(),
+                Toast.makeText(
+                        requireContext(),
                         "Netačno rešenje kolone " + column.getLabel(),
-                        Toast.LENGTH_SHORT).show();
+                        Toast.LENGTH_SHORT
+                ).show();
             }
         });
 
@@ -233,19 +241,20 @@ public class AsocijacijeFragment extends Fragment {
         applyFinalState();
 
         binding.btnAsocijacijeFinalSubmit.setOnClickListener(v -> {
-            String enteredText = binding.etAsocijacijeFinalSolution.getText().toString().trim();
+            String enteredText = binding.etAsocijacijeFinalSolution.getText().toString();
 
-            if (enteredText.isEmpty()) {
+            if (enteredText.trim().isEmpty()) {
                 Toast.makeText(requireContext(), "Unesi konačno rešenje", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            if (enteredText.equalsIgnoreCase(asocijacija.getFinalSolution())) {
-                openWholeBoard();
+            boolean success = gameService.submitFinalSolution(enteredText);
+
+            if (success) {
                 renderColumns();
                 applyFinalState();
 
-                binding.etAsocijacijeFinalSolution.setText(asocijacija.getFinalSolution());
+                binding.etAsocijacijeFinalSolution.setText(gameService.getAsocijacija().getFinalSolution());
                 binding.etAsocijacijeFinalSolution.setEnabled(false);
                 binding.btnAsocijacijeFinalSubmit.setEnabled(false);
 
@@ -257,7 +266,7 @@ public class AsocijacijeFragment extends Fragment {
     }
 
     private void applyFinalState() {
-        if (asocijacija.isFinalSolved()) {
+        if (gameService.isFinalSolved()) {
             binding.finalSolutionContainer.setBackgroundResource(R.drawable.bg_asocijacije_solution_open);
             binding.etAsocijacijeFinalSolution.setEnabled(false);
             binding.btnAsocijacijeFinalSubmit.setEnabled(false);
@@ -275,21 +284,5 @@ public class AsocijacijeFragment extends Fragment {
                 value,
                 resources.getDisplayMetrics()
         );
-    }
-
-    private void openAllFieldsInColumn(AsocijacijaKolona column) {
-        for (AsocijacijaPolje field : column.getFields()) {
-            field.setOpened(true);
-        }
-    }
-
-    private void openWholeBoard() {
-        for (AsocijacijaKolona column : asocijacija.getColumns()) {
-            column.setSolved(true);
-            for (AsocijacijaPolje field : column.getFields()) {
-                field.setOpened(true);
-            }
-        }
-        asocijacija.setFinalSolved(true);
     }
 }
