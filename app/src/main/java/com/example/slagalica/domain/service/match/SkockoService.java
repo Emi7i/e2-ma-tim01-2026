@@ -1,5 +1,6 @@
 package com.example.slagalica.domain.service.match;
 
+import com.example.slagalica.domain.model.match.TwoPlayerGameState;
 import com.example.slagalica.domain.model.match.games.SkockoPolje;
 import com.example.slagalica.domain.model.match.games.SkockoPokusaj;
 import com.example.slagalica.domain.model.match.games.SkockoTabla;
@@ -9,23 +10,72 @@ import java.util.List;
 
 public class SkockoService {
 
-    private final SkockoTabla skockoTabla;
+    private final List<SkockoTabla> rounds;
+    private int currentRoundIndex;
+    private boolean matchFinished;
 
-    public SkockoService(SkockoTabla skockoTabla) {
-        this.skockoTabla = skockoTabla;
+    public SkockoService(List<SkockoTabla> rounds) {
+        this.rounds = rounds;
+        this.currentRoundIndex = 0;
+        this.matchFinished = false;
     }
 
-    public SkockoTabla getSkockoTabla() {
-        return skockoTabla;
+    public SkockoTabla getCurrentRound() {
+        return rounds.get(currentRoundIndex);
+    }
+
+    public boolean isMatchFinished() {
+        return matchFinished;
+    }
+
+    public boolean canAdvanceRound() {
+        return getCurrentRound().getGameState().isRoundFinished()
+                && currentRoundIndex < rounds.size() - 1;
+    }
+
+    public ActionResult advanceToNextRound() {
+        SkockoTabla currentRound = getCurrentRound();
+
+        if (!currentRound.getGameState().isRoundFinished()) {
+            return ActionResult.error("Runda još nije završena");
+        }
+
+        if (!canAdvanceRound()) {
+            return ActionResult.error("Nema više rundi");
+        }
+
+        int previousP1 = currentRound.getGameState().getPlayerOneScore();
+        int previousP2 = currentRound.getGameState().getPlayerTwoScore();
+
+        currentRoundIndex++;
+
+        SkockoTabla nextRound = getCurrentRound();
+        nextRound.getGameState().setPlayerOneScore(previousP1);
+        nextRound.getGameState().setPlayerTwoScore(previousP2);
+
+        return ActionResult.success(
+                "Počinje runda " + nextRound.getGameState().getRoundNumber(),
+                false,
+                false
+        );
+    }
+
+    public boolean canEditCurrentAttempt() {
+        SkockoTabla round = getCurrentRound();
+        return !round.getGameState().isRoundFinished();
     }
 
     public void appendSymbol(String symbol) {
-        if (skockoTabla.isFinished()) return;
+        if (!canEditCurrentAttempt()) {
+            return;
+        }
 
-        SkockoPokusaj currentAttempt = skockoTabla.getAttempts().get(skockoTabla.getCurrentRow());
-        if (currentAttempt.isSubmitted()) return;
+        SkockoPokusaj attempt = getEditableAttempt();
+        if (attempt == null || attempt.isSubmitted()) {
+            return;
+        }
 
-        for (SkockoPolje polje : currentAttempt.getGuess()) {
+        for (SkockoPolje polje : attempt.getGuess()) {
             if (polje.isEmpty()) {
                 polje.setSymbol(symbol);
                 return;
@@ -34,13 +84,17 @@ public class SkockoService {
     }
 
     public void removeLastSymbol() {
-        if (skockoTabla.isFinished()) return;
+        if (!canEditCurrentAttempt()) {
+            return;
+        }
 
-        SkockoPokusaj currentAttempt = skockoTabla.getAttempts().get(skockoTabla.getCurrentRow());
-        if (currentAttempt.isSubmitted()) return;
+        SkockoPokusaj attempt = getEditableAttempt();
+        if (attempt == null || attempt.isSubmitted()) {
+            return;
+        }
 
-        for (int i = currentAttempt.getGuess().size() - 1; i >= 0; i--) {
-            SkockoPolje polje = currentAttempt.getGuess().get(i);
+        for (int i = attempt.getGuess().size() - 1; i >= 0; i--) {
+            SkockoPolje polje = attempt.getGuess().get(i);
             if (!polje.isEmpty()) {
                 polje.setSymbol("");
                 return;
@@ -48,77 +102,176 @@ public class SkockoService {
         }
     }
 
-    public SubmitResult submitCurrentRow() {
-        if (skockoTabla.isFinished()) {
-            return SubmitResult.gameAlreadyFinished();
+    public ActionResult submitCurrentRow() {
+        SkockoTabla round = getCurrentRound();
+
+        if (round.getGameState().isRoundFinished()) {
+            return ActionResult.error("Runda je završena");
         }
 
-        SkockoPokusaj currentAttempt = skockoTabla.getAttempts().get(skockoTabla.getCurrentRow());
+        SkockoPokusaj attempt = getEditableAttempt();
+        if (attempt == null) {
+            return ActionResult.error("Nema aktivnog pokušaja");
+        }
 
-        for (SkockoPolje polje : currentAttempt.getGuess()) {
+        for (SkockoPolje polje : attempt.getGuess()) {
             if (polje.isEmpty()) {
-                return SubmitResult.error("Popuni sva 4 polja");
+                return ActionResult.error("Popuni sva 4 polja");
             }
         }
 
-        evaluateAttempt(currentAttempt);
-        currentAttempt.setSubmitted(true);
+        evaluateAttempt(attempt);
+        attempt.setSubmitted(true);
 
-        boolean solved = isExactAttempt(currentAttempt);
+        if (isExactAttempt(attempt, round.getSecretCombination())) {
+            int points = round.isBonusAttemptActive()
+                    ? 10
+                    : calculateRegularAttemptPoints(round.getCurrentRow());
 
-        if (solved) {
-            skockoTabla.setSolved(true);
-            skockoTabla.setFinished(true);
+            awardPoints(round.getGameState(), round.getGameState().getCurrentPlayer(), points);
 
-            if (skockoTabla.getCurrentPlayer() == 1) {
-                skockoTabla.setWinnerName(skockoTabla.getPlayerOneName());
+            round.setSolved(true);
+            finishRound(round);
+
+            String message = round.isBonusAttemptActive()
+                    ? "Tačno! Bonus pokušaj uspešan (+" + points + " bodova)"
+                    : "Tačno! (+" + points + " bodova)";
+
+            return ActionResult.success(message, false, true);
+        }
+
+        if (round.isBonusAttemptActive()) {
+            round.setBonusAttemptUsed(true);
+            finishRound(round);
+            return ActionResult.success("Bonus pokušaj nije uspeo. Runda je završena.", false, true);
+        }
+
+        if (round.getCurrentRow() == 5) {
+            activateBonusAttempt(round);
+            return ActionResult.success(
+                    "Nije pogođeno. Protivnik ima bonus pokušaj od 10 sekundi za 10 bodova.",
+                    true,
+                    false
+            );
+        }
+
+        round.setCurrentRow(round.getCurrentRow() + 1);
+        return ActionResult.success("Netačno. Prelaz na sledeći pokušaj.", false, false);
+    }
+
+    public ActionResult onTimeExpired() {
+        SkockoTabla round = getCurrentRound();
+
+        if (round.getGameState().isRoundFinished()) {
+            return ActionResult.error("Runda je već završena");
+        }
+
+        if (round.isBonusAttemptActive()) {
+            round.setBonusAttemptUsed(true);
+            finishRound(round);
+            return ActionResult.success("Isteklo je vreme za bonus pokušaj.", false, true);
+        }
+
+        activateBonusAttempt(round);
+        return ActionResult.success(
+                "Isteklo je vreme. Protivnik dobija bonus pokušaj od 10 sekundi.",
+                true,
+                false
+        );
+    }
+
+    public String getRoundInfoText() {
+        TwoPlayerGameState state = getCurrentRound().getGameState();
+        return "Runda " + state.getRoundNumber() + "/2 | Preostalo: " + formatTime(state.getRemainingSeconds());
+    }
+
+    public String getScoreText() {
+        TwoPlayerGameState state = getCurrentRound().getGameState();
+        return "Igrač 1: " + state.getPlayerOneScore() + " | Igrač 2: " + state.getPlayerTwoScore();
+    }
+
+    public String getStatusText() {
+        SkockoTabla round = getCurrentRound();
+        TwoPlayerGameState state = round.getGameState();
+
+        if (matchFinished && state.isRoundFinished()) {
+            if (state.getPlayerOneScore() > state.getPlayerTwoScore()) {
+                return "Kraj igre | Pobednik: " + state.getPlayerOneName();
+            } else if (state.getPlayerTwoScore() > state.getPlayerOneScore()) {
+                return "Kraj igre | Pobednik: " + state.getPlayerTwoName();
             } else {
-                skockoTabla.setWinnerName(skockoTabla.getPlayerTwoName());
+                return "Kraj igre | Nerešeno";
             }
+        }
 
-            return SubmitResult.success(true, false, null);
-        } else {
-            if (skockoTabla.getCurrentPlayer() == 1) {
-                if (skockoTabla.getCurrentRow() == 5) {
-                    skockoTabla.setCurrentPlayer(2);
-                    skockoTabla.setCurrentRow(6);
-                    return SubmitResult.success(false, true, "Sada igra Igrač 2");
-                } else {
-                    skockoTabla.setCurrentRow(skockoTabla.getCurrentRow() + 1);
-                    return SubmitResult.success(false, false, null);
-                }
-            } else {
-                skockoTabla.setFinished(true);
-                return SubmitResult.success(false, false, null);
-            }
+        if (state.isRoundFinished()) {
+            return "Runda " + state.getRoundNumber() + " je završena";
+        }
+
+        if (round.isBonusAttemptActive()) {
+            return "Bonus pokušaj: " + state.getCurrentPlayerName() + " | 1 pokušaj | 10 bodova";
+        }
+
+        return "Na potezu: " + state.getCurrentPlayerName()
+                + " | pokušaj " + (round.getCurrentRow() + 1) + " / 6";
+    }
+
+    private SkockoPokusaj getEditableAttempt() {
+        SkockoTabla round = getCurrentRound();
+
+        if (round.isBonusAttemptActive()) {
+            return round.getBonusAttempt();
+        }
+
+        if (round.getCurrentRow() >= 0 && round.getCurrentRow() < round.getAttempts().size()) {
+            return round.getAttempts().get(round.getCurrentRow());
+        }
+
+        return null;
+    }
+
+    private void activateBonusAttempt(SkockoTabla round) {
+        round.getGameState().switchTurn();
+        round.getGameState().setRemainingSeconds(10);
+        round.setBonusAttemptActive(true);
+    }
+
+    private void finishRound(SkockoTabla round) {
+        round.setBonusAttemptActive(false);
+        round.getGameState().setRoundFinished(true);
+
+        if (currentRoundIndex == rounds.size() - 1) {
+            matchFinished = true;
+            round.getGameState().setGameFinished(true);
         }
     }
 
-    public boolean canAppendMoreSymbols() {
-        if (skockoTabla.isFinished()) return false;
-
-        SkockoPokusaj currentAttempt = skockoTabla.getAttempts().get(skockoTabla.getCurrentRow());
-        if (currentAttempt.isSubmitted()) return false;
-
-        for (SkockoPolje polje : currentAttempt.getGuess()) {
-            if (polje.isEmpty()) {
-                return true;
-            }
-        }
-        return false;
+    private void awardPoints(TwoPlayerGameState gameState, int player, int points) {
+        gameState.addPointsToPlayer(player, points);
     }
 
-    public boolean isExactAttempt(SkockoPokusaj attempt) {
+    private int calculateRegularAttemptPoints(int currentRow) {
+        if (currentRow == 0 || currentRow == 1) {
+            return 20;
+        }
+        if (currentRow == 2 || currentRow == 3) {
+            return 15;
+        }
+        return 10;
+    }
+
+    private boolean isExactAttempt(SkockoPokusaj attempt, List<String> secret) {
         for (int i = 0; i < 4; i++) {
-            if (!attempt.getGuess().get(i).getSymbol().equals(skockoTabla.getSecretCombination().get(i))) {
+            String guessSymbol = attempt.getGuess().get(i).getSymbol();
+            if (!guessSymbol.equals(secret.get(i))) {
                 return false;
             }
         }
         return true;
     }
 
-    public void evaluateAttempt(SkockoPokusaj attempt) {
-        List<String> secret = new ArrayList<>(skockoTabla.getSecretCombination());
+    private void evaluateAttempt(SkockoPokusaj attempt) {
+        List<String> secret = new ArrayList<>(getCurrentRound().getSecretCombination());
         List<String> guess = new ArrayList<>();
 
         for (SkockoPolje polje : attempt.getGuess()) {
@@ -154,68 +307,47 @@ public class SkockoService {
         }
     }
 
-    public String getGameStateText() {
-        if (skockoTabla.isSolved()) {
-            return "Pobednik: " + skockoTabla.getWinnerName();
-        } else if (skockoTabla.isFinished()) {
-            return "Niko nije pogodio | Kombinacija prikazana";
-        } else if (skockoTabla.getCurrentPlayer() == 1) {
-            return "Na potezu: " + skockoTabla.getPlayerOneName()
-                    + " | pokušaj " + (skockoTabla.getCurrentRow() + 1) + " / 6";
-        } else {
-            return "Na potezu: " + skockoTabla.getPlayerTwoName() + " | pokušaj 1 / 1";
-        }
+    private String formatTime(int totalSeconds) {
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        return String.format("%02d:%02d", minutes, seconds);
     }
 
-    public static class SubmitResult {
+    public static class ActionResult {
         private final boolean success;
-        private final boolean solved;
-        private final boolean switchedToPlayerTwo;
-        private final boolean gameAlreadyFinished;
         private final String message;
+        private final boolean bonusActivated;
+        private final boolean roundFinished;
 
-        private SubmitResult(boolean success,
-                             boolean solved,
-                             boolean switchedToPlayerTwo,
-                             boolean gameAlreadyFinished,
-                             String message) {
+        private ActionResult(boolean success, String message, boolean bonusActivated, boolean roundFinished) {
             this.success = success;
-            this.solved = solved;
-            this.switchedToPlayerTwo = switchedToPlayerTwo;
-            this.gameAlreadyFinished = gameAlreadyFinished;
             this.message = message;
+            this.bonusActivated = bonusActivated;
+            this.roundFinished = roundFinished;
         }
 
-        public static SubmitResult success(boolean solved, boolean switchedToPlayerTwo, String message) {
-            return new SubmitResult(true, solved, switchedToPlayerTwo, false, message);
+        public static ActionResult success(String message, boolean bonusActivated, boolean roundFinished) {
+            return new ActionResult(true, message, bonusActivated, roundFinished);
         }
 
-        public static SubmitResult error(String message) {
-            return new SubmitResult(false, false, false, false, message);
-        }
-
-        public static SubmitResult gameAlreadyFinished() {
-            return new SubmitResult(false, false, false, true, null);
+        public static ActionResult error(String message) {
+            return new ActionResult(false, message, false, false);
         }
 
         public boolean isSuccess() {
             return success;
         }
 
-        public boolean isSolved() {
-            return solved;
-        }
-
-        public boolean isSwitchedToPlayerTwo() {
-            return switchedToPlayerTwo;
-        }
-
-        public boolean isGameAlreadyFinished() {
-            return gameAlreadyFinished;
-        }
-
         public String getMessage() {
             return message;
+        }
+
+        public boolean isBonusActivated() {
+            return bonusActivated;
+        }
+
+        public boolean isRoundFinished() {
+            return roundFinished;
         }
     }
 }

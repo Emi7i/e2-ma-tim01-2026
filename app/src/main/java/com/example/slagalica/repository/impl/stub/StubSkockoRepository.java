@@ -4,6 +4,8 @@ import com.example.slagalica.domain.model.match.games.SkockoTabla;
 import com.example.slagalica.domain.service.match.SkockoDemoFactory;
 import com.example.slagalica.repository.impl.SkockoRepository;
 
+import java.util.List;
+
 public class StubSkockoRepository implements SkockoRepository {
 
     private final SkockoDemoFactory skockoDemoFactory;
@@ -13,7 +15,7 @@ public class StubSkockoRepository implements SkockoRepository {
     }
 
     @Override
-    public SkockoTabla getSkockoTabla() {
-        return skockoDemoFactory.createDemoTabla();
+    public List<SkockoTabla> getRounds() {
+        return skockoDemoFactory.createDemoRounds();
     }
 }
