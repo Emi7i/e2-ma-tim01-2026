@@ -93,6 +93,7 @@ public class KoZnaZnaFragment extends Fragment {
                         buttons.get(i).setVisibility(View.GONE);
                     }
                 }
+                resetScoreColors();
             }
         });
 
@@ -128,10 +129,6 @@ public class KoZnaZnaFragment extends Fragment {
             }
         });
 
-        viewModel.getLastSelectedAnswer().observe(getViewLifecycleOwner(), selected -> {
-            // We highlight only when the ViewModel says we are "revealing answer"
-        });
-
         viewModel.isWaitingForNextPlayer().observe(getViewLifecycleOwner(), waiting -> {
             if (waiting) {
                 showNextPlayerDialog();
@@ -140,12 +137,12 @@ public class KoZnaZnaFragment extends Fragment {
 
         viewModel.isRevealingAnswer().observe(getViewLifecycleOwner(), revealing -> {
             if (revealing) {
-                highlightAnswers(null); // Will highlight based on internal correct answer
+                highlightAnswers();
             }
         });
 
         viewModel.getCurrentPlayerTurn().observe(getViewLifecycleOwner(), turn -> {
-            Toast.makeText(requireContext(), "Red je na igraču " + turn, Toast.LENGTH_SHORT).show();
+            // Optional: Show which player's turn it is
         });
 
         viewModel.isGameFinished().observe(getViewLifecycleOwner(), finished -> {
@@ -161,9 +158,9 @@ public class KoZnaZnaFragment extends Fragment {
 
     private void showNextPlayerDialog() {
         new AlertDialog.Builder(requireContext())
-                .setTitle("Sledeći igrač")
-                .setMessage("Igrač 2, tvoj je red.")
-                .setPositiveButton("Spreman sam", (dialog, which) -> viewModel.startNextPlayerTurn())
+                .setTitle("Igrač 2, tvoj potez")
+                .setMessage("IGRAJ")
+                .setPositiveButton("Ma moze", (dialog, which) -> viewModel.startNextPlayerTurn())
                 .setCancelable(false)
                 .show();
     }
@@ -180,9 +177,21 @@ public class KoZnaZnaFragment extends Fragment {
             ((com.google.android.material.button.MaterialButton) button).setBackgroundTintList(null);
         }
         button.setBackgroundResource(R.drawable.game_field_background);
+        button.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.black));
     }
 
-    private void highlightAnswers(String ignored) {
+    private void resetScoreColors() {
+        com.example.slagalica.presentation.views.GameHeaderView gameHeader = requireActivity().findViewById(R.id.gameHeader);
+        if (gameHeader != null) {
+            android.widget.TextView p1Stars = gameHeader.findViewById(R.id.player1Stars);
+            android.widget.TextView p2Stars = gameHeader.findViewById(R.id.player2Stars);
+            int defaultColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.black);
+            if (p1Stars != null) p1Stars.setTextColor(defaultColor);
+            if (p2Stars != null) p2Stars.setTextColor(defaultColor);
+        }
+    }
+
+    private void highlightAnswers() {
         com.example.slagalica.domain.model.match.games.KoZnaZna current = viewModel.getCurrentQuestion().getValue();
         if (current == null) return;
 
@@ -191,18 +200,49 @@ public class KoZnaZnaFragment extends Fragment {
         );
 
         String correct = current.getCorrectAnswer();
+        String p1Answer = viewModel.getPlayer1Answer().getValue();
+        String p2Answer = viewModel.getPlayer2Answer().getValue();
+
         int greenColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.green);
+        int blueColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.blue_light);
+        int purpleColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.field_border);
 
         for (android.widget.Button button : buttons) {
             String text = button.getText().toString().trim();
+            android.content.res.ColorStateList tint = null;
+
+            // Priority: Correct answer always green
             if (text.equalsIgnoreCase(correct.trim())) {
+                tint = android.content.res.ColorStateList.valueOf(greenColor);
+            } 
+            // Then show player choices if they were wrong
+            else if (p1Answer != null && text.equalsIgnoreCase(p1Answer.trim())) {
+                tint = android.content.res.ColorStateList.valueOf(blueColor);
+            } 
+            else if (p2Answer != null && text.equalsIgnoreCase(p2Answer.trim())) {
+                tint = android.content.res.ColorStateList.valueOf(purpleColor);
+            }
+
+            if (tint != null) {
                 if (button instanceof com.google.android.material.button.MaterialButton) {
-                    ((com.google.android.material.button.MaterialButton) button).setBackgroundTintList(
-                            android.content.res.ColorStateList.valueOf(greenColor));
+                    ((com.google.android.material.button.MaterialButton) button).setBackgroundTintList(tint);
                 } else {
-                    button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(greenColor));
+                    button.setBackgroundTintList(tint);
                 }
             }
+        }
+        
+        highlightScoresInHeader();
+    }
+
+    private void highlightScoresInHeader() {
+        com.example.slagalica.presentation.views.GameHeaderView gameHeader = requireActivity().findViewById(R.id.gameHeader);
+        if (gameHeader != null) {
+            android.widget.TextView p1Stars = gameHeader.findViewById(R.id.player1Stars);
+            android.widget.TextView p2Stars = gameHeader.findViewById(R.id.player2Stars);
+            
+            if (p1Stars != null) p1Stars.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.blue_light));
+            if (p2Stars != null) p2Stars.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.field_border));
         }
     }
 

@@ -34,6 +34,9 @@ public class KoZnaZnaViewModel extends ViewModel {
     private final MutableLiveData<Boolean> waitingForNextPlayer = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> revealingAnswer = new MutableLiveData<>(false);
 
+    private final MutableLiveData<String> player1AnswerLiveData = new MutableLiveData<>(null);
+    private final MutableLiveData<String> player2AnswerLiveData = new MutableLiveData<>(null);
+
     private CountDownTimer timer;
     private long lastQuestionStartTime;
     
@@ -62,6 +65,8 @@ public class KoZnaZnaViewModel extends ViewModel {
     public LiveData<Integer> getCurrentPlayerTurn() { return currentPlayerTurn; }
     public LiveData<Boolean> isWaitingForNextPlayer() { return waitingForNextPlayer; }
     public LiveData<Boolean> isRevealingAnswer() { return revealingAnswer; }
+    public LiveData<String> getPlayer1Answer() { return player1AnswerLiveData; }
+    public LiveData<String> getPlayer2Answer() { return player2AnswerLiveData; }
 
     private void loadQuestions() {
         isLoading.setValue(true);
@@ -229,6 +234,8 @@ public class KoZnaZnaViewModel extends ViewModel {
 
             player1Delta.postValue(p1D);
             player2Delta.postValue(p2D);
+            player1AnswerLiveData.postValue(player1Answer);
+            player2AnswerLiveData.postValue(player2Answer);
         }
         
         revealingAnswer.postValue(true);
