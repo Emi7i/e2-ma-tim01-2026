@@ -141,21 +141,40 @@ public class SkockoFragment extends Fragment {
     }
 
     private void renderWholeScreen() {
-        renderInfo();
+        updateGameHeader();
         renderRegularAttempts();
         renderBonusAttempt();
         renderFinalSolution();
         renderActionButtons();
     }
 
-    private void renderInfo() {
-        binding.tvSkockoGameState.setText(
-                skockoService.getRoundInfoText()
-                        + "\n"
-                        + skockoService.getScoreText()
-                        + "\n"
-                        + skockoService.getStatusText()
+    private void updateGameHeader() {
+        AppActivity activity = (AppActivity) requireActivity();
+        SkockoTabla round = skockoService.getCurrentRound();
+
+        activity.getBinding().gameHeader.setPlayerNames(
+                round.getGameState().getPlayerOneName(),
+                round.getGameState().getPlayerTwoName()
         );
+
+        activity.getBinding().gameHeader.setActivePlayer(
+                round.getGameState().getCurrentPlayer()
+        );
+
+        activity.getBinding().gameHeader.setScores(
+                round.getGameState().getPlayerOneScore(),
+                round.getGameState().getPlayerTwoScore()
+        );
+
+        activity.getBinding().gameHeader.setTimer(
+                formatTime(round.getGameState().getRemainingSeconds())
+        );
+    }
+
+    private String formatTime(int totalSeconds) {
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        return String.format("%02d:%02d", minutes, seconds);
     }
 
     private void renderRegularAttempts() {
@@ -238,7 +257,6 @@ public class SkockoFragment extends Fragment {
             @Override
             public void onTick(long millisUntilFinished) {
                 round.getGameState().setRemainingSeconds((int) (millisUntilFinished / 1000));
-                renderInfo();
             }
 
             @Override

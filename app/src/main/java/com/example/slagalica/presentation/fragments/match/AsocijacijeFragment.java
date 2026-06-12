@@ -145,16 +145,39 @@ public class AsocijacijeFragment extends Fragment {
     }
 
     private void renderWholeScreen() {
-        renderInfo();
+        updateGameHeader();
         renderColumns();
         renderFinalState();
         renderPassButtonState();
     }
 
-    private void renderInfo() {
-        binding.tvAsocijacijeRoundInfo.setText(asocijacijeService.getRoundInfoText());
-        binding.tvAsocijacijeScoreInfo.setText(asocijacijeService.getScoreText());
-        binding.tvAsocijacijeStatus.setText(asocijacijeService.getStatusText());
+    private void updateGameHeader() {
+        AppActivity activity = (AppActivity) requireActivity();
+        Asocijacija round = asocijacijeService.getCurrentRound();
+
+        activity.getBinding().gameHeader.setPlayerNames(
+                round.getGameState().getPlayerOneName(),
+                round.getGameState().getPlayerTwoName()
+        );
+
+        activity.getBinding().gameHeader.setActivePlayer(
+                round.getGameState().getCurrentPlayer()
+        );
+
+        activity.getBinding().gameHeader.setScores(
+                round.getGameState().getPlayerOneScore(),
+                round.getGameState().getPlayerTwoScore()
+        );
+
+        activity.getBinding().gameHeader.setTimer(
+                formatTime(round.getGameState().getRemainingSeconds())
+        );
+    }
+
+    private String formatTime(int totalSeconds) {
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        return String.format("%02d:%02d", minutes, seconds);
     }
 
     private void renderColumns() {
@@ -334,7 +357,6 @@ public class AsocijacijeFragment extends Fragment {
             @Override
             public void onTick(long millisUntilFinished) {
                 round.getGameState().setRemainingSeconds((int) (millisUntilFinished / 1000));
-                renderInfo();
             }
 
             @Override

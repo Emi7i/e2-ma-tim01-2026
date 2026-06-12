@@ -136,4 +136,7 @@ public class AppActivity extends AppCompatActivity {
         binding.toolbarTitle.setText(title);
     }
 
+    public ActivityAppBinding getBinding() {
+        return binding;
+    }
 }
