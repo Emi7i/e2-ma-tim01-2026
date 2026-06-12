@@ -1,4 +1,4 @@
-package com.example.slagalica.domain.model.match.games;
+package com.example.slagalica.domain.model.config;
 
 public class KoZnaZnaConfig {
     public static final int QUESTIONS_COUNT = 5;

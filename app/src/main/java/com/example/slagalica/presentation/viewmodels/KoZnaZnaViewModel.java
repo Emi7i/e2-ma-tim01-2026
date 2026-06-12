@@ -5,7 +5,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import com.example.slagalica.domain.model.match.games.KoZnaZna;
-import com.example.slagalica.domain.model.match.games.KoZnaZnaConfig;
+import com.example.slagalica.domain.model.config.KoZnaZnaConfig;
 import com.example.slagalica.repository.impl.KoZnaZnaRepository;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,40 +55,42 @@ public class KoZnaZnaViewModel extends ViewModel {
     private void loadQuestions() {
         isLoading.setValue(true);
         repository.getRandomQuestions(KoZnaZnaConfig.QUESTIONS_COUNT).thenAccept(loadedQuestions -> {
-            if (loadedQuestions == null || loadedQuestions.isEmpty()) {
+            List<KoZnaZna> questionsToUse = loadedQuestions;
+            if (questionsToUse == null || questionsToUse.isEmpty()) {
                 android.util.Log.w("KoZnaZnaViewModel", "No questions in Firestore, seeding data...");
                 List<KoZnaZna> demoQuestions = new com.example.slagalica.domain.service.match.KoZnaZnaDemoFactory().createDemoQuestions();
                 repository.seedData(demoQuestions).thenAccept(v -> {
                     android.util.Log.d("KoZnaZnaViewModel", "Data seeded successfully");
-                    // After seeding, we can just use the demo questions immediately for this session
-                    questions.postValue(demoQuestions);
-                    isLoading.postValue(false);
-                    android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-                    mainHandler.post(() -> startWithQuestions(demoQuestions));
                 }).exceptionally(ex -> {
                     android.util.Log.e("KoZnaZnaViewModel", "Error seeding data", ex);
-                    // Still use demo questions in memory so game can start
-                    questions.postValue(demoQuestions);
-                    isLoading.postValue(false);
-                    android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-                    mainHandler.post(() -> startWithQuestions(demoQuestions));
                     return null;
                 });
-            } else {
-                android.util.Log.d("KoZnaZnaViewModel", "Loaded questions from Firestore: " + loadedQuestions.size());
-                questions.postValue(loadedQuestions);
-                isLoading.postValue(false);
-                android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-                mainHandler.post(() -> startWithQuestions(loadedQuestions));
+                questionsToUse = demoQuestions;
             }
+            
+            // Shuffle all available questions
+            java.util.Collections.shuffle(questionsToUse);
+            
+            // Limit to QUESTIONS_COUNT defined in config
+            final List<KoZnaZna> finalQuestions = questionsToUse.subList(0, Math.min(KoZnaZnaConfig.QUESTIONS_COUNT, questionsToUse.size()));
+            
+            android.util.Log.d("KoZnaZnaViewModel", "Starting game with " + finalQuestions.size() + " shuffled questions");
+            questions.postValue(finalQuestions);
+            isLoading.postValue(false);
+            
+            android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            mainHandler.post(() -> startWithQuestions(finalQuestions));
         }).exceptionally(ex -> {
             android.util.Log.e("KoZnaZnaViewModel", "Error loading questions", ex);
             isLoading.postValue(false);
-            // Fallback to demo questions in memory
+            
             List<KoZnaZna> demoQuestions = new com.example.slagalica.domain.service.match.KoZnaZnaDemoFactory().createDemoQuestions();
-            questions.postValue(demoQuestions);
+            java.util.Collections.shuffle(demoQuestions);
+            List<KoZnaZna> finalQuestions = demoQuestions.subList(0, Math.min(KoZnaZnaConfig.QUESTIONS_COUNT, demoQuestions.size()));
+            
+            questions.postValue(finalQuestions);
             android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-            mainHandler.post(() -> startWithQuestions(demoQuestions));
+            mainHandler.post(() -> startWithQuestions(finalQuestions));
             return null;
         });
     }
