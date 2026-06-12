@@ -87,7 +87,7 @@ public class KoZnaZnaFragment extends Fragment {
                         buttons.get(i).setText(answers.get(i));
                         buttons.get(i).setVisibility(View.VISIBLE);
                         buttons.get(i).setEnabled(true);
-                        buttons.get(i).setBackgroundResource(R.drawable.game_field_background);
+                        resetButtonBackground(buttons.get(i));
                     } else {
                         buttons.get(i).setVisibility(View.GONE);
                     }
@@ -127,6 +127,12 @@ public class KoZnaZnaFragment extends Fragment {
             }
         });
 
+        viewModel.getLastSelectedAnswer().observe(getViewLifecycleOwner(), selected -> {
+            if (selected != null) {
+                highlightAnswers(selected);
+            }
+        });
+
         viewModel.isGameFinished().observe(getViewLifecycleOwner(), finished -> {
             if (finished) {
                 Toast.makeText(requireContext(), "Igra je završena!", Toast.LENGTH_LONG).show();
@@ -142,6 +148,45 @@ public class KoZnaZnaFragment extends Fragment {
         com.example.slagalica.presentation.views.GameHeaderView gameHeader = requireActivity().findViewById(R.id.gameHeader);
         if (gameHeader != null) {
             gameHeader.setStars(p1Score, p2Score);
+        }
+    }
+
+    private void resetButtonBackground(android.widget.Button button) {
+        if (button instanceof com.google.android.material.button.MaterialButton) {
+            ((com.google.android.material.button.MaterialButton) button).setBackgroundTintList(null);
+        }
+        button.setBackgroundResource(R.drawable.game_field_background);
+    }
+
+    private void highlightAnswers(String selected) {
+        com.example.slagalica.domain.model.match.games.KoZnaZna current = viewModel.getCurrentQuestion().getValue();
+        if (current == null) return;
+
+        List<android.widget.Button> buttons = Arrays.asList(
+                binding.answer1, binding.answer2, binding.answer3, binding.answer4
+        );
+
+        String correct = current.getCorrectAnswer();
+        int greenColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.green);
+        int redColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.red);
+
+        for (android.widget.Button button : buttons) {
+            String text = button.getText().toString().trim();
+            android.content.res.ColorStateList tint = null;
+
+            if (text.equalsIgnoreCase(correct.trim())) {
+                tint = android.content.res.ColorStateList.valueOf(greenColor);
+            } else if (text.equalsIgnoreCase(selected.trim())) {
+                tint = android.content.res.ColorStateList.valueOf(redColor);
+            }
+
+            if (tint != null) {
+                if (button instanceof com.google.android.material.button.MaterialButton) {
+                    ((com.google.android.material.button.MaterialButton) button).setBackgroundTintList(tint);
+                } else {
+                    button.setBackgroundTintList(tint);
+                }
+            }
         }
     }
 
