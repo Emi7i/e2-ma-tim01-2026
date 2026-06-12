@@ -30,9 +30,17 @@ public class KoZnaZnaViewModel extends ViewModel {
     private final MutableLiveData<Integer> player2Delta = new MutableLiveData<>(0);
     private final MutableLiveData<Boolean> canAnswer = new MutableLiveData<>(true);
     private final MutableLiveData<String> lastSelectedAnswer = new MutableLiveData<>(null);
+    private final MutableLiveData<Integer> currentPlayerTurn = new MutableLiveData<>(1); // 1 or 2
+    private final MutableLiveData<Boolean> waitingForNextPlayer = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> revealingAnswer = new MutableLiveData<>(false);
 
     private CountDownTimer timer;
     private long lastQuestionStartTime;
+    
+    private String player1Answer = null;
+    private long player1Time = Long.MAX_VALUE;
+    private String player2Answer = null;
+    private long player2Time = Long.MAX_VALUE;
 
     @Inject
     public KoZnaZnaViewModel(KoZnaZnaRepository repository) {
@@ -51,6 +59,9 @@ public class KoZnaZnaViewModel extends ViewModel {
     public LiveData<Integer> getPlayer2Delta() { return player2Delta; }
     public LiveData<Boolean> getCanAnswer() { return canAnswer; }
     public LiveData<String> getLastSelectedAnswer() { return lastSelectedAnswer; }
+    public LiveData<Integer> getCurrentPlayerTurn() { return currentPlayerTurn; }
+    public LiveData<Boolean> isWaitingForNextPlayer() { return waitingForNextPlayer; }
+    public LiveData<Boolean> isRevealingAnswer() { return revealingAnswer; }
 
     private void loadQuestions() {
         isLoading.setValue(true);
@@ -111,6 +122,14 @@ public class KoZnaZnaViewModel extends ViewModel {
         index++;
         
         if (questionList != null && index < questionList.size()) {
+            player1Answer = null;
+            player1Time = Long.MAX_VALUE;
+            player2Answer = null;
+            player2Time = Long.MAX_VALUE;
+            revealingAnswer.postValue(false);
+            waitingForNextPlayer.postValue(false);
+            currentPlayerTurn.postValue(1);
+            
             canAnswer.postValue(true);
             lastSelectedAnswer.postValue(null);
             player1Delta.postValue(0);
@@ -124,11 +143,23 @@ public class KoZnaZnaViewModel extends ViewModel {
             Collections.shuffle(allAnswers);
             currentAnswers.postValue(allAnswers);
             
-            lastQuestionStartTime = System.currentTimeMillis();
-            startTimer();
+            startPlayerTurn(1);
         } else if (questionList != null) {
             gameFinished.postValue(true);
         }
+    }
+
+    private void startPlayerTurn(int player) {
+        currentPlayerTurn.postValue(player);
+        waitingForNextPlayer.postValue(false);
+        canAnswer.postValue(true);
+        lastSelectedAnswer.postValue(null);
+        lastQuestionStartTime = System.currentTimeMillis();
+        startTimer();
+    }
+
+    public void startNextPlayerTurn() {
+        startPlayerTurn(2);
     }
 
     private void startTimer() {
@@ -145,16 +176,9 @@ public class KoZnaZnaViewModel extends ViewModel {
             @Override
             public void onFinish() {
                 timeLeft.postValue(0);
-                handleNoAnswer();
+                submitAnswer(null); // Time out
             }
         }.start();
-    }
-
-    private void handleNoAnswer() {
-        canAnswer.postValue(false);
-        // Simulate opponent in case of no answer? 
-        // For simplicity, just move next.
-        nextQuestion();
     }
 
     public void submitAnswer(String answer) {
@@ -165,44 +189,51 @@ public class KoZnaZnaViewModel extends ViewModel {
         if (timer != null) {
             timer.cancel();
         }
-        
-        long timeOfSubmission = System.currentTimeMillis();
-        // Simulate opponent: 50% chance they got it right, random time
-        boolean opponentCorrect = new java.util.Random().nextBoolean();
-        long opponentTimeOfSubmission = lastQuestionStartTime + (new java.util.Random().nextInt(4000) + 500);
 
+        long timeTaken = System.currentTimeMillis() - lastQuestionStartTime;
+        
+        if (currentPlayerTurn.getValue() == 1) {
+            player1Answer = answer;
+            player1Time = timeTaken;
+            waitingForNextPlayer.postValue(true);
+        } else {
+            player2Answer = answer;
+            player2Time = timeTaken;
+            calculateResults();
+        }
+    }
+
+    private void calculateResults() {
         KoZnaZna q = currentQuestion.getValue();
         if (q != null) {
-            boolean playerCorrect = q.getCorrectAnswer().equals(answer);
-            int p1DeltaValue = 0;
-            int p2DeltaValue = 0;
+            String correct = q.getCorrectAnswer();
+            boolean p1Correct = correct.equalsIgnoreCase(player1Answer);
+            boolean p2Correct = correct.equalsIgnoreCase(player2Answer);
+            
+            int p1D = 0;
+            int p2D = 0;
 
-            if (playerCorrect) {
-                if (opponentCorrect) {
-                    if (timeOfSubmission < opponentTimeOfSubmission) {
-                        p1DeltaValue = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
-                    } else {
-                        p2DeltaValue = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
-                    }
+            if (p1Correct && p2Correct) {
+                if (player1Time <= player2Time) {
+                    p1D = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
                 } else {
-                    p1DeltaValue = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
+                    p2D = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
                 }
             } else {
-                p1DeltaValue = KoZnaZnaConfig.INCORRECT_ANSWER_POINTS;
-                if (opponentCorrect) {
-                    p2DeltaValue = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
-                }
+                if (p1Correct) p1D = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
+                else if (player1Answer != null) p1D = KoZnaZnaConfig.INCORRECT_ANSWER_POINTS;
+
+                if (p2Correct) p2D = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
+                else if (player2Answer != null) p2D = KoZnaZnaConfig.INCORRECT_ANSWER_POINTS;
             }
 
-            player1Delta.postValue(p1DeltaValue);
-            player2Delta.postValue(p2DeltaValue);
-            
-            int currentScore = score.getValue() != null ? score.getValue() : 0;
-            score.postValue(currentScore + p1DeltaValue);
+            player1Delta.postValue(p1D);
+            player2Delta.postValue(p2D);
         }
         
-        // Short delay before next question
-        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this::nextQuestion, 1000);
+        revealingAnswer.postValue(true);
+        // Delay before moving to next question
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this::nextQuestion, 2000);
     }
 
     @Override

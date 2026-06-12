@@ -5,6 +5,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -128,9 +129,23 @@ public class KoZnaZnaFragment extends Fragment {
         });
 
         viewModel.getLastSelectedAnswer().observe(getViewLifecycleOwner(), selected -> {
-            if (selected != null) {
-                highlightAnswers(selected);
+            // We highlight only when the ViewModel says we are "revealing answer"
+        });
+
+        viewModel.isWaitingForNextPlayer().observe(getViewLifecycleOwner(), waiting -> {
+            if (waiting) {
+                showNextPlayerDialog();
             }
+        });
+
+        viewModel.isRevealingAnswer().observe(getViewLifecycleOwner(), revealing -> {
+            if (revealing) {
+                highlightAnswers(null); // Will highlight based on internal correct answer
+            }
+        });
+
+        viewModel.getCurrentPlayerTurn().observe(getViewLifecycleOwner(), turn -> {
+            Toast.makeText(requireContext(), "Red je na igraču " + turn, Toast.LENGTH_SHORT).show();
         });
 
         viewModel.isGameFinished().observe(getViewLifecycleOwner(), finished -> {
@@ -142,6 +157,15 @@ public class KoZnaZnaFragment extends Fragment {
         viewModel.getIsLoading().observe(getViewLifecycleOwner(), isLoading -> {
             // Show/hide loading indicator if needed
         });
+    }
+
+    private void showNextPlayerDialog() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Sledeći igrač")
+                .setMessage("Igrač 2, tvoj je red.")
+                .setPositiveButton("Spreman sam", (dialog, which) -> viewModel.startNextPlayerTurn())
+                .setCancelable(false)
+                .show();
     }
 
     private void updateHeader(int p1Score, int p2Score) {
@@ -158,7 +182,7 @@ public class KoZnaZnaFragment extends Fragment {
         button.setBackgroundResource(R.drawable.game_field_background);
     }
 
-    private void highlightAnswers(String selected) {
+    private void highlightAnswers(String ignored) {
         com.example.slagalica.domain.model.match.games.KoZnaZna current = viewModel.getCurrentQuestion().getValue();
         if (current == null) return;
 
@@ -168,23 +192,15 @@ public class KoZnaZnaFragment extends Fragment {
 
         String correct = current.getCorrectAnswer();
         int greenColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.green);
-        int redColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.red);
 
         for (android.widget.Button button : buttons) {
             String text = button.getText().toString().trim();
-            android.content.res.ColorStateList tint = null;
-
             if (text.equalsIgnoreCase(correct.trim())) {
-                tint = android.content.res.ColorStateList.valueOf(greenColor);
-            } else if (text.equalsIgnoreCase(selected.trim())) {
-                tint = android.content.res.ColorStateList.valueOf(redColor);
-            }
-
-            if (tint != null) {
                 if (button instanceof com.google.android.material.button.MaterialButton) {
-                    ((com.google.android.material.button.MaterialButton) button).setBackgroundTintList(tint);
+                    ((com.google.android.material.button.MaterialButton) button).setBackgroundTintList(
+                            android.content.res.ColorStateList.valueOf(greenColor));
                 } else {
-                    button.setBackgroundTintList(tint);
+                    button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(greenColor));
                 }
             }
         }
