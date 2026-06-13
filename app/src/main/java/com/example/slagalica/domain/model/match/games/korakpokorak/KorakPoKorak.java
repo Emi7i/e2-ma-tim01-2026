@@ -71,7 +71,7 @@ public class KorakPoKorak extends AbstractGame {
     }
 
     public boolean isAnswerCorrect(String answer){
-        if(Objects.equals(answer, term)){
+        if(answer != null && answer.equalsIgnoreCase(term)){
             if(!stealOpportunity){
                 awardCurrentPlayerPoints();
             }
