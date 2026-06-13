@@ -64,6 +64,13 @@ public abstract class AbstractGame implements IGame {
     }
 
     @Override
+    public void setCurrentPlayer(long playerId) {
+        session.setCurrentPlayer(playerId);
+    }
+
+
+
+    @Override
     public long getOtherPlayer() {
         if(getPlayer1Id() == session.getCurrentPlayer())
             return getPlayer2Id();

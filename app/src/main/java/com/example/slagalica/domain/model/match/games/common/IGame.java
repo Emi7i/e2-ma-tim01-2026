@@ -8,6 +8,7 @@ public interface IGame {
     int getMinPoints();
     int getCurrentRound();
     long getCurrentPlayer();
+    void setCurrentPlayer(long playerId);
     long getMatchId();
     long getPlayer1Id();
     long getPlayer2Id();
