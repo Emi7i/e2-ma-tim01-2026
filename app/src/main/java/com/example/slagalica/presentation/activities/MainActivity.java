@@ -21,6 +21,7 @@ import com.example.slagalica.repository.impl.SkockoContentRepository;
 import com.example.slagalica.repository.impl.SpojniceRepository;
 import com.example.slagalica.repository.impl.UserProfileRepository;
 import com.example.slagalica.repository.impl.UserStatisticsRepository;
+import com.example.slagalica.util.FirebaseSeeder;
 
 import java.util.Arrays;
 
@@ -39,6 +40,7 @@ MainActivity extends AppCompatActivity {
     @Inject AsocijacijeContentRepository asocijacijeContentRepository;
     @Inject SkockoContentRepository skockoContentRepository;
     @Inject NotificationsRepository notificationsRepository;
+    @Inject FirebaseSeeder firebaseSeeder;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,7 +49,9 @@ MainActivity extends AppCompatActivity {
         testFullFirebaseSchema();
        // seedAsocijacije();        samo prvi puuut sam pozvala
        // seedSkocko();
-        seedNotifications();
+//        seedNotifications();
+        firebaseSeeder.seedTestData();
+
 
         if (isLoggedIn()) {
             startActivity(new Intent(this, AppActivity.class));

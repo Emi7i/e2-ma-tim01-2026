@@ -43,4 +43,13 @@ public class FirestoreTermRepository implements TermRepository {
             return list.get(new Random().nextInt(list.size()));
         });
     }
+
+    @Override
+    public CompletableFuture<Void> saveTerm(TermWithHints term) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        db.collection(COLLECTION_TERMS).add(term)
+                .addOnSuccessListener(docRef -> future.complete(null))
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
+    }
 }
