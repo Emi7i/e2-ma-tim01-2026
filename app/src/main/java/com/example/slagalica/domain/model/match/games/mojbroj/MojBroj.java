@@ -71,14 +71,18 @@ public class MojBroj extends AbstractGame {
 
     public int generateGoalNumber() {
         goalNumber = gameService.generateGoalNumber();
-        updateSessionData();
+//        updateSessionData();
         return goalNumber;
     }
 
     public List<Integer> generateOperands() {
         operands = gameService.generateOperands();
-        updateSessionData();
+//        updateSessionData();
         return operands;
+    }
+
+    public void saveNumbers(){
+        updateSessionData();
     }
 
     /**

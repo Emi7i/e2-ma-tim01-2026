@@ -130,6 +130,7 @@ public class MojBrojViewModel extends ViewModel {
         if (stopTimer != null) stopTimer.cancel();
         isGoalSpinning.setValue(false);
         areOperandsSpinning.setValue(true);
+        game.saveNumbers();
         startStopTimer(this::stopOperandsSpinning);
     }
 
@@ -140,6 +141,7 @@ public class MojBrojViewModel extends ViewModel {
     public void stopOperandsSpinning() {
         if (stopTimer != null) stopTimer.cancel();
         areOperandsSpinning.setValue(false);
+        game.saveNumbers();
         startRoundTimer();
     }
 
