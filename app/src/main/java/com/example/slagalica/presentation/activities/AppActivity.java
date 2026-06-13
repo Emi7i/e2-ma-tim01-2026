@@ -141,6 +141,26 @@ public class AppActivity extends AppCompatActivity {
             View leaveMatchButton = leftDrawer.findViewById(R.id.leave_match);
             leaveMatchButton.setVisibility(active ? View.VISIBLE : View.GONE);
         });
+
+        matchViewModel.getPlayer1Name().observe(this, name -> {
+            binding.gameHeader.setPlayerNames(name, matchViewModel.getPlayer2Name().getValue());
+        });
+
+        matchViewModel.getPlayer2Name().observe(this, name -> {
+            binding.gameHeader.setPlayerNames(matchViewModel.getPlayer1Name().getValue(), name);
+        });
+
+        matchViewModel.getPlayer1Score().observe(this, score -> {
+            binding.gameHeader.setStars(score, matchViewModel.getPlayer2Score().getValue() != null ? matchViewModel.getPlayer2Score().getValue() : 0);
+        });
+
+        matchViewModel.getPlayer2Score().observe(this, score -> {
+            binding.gameHeader.setStars(matchViewModel.getPlayer1Score().getValue() != null ? matchViewModel.getPlayer1Score().getValue() : 0, score);
+        });
+
+        matchViewModel.getActivePlayer().observe(this, player -> {
+            binding.gameHeader.setActivePlayer(player);
+        });
     }
 
     public void setToolbarTitle(String title) {
