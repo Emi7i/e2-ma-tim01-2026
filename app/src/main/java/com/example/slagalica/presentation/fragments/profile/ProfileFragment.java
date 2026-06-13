@@ -25,6 +25,7 @@ public class ProfileFragment extends Fragment {
     private FragmentProfileBinding binding;
 
     public ProfileFragment() {
+
     }
 
     @Override

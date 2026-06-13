@@ -88,7 +88,7 @@ public class AppActivity extends AppCompatActivity {
             });
         });
 
-        // Home button
+        // Home button, also shows game leaving dialogue
         leftDrawer.findViewById(R.id.home).setOnClickListener(v -> {
             if (matchViewModel.getIsGameActive().getValue() != null && matchViewModel.getIsGameActive().getValue()) {
                 showLeaveGameConfirmationDialog(() -> {
