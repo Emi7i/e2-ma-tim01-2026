@@ -183,11 +183,8 @@ public class KoZnaZnaFragment extends Fragment {
     private void resetScoreColors() {
         com.example.slagalica.presentation.views.GameHeaderView gameHeader = requireActivity().findViewById(R.id.gameHeader);
         if (gameHeader != null) {
-            android.widget.TextView p1Stars = gameHeader.findViewById(R.id.player1Stars);
-            android.widget.TextView p2Stars = gameHeader.findViewById(R.id.player2Stars);
-            int defaultColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.black);
-            if (p1Stars != null) p1Stars.setTextColor(defaultColor);
-            if (p2Stars != null) p2Stars.setTextColor(defaultColor);
+            int defaultColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.white);
+            gameHeader.setStarColors(defaultColor, defaultColor);
         }
     }
 
@@ -238,11 +235,9 @@ public class KoZnaZnaFragment extends Fragment {
     private void highlightScoresInHeader() {
         com.example.slagalica.presentation.views.GameHeaderView gameHeader = requireActivity().findViewById(R.id.gameHeader);
         if (gameHeader != null) {
-            android.widget.TextView p1Stars = gameHeader.findViewById(R.id.player1Stars);
-            android.widget.TextView p2Stars = gameHeader.findViewById(R.id.player2Stars);
-
-            if (p1Stars != null) p1Stars.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.blue_light));
-            if (p2Stars != null) p2Stars.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.field_border));
+            int blue = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.blue_light);
+            int purple = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.field_border);
+            gameHeader.setStarColors(blue, purple);
         }
     }
 

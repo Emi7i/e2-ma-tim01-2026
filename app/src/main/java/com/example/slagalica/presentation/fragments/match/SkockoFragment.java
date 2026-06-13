@@ -203,7 +203,7 @@ public class SkockoFragment extends Fragment {
         AppActivity activity = (AppActivity) requireActivity();
         SkockoTabla round = skockoService.getCurrentRound();
 
-        activity.getBinding().gameHeader.setPlayerNames(
+        matchViewModel.setPlayerNames(
                 round.getGameState().getPlayerOneName(),
                 round.getGameState().getPlayerTwoName()
         );
@@ -212,7 +212,7 @@ public class SkockoFragment extends Fragment {
                 round.getGameState().getCurrentPlayer()
         );
 
-        activity.getBinding().gameHeader.setScores(
+        activity.getBinding().gameHeader.setStars(
                 round.getGameState().getPlayerOneScore(),
                 round.getGameState().getPlayerTwoScore()
         );

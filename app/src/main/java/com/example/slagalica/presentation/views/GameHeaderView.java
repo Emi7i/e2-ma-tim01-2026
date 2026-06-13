@@ -34,9 +34,14 @@ public class GameHeaderView extends LinearLayout {
         binding.player2Name.setText(safePlayerTwo);
     }
 
-    public void setScores(int playerOneScore, int playerTwoScore) {
-        binding.player1Score.setText(String.valueOf(playerOneScore));
-        binding.player2Score.setText(String.valueOf(playerTwoScore));
+    public void setStars(int playerOneStars, int playerTwoStars) {
+        binding.player1Stars.setText(String.valueOf(playerOneStars));
+        binding.player2Stars.setText(String.valueOf(playerTwoStars));
+    }
+
+    public void setStarColors(int color1, int color2) {
+        binding.player1Stars.setTextColor(color1);
+        binding.player2Stars.setTextColor(color2);
     }
 
     public void setActivePlayer(int currentPlayer) {

@@ -204,7 +204,7 @@ public class AsocijacijeFragment extends Fragment {
         AppActivity activity = (AppActivity) requireActivity();
         Asocijacija round = asocijacijeService.getCurrentRound();
 
-        activity.getBinding().gameHeader.setPlayerNames(
+        matchViewModel.setPlayerNames(
                 round.getGameState().getPlayerOneName(),
                 round.getGameState().getPlayerTwoName()
         );
@@ -213,7 +213,7 @@ public class AsocijacijeFragment extends Fragment {
                 round.getGameState().getCurrentPlayer()
         );
 
-        activity.getBinding().gameHeader.setScores(
+        activity.getBinding().gameHeader.setStars(
                 round.getGameState().getPlayerOneScore(),
                 round.getGameState().getPlayerTwoScore()
         );

@@ -219,14 +219,11 @@ public class SpojniceFragment extends Fragment {
     private void highlightScoreInHeader(int turn) {
         GameHeaderView gameHeader = requireActivity().findViewById(R.id.gameHeader);
         if (gameHeader != null) {
-            android.widget.TextView p1Stars = gameHeader.findViewById(R.id.player1Stars);
-            android.widget.TextView p2Stars = gameHeader.findViewById(R.id.player2Stars);
             int blue = ContextCompat.getColor(requireContext(), R.color.blue_light);
             int purple = ContextCompat.getColor(requireContext(), R.color.field_border);
             int black = ContextCompat.getColor(requireContext(), R.color.black);
 
-            if (p1Stars != null) p1Stars.setTextColor(turn == 1 ? blue : black);
-            if (p2Stars != null) p2Stars.setTextColor(turn == 2 ? purple : black);
+            gameHeader.setStarColors(turn == 1 ? blue : black, turn == 2 ? purple : black);
         }
     }
 

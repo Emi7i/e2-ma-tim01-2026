@@ -28,7 +28,7 @@
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/player1Score"
+            android:id="@+id/player1Stars"
             android:layout_width="52dp"
             android:layout_height="42dp"
             android:background="@drawable/bg_player1_score"
@@ -73,7 +73,7 @@
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/player2Score"
+            android:id="@+id/player2Stars"
             android:layout_width="52dp"
             android:layout_height="42dp"
             android:background="@drawable/bg_player2_score"
