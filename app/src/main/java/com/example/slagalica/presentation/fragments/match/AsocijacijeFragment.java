@@ -17,7 +17,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -26,21 +25,28 @@ import com.example.slagalica.databinding.FragmentGameAsocijacijeBinding;
 import com.example.slagalica.domain.model.match.games.Asocijacija;
 import com.example.slagalica.domain.model.match.games.AsocijacijaKolona;
 import com.example.slagalica.domain.model.match.games.AsocijacijaPolje;
+import com.example.slagalica.domain.service.match.AsocijacijeFactory;
 import com.example.slagalica.domain.service.match.AsocijacijeService;
 import com.example.slagalica.presentation.activities.AppActivity;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
-import com.example.slagalica.repository.impl.AsocijacijeRepository;
-import com.example.slagalica.repository.impl.stub.StubAsocijacijeRepository;
+import com.example.slagalica.repository.impl.AsocijacijeContentRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.inject.Inject;
+
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class AsocijacijeFragment extends Fragment {
 
     private MatchViewModel matchViewModel;
     private FragmentGameAsocijacijeBinding binding;
 
-    private AsocijacijeRepository asocijacijeRepository;
+    @Inject
+    AsocijacijeContentRepository asocijacijeContentRepository;
+
     private AsocijacijeService asocijacijeService;
 
     private final List<LinearLayout> columnContainers = new ArrayList<>();
@@ -67,26 +73,54 @@ public class AsocijacijeFragment extends Fragment {
 
         ((AppActivity) requireActivity()).setToolbarTitle("Asocijacije");
 
-        asocijacijeRepository = new StubAsocijacijeRepository();
-        asocijacijeService = new AsocijacijeService(asocijacijeRepository.getRounds());
-
         bindViews();
         setupPassButton();
         setupFinalSolution();
-        renderWholeScreen();
-        startRoundTimer();
+        loadAsocijacijeFromFirestore();
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+
         if (matchViewModel != null) {
             matchViewModel.setGameActive(false);
         }
+
         if (roundTimer != null) {
             roundTimer.cancel();
         }
+
         binding = null;
+    }
+
+    private void loadAsocijacijeFromFirestore() {
+        asocijacijeContentRepository.getAllAsocijacije()
+                .thenAccept(documents -> {
+                    requireActivity().runOnUiThread(() -> {
+                        AsocijacijeFactory factory = new AsocijacijeFactory();
+                        List<Asocijacija> rounds = factory.createRounds(documents);
+
+                        if (rounds == null || rounds.isEmpty()) {
+                            Toast.makeText(requireContext(),
+                                    "Nema asocijacija u bazi",
+                                    Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        asocijacijeService = new AsocijacijeService(rounds);
+                        renderWholeScreen();
+                        startRoundTimer();
+                    });
+                })
+                .exceptionally(e -> {
+                    requireActivity().runOnUiThread(() ->
+                            Toast.makeText(requireContext(),
+                                    "Greška pri učitavanju asocijacija iz baze",
+                                    Toast.LENGTH_SHORT).show()
+                    );
+                    return null;
+                });
     }
 
     private void bindViews() {
@@ -99,6 +133,10 @@ public class AsocijacijeFragment extends Fragment {
 
     private void setupPassButton() {
         binding.btnAsocijacijePass.setOnClickListener(v -> {
+            if (asocijacijeService == null) {
+                return;
+            }
+
             AsocijacijeService.ActionResult result = asocijacijeService.passTurn();
 
             if (!result.isSuccess()) {
@@ -112,6 +150,7 @@ public class AsocijacijeFragment extends Fragment {
                 if (roundTimer != null) {
                     roundTimer.cancel();
                 }
+
                 if (!asocijacijeService.getCurrentRound().getGameState().isRoundFinished()) {
                     startRoundTimer();
                 } else if (asocijacijeService.canAdvanceRound()) {
@@ -131,12 +170,18 @@ public class AsocijacijeFragment extends Fragment {
 
     private void setupFinalSolution() {
         binding.btnAsocijacijeFinalSubmit.setOnClickListener(v -> {
+            if (asocijacijeService == null) {
+                return;
+            }
+
             AsocijacijeService.ActionResult result =
                     asocijacijeService.submitFinalSolution(binding.etAsocijacijeFinalSolution.getText().toString());
 
             Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
 
-            if (result.isSuccess() && roundTimer != null && asocijacijeService.getCurrentRound().getGameState().isRoundFinished()) {
+            if (result.isSuccess()
+                    && roundTimer != null
+                    && asocijacijeService.getCurrentRound().getGameState().isRoundFinished()) {
                 roundTimer.cancel();
             }
 
@@ -145,6 +190,10 @@ public class AsocijacijeFragment extends Fragment {
     }
 
     private void renderWholeScreen() {
+        if (asocijacijeService == null) {
+            return;
+        }
+
         updateGameHeader();
         renderColumns();
         renderFinalState();
@@ -214,7 +263,7 @@ public class AsocijacijeFragment extends Fragment {
 
         textView.setGravity(Gravity.CENTER);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-        textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.black));
+        textView.setTextColor(getResources().getColor(R.color.black, requireContext().getTheme()));
         textView.setPadding(dp(4), dp(4), dp(4), dp(4));
 
         applyFieldState(textView, field, column.getLabel(), fieldIndex);
@@ -266,7 +315,7 @@ public class AsocijacijeFragment extends Fragment {
         editText.setLayoutParams(etParams);
         editText.setBackgroundColor(Color.TRANSPARENT);
         editText.setHint("Rešenje " + column.getLabel());
-        editText.setTextColor(ContextCompat.getColor(requireContext(), R.color.black));
+        editText.setTextColor(getResources().getColor(R.color.black, requireContext().getTheme()));
         editText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         editText.setPadding(dp(8), 0, dp(8), 0);
         editText.setSingleLine(true);
@@ -298,7 +347,9 @@ public class AsocijacijeFragment extends Fragment {
 
             Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
 
-            if (result.isSuccess() && roundTimer != null && asocijacijeService.getCurrentRound().getGameState().isRoundFinished()) {
+            if (result.isSuccess()
+                    && roundTimer != null
+                    && asocijacijeService.getCurrentRound().getGameState().isRoundFinished()) {
                 roundTimer.cancel();
             }
 
@@ -347,6 +398,10 @@ public class AsocijacijeFragment extends Fragment {
     }
 
     private void startRoundTimer() {
+        if (asocijacijeService == null) {
+            return;
+        }
+
         Asocijacija round = asocijacijeService.getCurrentRound();
 
         if (roundTimer != null) {

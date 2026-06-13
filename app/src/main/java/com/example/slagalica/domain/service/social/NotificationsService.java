@@ -1,40 +1,16 @@
 package com.example.slagalica.domain.service.social;
 
 import com.example.slagalica.domain.model.social.NotificationActionStatus;
-import com.example.slagalica.domain.model.social.NotificationFilter;
 import com.example.slagalica.domain.model.social.NotificationItem;
 import com.example.slagalica.domain.model.social.NotificationType;
-import com.example.slagalica.repository.impl.NotificationsRepository;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 
 public class NotificationsService {
 
-    private final NotificationsRepository repository;
-
-    public NotificationsService(NotificationsRepository repository) {
-        this.repository = repository;
-    }
-
-    public List<NotificationItem> getFilteredNotifications(NotificationFilter filter) {
-        List<NotificationItem> source = repository.getNotifications();
-        List<NotificationItem> filtered = new ArrayList<>();
-
-        for (NotificationItem item : source) {
-            if (filter == NotificationFilter.ALL) {
-                filtered.add(item);
-            } else if (filter == NotificationFilter.READ && item.isRead()) {
-                filtered.add(item);
-            } else if (filter == NotificationFilter.UNREAD && !item.isRead()) {
-                filtered.add(item);
-            }
-        }
-
-        return filtered;
+    public NotificationsService() {
     }
 
     public void toggleRead(NotificationItem item) {

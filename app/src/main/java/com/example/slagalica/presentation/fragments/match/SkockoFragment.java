@@ -22,18 +22,27 @@ import com.example.slagalica.R;
 import com.example.slagalica.databinding.FragmentGameSkockoBinding;
 import com.example.slagalica.domain.model.match.games.SkockoPokusaj;
 import com.example.slagalica.domain.model.match.games.SkockoTabla;
+import com.example.slagalica.domain.service.match.SkockoFactory;
 import com.example.slagalica.domain.service.match.SkockoService;
 import com.example.slagalica.presentation.activities.AppActivity;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
-import com.example.slagalica.repository.impl.SkockoRepository;
-import com.example.slagalica.repository.impl.stub.StubSkockoRepository;
+import com.example.slagalica.repository.impl.SkockoContentRepository;
 
+import java.util.List;
+
+import javax.inject.Inject;
+
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class SkockoFragment extends Fragment {
 
     private MatchViewModel matchViewModel;
     private FragmentGameSkockoBinding binding;
 
-    private SkockoRepository skockoRepository;
+    @Inject
+    SkockoContentRepository skockoContentRepository;
+
     private SkockoService skockoService;
     private CountDownTimer roundTimer;
 
@@ -58,12 +67,8 @@ public class SkockoFragment extends Fragment {
 
         ((AppActivity) requireActivity()).setToolbarTitle("Skočko");
 
-        skockoRepository = new StubSkockoRepository();
-        skockoService = new SkockoService(skockoRepository.getRounds());
-
         setupSymbolButtons();
-        renderWholeScreen();
-        startRoundTimer();
+        loadSkockoFromFirestore();
     }
 
     @Override
@@ -78,6 +83,35 @@ public class SkockoFragment extends Fragment {
         binding = null;
     }
 
+    private void loadSkockoFromFirestore() {
+        skockoContentRepository.getAllCombinations()
+                .thenAccept(documents -> {
+                    requireActivity().runOnUiThread(() -> {
+                        SkockoFactory factory = new SkockoFactory();
+                        List<SkockoTabla> rounds = factory.createRounds(documents);
+
+                        if (rounds == null || rounds.isEmpty()) {
+                            Toast.makeText(requireContext(),
+                                    "Nema skočko kombinacija u bazi",
+                                    Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        skockoService = new SkockoService(rounds);
+                        renderWholeScreen();
+                        startRoundTimer();
+                    });
+                })
+                .exceptionally(e -> {
+                    requireActivity().runOnUiThread(() ->
+                            Toast.makeText(requireContext(),
+                                    "Greška pri učitavanju skočka iz baze",
+                                    Toast.LENGTH_SHORT).show()
+                    );
+                    return null;
+                });
+    }
+
     private void setupSymbolButtons() {
         binding.symStar.setOnClickListener(v -> handleAppendSymbol("★"));
         binding.symSpade.setOnClickListener(v -> handleAppendSymbol("♠"));
@@ -87,14 +121,23 @@ public class SkockoFragment extends Fragment {
         binding.symExplosion.setOnClickListener(v -> handleAppendSymbol("💥"));
 
         binding.btnSkockoDelete.setOnClickListener(v -> {
+            if (skockoService == null) {
+                return;
+            }
+
             if (skockoService.getCurrentRound().getGameState().isRoundFinished()) {
                 return;
             }
+
             skockoService.removeLastSymbol();
             renderWholeScreen();
         });
 
         binding.btnSkockoSubmit.setOnClickListener(v -> {
+            if (skockoService == null) {
+                return;
+            }
+
             SkockoTabla round = skockoService.getCurrentRound();
 
             if (round.getGameState().isRoundFinished()) {
@@ -132,6 +175,10 @@ public class SkockoFragment extends Fragment {
     }
 
     private void handleAppendSymbol(String symbol) {
+        if (skockoService == null) {
+            return;
+        }
+
         if (!skockoService.canEditCurrentAttempt()) {
             return;
         }
@@ -141,6 +188,10 @@ public class SkockoFragment extends Fragment {
     }
 
     private void renderWholeScreen() {
+        if (skockoService == null) {
+            return;
+        }
+
         updateGameHeader();
         renderRegularAttempts();
         renderBonusAttempt();
@@ -247,6 +298,10 @@ public class SkockoFragment extends Fragment {
     }
 
     private void startRoundTimer() {
+        if (skockoService == null) {
+            return;
+        }
+
         SkockoTabla round = skockoService.getCurrentRound();
 
         if (roundTimer != null) {
@@ -404,7 +459,6 @@ public class SkockoFragment extends Fragment {
             textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.black));
         }
     }
-
 
     private int dp(int value) {
         Resources resources = requireContext().getResources();

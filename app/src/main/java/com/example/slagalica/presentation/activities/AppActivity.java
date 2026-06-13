@@ -22,7 +22,6 @@ import com.example.slagalica.R;
 import com.example.slagalica.databinding.ActivityAppBinding;
 import com.example.slagalica.domain.model.social.NotificationItem;
 import com.example.slagalica.domain.service.social.NotificationsService;
-import com.example.slagalica.presentation.fragments.auth.LoginFragment;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
 import com.example.slagalica.presentation.fragments.common.HomeFragment;
 import com.example.slagalica.presentation.fragments.profile.ProfileFragment;
@@ -30,7 +29,6 @@ import com.example.slagalica.presentation.fragments.social.NotificationTargetPla
 import com.example.slagalica.presentation.fragments.social.NotificationsFragment;
 import com.example.slagalica.presentation.notifications.AppNotificationHelper;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
-import com.example.slagalica.repository.impl.InMemoryNotificationsRepository;
 
 import dagger.hilt.android.AndroidEntryPoint;
 
@@ -163,17 +161,8 @@ public class AppActivity extends AppCompatActivity {
             return;
         }
 
-        NotificationsService service = new NotificationsService(InMemoryNotificationsRepository.getInstance());
-        NotificationItem item = InMemoryNotificationsRepository.getInstance().findById(notificationId);
-
-        if (item == null) {
-            return;
-        }
-
-        service.markAsRead(item);
-
         FragmentTransition.to(
-                NotificationTargetPlaceholderFragment.newInstance(item.getId()),
+                NotificationTargetPlaceholderFragment.newInstance(notificationId),
                 this,
                 true,
                 R.id.appContainer

@@ -19,23 +19,39 @@ import androidx.fragment.app.Fragment;
 import com.example.slagalica.R;
 import com.example.slagalica.databinding.FragmentNotificationsBinding;
 import com.example.slagalica.domain.model.social.NotificationActionStatus;
+import com.example.slagalica.domain.model.social.NotificationDocument;
 import com.example.slagalica.domain.model.social.NotificationFilter;
 import com.example.slagalica.domain.model.social.NotificationItem;
 import com.example.slagalica.domain.model.social.NotificationTarget;
 import com.example.slagalica.domain.model.social.NotificationType;
+import com.example.slagalica.domain.service.social.NotificationsMapper;
 import com.example.slagalica.domain.service.social.NotificationsService;
 import com.example.slagalica.presentation.activities.AppActivity;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
 import com.example.slagalica.presentation.notifications.AppNotificationHelper;
-import com.example.slagalica.repository.impl.InMemoryNotificationsRepository;
+import com.example.slagalica.repository.impl.NotificationsRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.inject.Inject;
+
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class NotificationsFragment extends Fragment {
 
+    private static final String TEST_USER_ID = "test_user_123";
+
     private FragmentNotificationsBinding binding;
+
+    @Inject
+    NotificationsRepository notificationsRepository;
+
     private NotificationsService notificationsService;
+    private final NotificationsMapper notificationsMapper = new NotificationsMapper();
+    private final List<NotificationItem> notificationItems = new ArrayList<>();
+
     private NotificationFilter currentFilter = NotificationFilter.ALL;
     private int demoNotificationIndex = 0;
 
@@ -55,20 +71,43 @@ public class NotificationsFragment extends Fragment {
 
         ((AppActivity) requireActivity()).setToolbarTitle("Notifikacije");
 
-        notificationsService = new NotificationsService(InMemoryNotificationsRepository.getInstance());
+        notificationsService = new NotificationsService();
 
         binding.btnSendDemoNotification.setOnClickListener(v -> {
             sendDemoNotification();
         });
 
         setupFilterButtons();
-        renderNotifications();
+        loadNotificationsFromFirestore();
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+    }
+
+    private void loadNotificationsFromFirestore() {
+        notificationsRepository.getNotificationsForUser(TEST_USER_ID)
+                .thenAccept(documents -> {
+                    requireActivity().runOnUiThread(() -> {
+                        notificationItems.clear();
+
+                        for (NotificationDocument doc : documents) {
+                            notificationItems.add(notificationsMapper.toRuntime(doc));
+                        }
+
+                        renderNotifications();
+                    });
+                })
+                .exceptionally(e -> {
+                    requireActivity().runOnUiThread(() ->
+                            Toast.makeText(requireContext(),
+                                    "Greška pri učitavanju notifikacija iz baze",
+                                    Toast.LENGTH_SHORT).show()
+                    );
+                    return null;
+                });
     }
 
     private void sendDemoNotification() {
@@ -136,11 +175,22 @@ public class NotificationsFragment extends Fragment {
 
         demoNotificationIndex++;
 
-        InMemoryNotificationsRepository.getInstance().addNotification(demoItem);
-        AppNotificationHelper.showSystemNotification(requireContext(), demoItem);
+        NotificationDocument document = notificationsMapper.toDocument(demoItem, TEST_USER_ID);
 
-        Toast.makeText(requireContext(), "Demo notifikacija poslata", Toast.LENGTH_SHORT).show();
-        renderNotifications();
+        notificationsRepository.saveNotification(document)
+                .thenAccept(v -> requireActivity().runOnUiThread(() -> {
+                    AppNotificationHelper.showSystemNotification(requireContext(), demoItem);
+                    Toast.makeText(requireContext(), "Demo notifikacija poslata", Toast.LENGTH_SHORT).show();
+                    loadNotificationsFromFirestore();
+                }))
+                .exceptionally(e -> {
+                    requireActivity().runOnUiThread(() ->
+                            Toast.makeText(requireContext(),
+                                    "Greška pri čuvanju demo notifikacije",
+                                    Toast.LENGTH_SHORT).show()
+                    );
+                    return null;
+                });
     }
 
     private void setupFilterButtons() {
@@ -174,7 +224,7 @@ public class NotificationsFragment extends Fragment {
     private void renderNotifications() {
         binding.notificationsContainer.removeAllViews();
 
-        List<NotificationItem> filtered = notificationsService.getFilteredNotifications(currentFilter);
+        List<NotificationItem> filtered = getFilteredNotifications();
 
         if (filtered.isEmpty()) {
             TextView emptyView = new TextView(requireContext());
@@ -188,6 +238,22 @@ public class NotificationsFragment extends Fragment {
         for (NotificationItem item : filtered) {
             binding.notificationsContainer.addView(createNotificationCard(item));
         }
+    }
+
+    private List<NotificationItem> getFilteredNotifications() {
+        List<NotificationItem> filtered = new ArrayList<>();
+
+        for (NotificationItem item : notificationItems) {
+            if (currentFilter == NotificationFilter.ALL) {
+                filtered.add(item);
+            } else if (currentFilter == NotificationFilter.READ && item.isRead()) {
+                filtered.add(item);
+            } else if (currentFilter == NotificationFilter.UNREAD && !item.isRead()) {
+                filtered.add(item);
+            }
+        }
+
+        return filtered;
     }
 
     private LinearLayout createNotificationCard(NotificationItem item) {
@@ -245,8 +311,6 @@ public class NotificationsFragment extends Fragment {
         actionsContainer.setGravity(Gravity.END);
 
         LinearLayout firstRow = createActionsRow();
-        LinearLayout secondRow = createActionsRow();
-
         List<com.google.android.material.button.MaterialButton> buttons = new ArrayList<>();
 
         if (item.hasOpenAction()) {
@@ -258,31 +322,17 @@ public class NotificationsFragment extends Fragment {
         com.google.android.material.button.MaterialButton markButton =
                 createActionButton(item.isRead() ? "Označi nepročitano" : "Označi pročitano", false);
         markButton.setOnClickListener(v -> {
-            notificationsService.toggleRead(item);
-            renderNotifications();
+            item.setRead(!item.isRead());
+            updateNotificationInFirestore(item);
         });
         buttons.add(markButton);
 
-        for (int i = 0; i < buttons.size(); i++) {
-            if (i < 2) {
-                firstRow.addView(buttons.get(i));
-            } else {
-                secondRow.addView(buttons.get(i));
-            }
+        for (com.google.android.material.button.MaterialButton button : buttons) {
+            firstRow.addView(button);
         }
 
         if (firstRow.getChildCount() > 0) {
             actionsContainer.addView(firstRow);
-        }
-
-        if (secondRow.getChildCount() > 0) {
-            LinearLayout.LayoutParams row2Params = new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-            );
-            row2Params.topMargin = dp(8);
-            secondRow.setLayoutParams(row2Params);
-            actionsContainer.addView(secondRow);
         }
 
         card.setOnClickListener(v -> openNotification(item));
@@ -300,7 +350,8 @@ public class NotificationsFragment extends Fragment {
     }
 
     private void openNotification(NotificationItem item) {
-        notificationsService.markAsRead(item);
+        item.setRead(true);
+        updateNotificationInFirestore(item);
 
         FragmentTransition.to(
                 NotificationTargetPlaceholderFragment.newInstance(item.getId()),
@@ -308,6 +359,21 @@ public class NotificationsFragment extends Fragment {
                 true,
                 R.id.appContainer
         );
+    }
+
+    private void updateNotificationInFirestore(NotificationItem item) {
+        NotificationDocument document = notificationsMapper.toDocument(item, TEST_USER_ID);
+
+        notificationsRepository.updateNotification(document)
+                .thenAccept(v -> requireActivity().runOnUiThread(this::loadNotificationsFromFirestore))
+                .exceptionally(e -> {
+                    requireActivity().runOnUiThread(() ->
+                            Toast.makeText(requireContext(),
+                                    "Greška pri ažuriranju notifikacije",
+                                    Toast.LENGTH_SHORT).show()
+                    );
+                    return null;
+                });
     }
 
     private LinearLayout createActionsRow() {

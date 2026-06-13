@@ -12,16 +12,31 @@ import androidx.fragment.app.Fragment;
 
 import com.example.slagalica.databinding.FragmentNotificationTargetPlaceholderBinding;
 import com.example.slagalica.domain.model.social.NotificationActionStatus;
+import com.example.slagalica.domain.model.social.NotificationDocument;
 import com.example.slagalica.domain.model.social.NotificationItem;
+import com.example.slagalica.domain.service.social.NotificationsMapper;
 import com.example.slagalica.domain.service.social.NotificationsService;
-import com.example.slagalica.repository.impl.InMemoryNotificationsRepository;
+import com.example.slagalica.repository.impl.NotificationsRepository;
 
+import java.util.List;
+
+import javax.inject.Inject;
+
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class NotificationTargetPlaceholderFragment extends Fragment {
 
     private static final String ARG_NOTIFICATION_ID = "arg_notification_id";
+    private static final String TEST_USER_ID = "test_user_123";
 
     private FragmentNotificationTargetPlaceholderBinding binding;
+
+    @Inject
+    NotificationsRepository notificationsRepository;
+
     private NotificationsService notificationsService;
+    private final NotificationsMapper notificationsMapper = new NotificationsMapper();
     private NotificationItem notificationItem;
 
     public NotificationTargetPlaceholderFragment() {
@@ -46,24 +61,54 @@ public class NotificationTargetPlaceholderFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        notificationsService = new NotificationsService(InMemoryNotificationsRepository.getInstance());
+        notificationsService = new NotificationsService();
 
         String notificationId = null;
         if (getArguments() != null) {
             notificationId = getArguments().getString(ARG_NOTIFICATION_ID);
         }
 
-        notificationItem = InMemoryNotificationsRepository.getInstance().findById(notificationId);
-
-        if (notificationItem == null) {
+        if (notificationId == null) {
             Toast.makeText(requireContext(), "Notifikacija nije pronađena", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        notificationsService.markAsRead(notificationItem);
+        loadNotificationFromFirestore(notificationId);
+    }
 
-        renderNotification();
-        setupActions();
+    private void loadNotificationFromFirestore(String notificationId) {
+        notificationsRepository.getNotificationsForUser(TEST_USER_ID)
+                .thenAccept(documents -> requireActivity().runOnUiThread(() -> {
+                    notificationItem = findNotificationById(documents, notificationId);
+
+                    if (notificationItem == null) {
+                        Toast.makeText(requireContext(), "Notifikacija nije pronađena", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    notificationsService.markAsRead(notificationItem);
+                    updateNotificationInFirestore(notificationItem);
+
+                    renderNotification();
+                    setupActions();
+                }))
+                .exceptionally(e -> {
+                    requireActivity().runOnUiThread(() ->
+                            Toast.makeText(requireContext(),
+                                    "Greška pri učitavanju notifikacije",
+                                    Toast.LENGTH_SHORT).show()
+                    );
+                    return null;
+                });
+    }
+
+    private NotificationItem findNotificationById(List<NotificationDocument> documents, String notificationId) {
+        for (NotificationDocument doc : documents) {
+            if (notificationId.equals(doc.getNotificationId())) {
+                return notificationsMapper.toRuntime(doc);
+            }
+        }
+        return null;
     }
 
     private void renderNotification() {
@@ -85,16 +130,40 @@ public class NotificationTargetPlaceholderFragment extends Fragment {
 
     private void setupActions() {
         binding.btnAcceptInvite.setOnClickListener(v -> {
+            if (notificationItem == null) {
+                return;
+            }
+
             notificationsService.acceptInvitation(notificationItem);
+            updateNotificationInFirestore(notificationItem);
             Toast.makeText(requireContext(), "Poziv prihvaćen", Toast.LENGTH_SHORT).show();
             renderNotification();
         });
 
         binding.btnDeclineInvite.setOnClickListener(v -> {
+            if (notificationItem == null) {
+                return;
+            }
+
             notificationsService.declineInvitation(notificationItem);
+            updateNotificationInFirestore(notificationItem);
             Toast.makeText(requireContext(), "Poziv odbijen", Toast.LENGTH_SHORT).show();
             renderNotification();
         });
+    }
+
+    private void updateNotificationInFirestore(NotificationItem item) {
+        NotificationDocument document = notificationsMapper.toDocument(item, TEST_USER_ID);
+
+        notificationsRepository.updateNotification(document)
+                .exceptionally(e -> {
+                    requireActivity().runOnUiThread(() ->
+                            Toast.makeText(requireContext(),
+                                    "Greška pri ažuriranju notifikacije",
+                                    Toast.LENGTH_SHORT).show()
+                    );
+                    return null;
+                });
     }
 
     @Override
