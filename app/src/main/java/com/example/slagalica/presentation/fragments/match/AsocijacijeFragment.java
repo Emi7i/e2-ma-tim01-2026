@@ -52,6 +52,9 @@ public class AsocijacijeFragment extends Fragment {
     private final List<LinearLayout> columnContainers = new ArrayList<>();
     private CountDownTimer roundTimer;
 
+    private int initialPlayer1Score = 0;
+    private int initialPlayer2Score = 0;
+
     public AsocijacijeFragment() {
     }
 
@@ -70,6 +73,11 @@ public class AsocijacijeFragment extends Fragment {
 
         matchViewModel = new ViewModelProvider(requireActivity()).get(MatchViewModel.class);
         matchViewModel.setGameActive(true);
+
+        Integer p1 = matchViewModel.getPlayer1Score().getValue();
+        Integer p2 = matchViewModel.getPlayer2Score().getValue();
+        initialPlayer1Score = p1 != null ? p1 : 0;
+        initialPlayer2Score = p2 != null ? p2 : 0;
 
         ((AppActivity) requireActivity()).setToolbarTitle("Asocijacije");
 
@@ -213,8 +221,8 @@ public class AsocijacijeFragment extends Fragment {
                 round.getGameState().getCurrentPlayer()
         );
 
-        matchViewModel.setPlayer1Score(round.getGameState().getPlayerOneScore());
-        matchViewModel.setPlayer2Score(round.getGameState().getPlayerTwoScore());
+        matchViewModel.setPlayer1Score(initialPlayer1Score + round.getGameState().getPlayerOneScore());
+        matchViewModel.setPlayer2Score(initialPlayer2Score + round.getGameState().getPlayerTwoScore());
 
         activity.getBinding().gameHeader.setTimer(
                 formatTime(round.getGameState().getRemainingSeconds())

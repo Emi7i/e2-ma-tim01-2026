@@ -234,19 +234,11 @@ public class KoZnaZnaViewModel extends ViewModel {
             int p1D = 0;
             int p2D = 0;
 
-            if (p1Correct && p2Correct) {
-                if (player1Time <= player2Time) {
-                    p1D = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
-                } else {
-                    p2D = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
-                }
-            } else {
-                if (p1Correct) p1D = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
-                else if (player1Answer != null) p1D = KoZnaZnaConfig.INCORRECT_ANSWER_POINTS;
+            if (p1Correct) p1D = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
+            else if (player1Answer != null) p1D = KoZnaZnaConfig.INCORRECT_ANSWER_POINTS;
 
-                if (p2Correct) p2D = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
-                else if (player2Answer != null) p2D = KoZnaZnaConfig.INCORRECT_ANSWER_POINTS;
-            }
+            if (p2Correct) p2D = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
+            else if (player2Answer != null) p2D = KoZnaZnaConfig.INCORRECT_ANSWER_POINTS;
 
             player1Delta.setValue(p1D);
             player2Delta.setValue(p2D);
