@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.slagalica.R;
 import com.example.slagalica.databinding.FragmentGameKorakPoKorakBinding;
@@ -131,7 +132,7 @@ public class KorakPoKorakFragment extends Fragment {
     }
 
     private void revealAllHints(){
-        List<String> hints = gameViewModel.getHints();
+        List<String> hints = gameViewModel.getAllHints();
         binding.hint1.setText(hints.get(0));
         binding.points1.setText(String.valueOf(points[0]));
         binding.hint2.setText(hints.get(1));
@@ -153,6 +154,7 @@ public class KorakPoKorakFragment extends Fragment {
     private void revealAnswer(String answer){
         binding.answer.setEnabled(false);
         binding.answer.setText(answer);
+        Toast.makeText(requireContext(), "Answer " + answer + "revealed!", Toast.LENGTH_SHORT).show();
     }
 
     // temp

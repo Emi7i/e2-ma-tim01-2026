@@ -14,7 +14,7 @@ public class KorakPoKorak extends AbstractGame {
     private static final int MAX_POINTS_PER_HINT = 20;
     private static final int POINTS_LOST_PER_HINT = 2;
     private static final int POINTS_FOR_STEAL = 5;
-    public static final int SECONDS_PER_ANSWER = 10;
+    public static final int SECONDS_PER_ANSWER = 5; // 10
     private static final int ROUND_LENGTH = 70;
     private static final int ROUNDS = 2;
     private static final int MAX_POINTS = 40;
@@ -23,6 +23,7 @@ public class KorakPoKorak extends AbstractGame {
     private final KorakPoKorakService gameService;
     @Getter
     private int currentHint = 1;
+    @Getter
     private List<String> hints;
     @Getter
     private String term;
@@ -34,11 +35,9 @@ public class KorakPoKorak extends AbstractGame {
         gameService = service;
     }
 
-    @Override
-    public void startNewRound(){
+    public void startNewRound(Runnable onReady){
         super.startNewRound();
         if(hasEnded()){
-            // reveal all
             notifyGameEnded();
             updateSessionData();
             return;
@@ -49,11 +48,16 @@ public class KorakPoKorak extends AbstractGame {
                     this.term = termWithHints.getTerm();
                     currentHint = 1;
                     updateSessionData();
+                    if (onReady != null) onReady.run();
                 })
                 .exceptionally(ex -> {
-                    // handle error
                     return null;
                 });
+    }
+
+    @Override
+    public void startNewRound(){
+        startNewRound(null);
     }
 
     public String revealNextHint(){

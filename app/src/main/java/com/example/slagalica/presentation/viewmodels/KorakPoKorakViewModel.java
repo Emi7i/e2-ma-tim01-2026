@@ -25,10 +25,6 @@ public class KorakPoKorakViewModel extends ViewModel {
     public KorakPoKorakViewModel() {}
 
     @Getter
-    private final List<String> hints = List.of(
-            "This is hint 1!", "This is hint 2!", "This is hint 3!", "This is hint 4!", "This is hint 5!",
-            "This is hint 6!", "This is hint 7!");
-    @Getter
     private final int[] points = {20, 18, 16, 14, 12, 10, 8};
     @Getter
     private final String answer = "sezame";
@@ -50,7 +46,10 @@ public class KorakPoKorakViewModel extends ViewModel {
     public void start(KorakPoKorak game) {
         if (this.game == game) return;
         this.game = game;
-        game.startNewRound();
+        game.startNewRound(() -> {
+            String currentHint = game.getHints().get(0);
+            latestHint.postValue(currentHint);
+        });
         startTimer();
     }
 
@@ -93,6 +92,10 @@ public class KorakPoKorakViewModel extends ViewModel {
         timer.start();
     }
 
+    public List<String> getAllHints(){
+        return game.getHints();
+    }
+
     private void startStealTimer() {
         timer = new CountDownTimer(KorakPoKorak.SECONDS_PER_ANSWER * 1000L, 1000) {
             @Override
@@ -109,7 +112,12 @@ public class KorakPoKorakViewModel extends ViewModel {
     }
 
     private void advanceRound() {
-        game.startNewRound();
+        game.startNewRound(() -> {
+            if (!game.hasEnded()) {
+                String hint = game.getHints().get(0);
+                latestHint.postValue(hint);
+            }
+        });
         if (game.hasEnded()) {
             gameOver.postValue(true);
         } else {
