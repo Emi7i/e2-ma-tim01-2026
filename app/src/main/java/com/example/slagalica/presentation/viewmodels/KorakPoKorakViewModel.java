@@ -57,8 +57,11 @@ public class KorakPoKorakViewModel extends ViewModel {
     }
 
     private boolean isMyTurn() {
-        return game.getCurrentPlayer() == LOGGED_IN_USER_ID;
+        // TODO: BAD
+//        return game.getCurrentPlayer() == LOGGED_IN_USER_ID;
+        return true;
     }
+
 
     private void startTimer() {
         long roundLengthMs = game.getRoundLength() * 1000L;
