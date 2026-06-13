@@ -209,7 +209,7 @@ public class AsocijacijeFragment extends Fragment {
                 round.getGameState().getPlayerTwoName()
         );
 
-        activity.getBinding().gameHeader.setActivePlayer(
+        matchViewModel.setActivePlayer(
                 round.getGameState().getCurrentPlayer()
         );
 

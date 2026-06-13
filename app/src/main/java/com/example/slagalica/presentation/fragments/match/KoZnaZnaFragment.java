@@ -93,7 +93,6 @@ public class KoZnaZnaFragment extends Fragment {
                         buttons.get(i).setVisibility(View.GONE);
                     }
                 }
-                resetScoreColors();
             }
         });
 
@@ -142,7 +141,9 @@ public class KoZnaZnaFragment extends Fragment {
         });
 
         viewModel.getCurrentPlayerTurn().observe(getViewLifecycleOwner(), turn -> {
-            // Optional: Show which player's turn it is
+            if (turn != null) {
+                matchViewModel.setActivePlayer(turn);
+            }
         });
 
         viewModel.isGameFinished().observe(getViewLifecycleOwner(), finished -> {
@@ -178,14 +179,6 @@ public class KoZnaZnaFragment extends Fragment {
         }
         button.setBackgroundResource(R.drawable.game_field_background);
         button.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.black));
-    }
-
-    private void resetScoreColors() {
-        com.example.slagalica.presentation.views.GameHeaderView gameHeader = requireActivity().findViewById(R.id.gameHeader);
-        if (gameHeader != null) {
-            int defaultColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.white);
-            gameHeader.setStarColors(defaultColor, defaultColor);
-        }
     }
 
     private void highlightAnswers() {
@@ -227,17 +220,6 @@ public class KoZnaZnaFragment extends Fragment {
                     button.setBackgroundTintList(tint);
                 }
             }
-        }
-
-        highlightScoresInHeader();
-    }
-
-    private void highlightScoresInHeader() {
-        com.example.slagalica.presentation.views.GameHeaderView gameHeader = requireActivity().findViewById(R.id.gameHeader);
-        if (gameHeader != null) {
-            int blue = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.blue_light);
-            int purple = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.field_border);
-            gameHeader.setStarColors(blue, purple);
         }
     }
 

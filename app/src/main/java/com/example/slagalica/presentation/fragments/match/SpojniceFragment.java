@@ -217,14 +217,7 @@ public class SpojniceFragment extends Fragment {
     }
 
     private void highlightScoreInHeader(int turn) {
-        GameHeaderView gameHeader = requireActivity().findViewById(R.id.gameHeader);
-        if (gameHeader != null) {
-            int blue = ContextCompat.getColor(requireContext(), R.color.blue_light);
-            int purple = ContextCompat.getColor(requireContext(), R.color.field_border);
-            int black = ContextCompat.getColor(requireContext(), R.color.black);
-
-            gameHeader.setStarColors(turn == 1 ? blue : black, turn == 2 ? purple : black);
-        }
+        matchViewModel.setActivePlayer(turn);
     }
 
     private void updateHeaderScores(Integer p1, Integer p2) {

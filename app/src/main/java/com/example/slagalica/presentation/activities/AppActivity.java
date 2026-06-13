@@ -157,6 +157,10 @@ public class AppActivity extends AppCompatActivity {
         matchViewModel.getPlayer2Score().observe(this, score -> {
             binding.gameHeader.setStars(matchViewModel.getPlayer1Score().getValue() != null ? matchViewModel.getPlayer1Score().getValue() : 0, score);
         });
+
+        matchViewModel.getActivePlayer().observe(this, player -> {
+            binding.gameHeader.setActivePlayer(player);
+        });
     }
 
     public void setToolbarTitle(String title) {
