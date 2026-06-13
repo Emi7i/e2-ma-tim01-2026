@@ -62,6 +62,12 @@ public abstract class AbstractGame implements IGame {
         return session.getCurrentPlayer();
     }
 
+    public long getOtherPlayer() {
+        if(getPlayer1Id() == session.getCurrentPlayer())
+            return getPlayer2Id();
+        return getPlayer1Id();
+    }
+
     @Override
     public boolean hasEnded() {
         return session.isHasEnded();
@@ -75,6 +81,16 @@ public abstract class AbstractGame implements IGame {
     @Override
     public void setOnGameEndedListener(OnGameEndedListener listener) {
         this.endedListener = listener;
+    }
+
+    public void startNewRound(){
+        int currentRound = session.getCurrentRound();
+        currentRound++;
+        if(currentRound > config.getRounds()){
+            session.setHasEnded(true);
+            return;
+        }
+        session.setCurrentRound(currentRound);
     }
 
     protected void notifyPointsChanged(long playerId, int amount) {
