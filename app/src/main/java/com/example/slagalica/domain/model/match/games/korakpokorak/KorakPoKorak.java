@@ -8,20 +8,25 @@ import com.example.slagalica.domain.service.match.KorakPoKorakService;
 import java.util.List;
 import java.util.Objects;
 
+import lombok.Getter;
+
 public class KorakPoKorak extends AbstractGame {
     private static final int MAX_POINTS_PER_HINT = 20;
     private static final int POINTS_LOST_PER_HINT = 2;
     private static final int POINTS_FOR_STEAL = 5;
-    private static final int SECONDS_PER_ANSWER = 10;
+    public static final int SECONDS_PER_ANSWER = 10;
     private static final int ROUND_LENGTH = 70;
     private static final int ROUNDS = 2;
     private static final int MAX_POINTS = 40;
     private static final int MIN_POINTS = 0;
 
     private final KorakPoKorakService gameService;
+    @Getter
     private int currentHint = 1;
     private List<String> hints;
+    @Getter
     private String term;
+    @Getter
     private boolean stealOpportunity = false;
 
     public KorakPoKorak(GameSession session, KorakPoKorakService service) {
@@ -52,9 +57,17 @@ public class KorakPoKorak extends AbstractGame {
     }
 
     public String revealNextHint(){
+        if (currentHint >= hints.size()) {
+            return null;
+        }
         currentHint++;
         updateSessionData();
         return hints.get(currentHint - 1);
+    }
+
+    public void openStealOpportunity() {
+        stealOpportunity = true;
+        updateSessionData();
     }
 
     public boolean isAnswerCorrect(String answer){
@@ -73,7 +86,7 @@ public class KorakPoKorak extends AbstractGame {
     }
 
     private int getPointsForAnswer(){
-        return MAX_POINTS_PER_HINT - currentHint * POINTS_LOST_PER_HINT;
+        return MAX_POINTS_PER_HINT - (currentHint - 1) * POINTS_LOST_PER_HINT;
     }
 
     private void awardCurrentPlayerPoints(){

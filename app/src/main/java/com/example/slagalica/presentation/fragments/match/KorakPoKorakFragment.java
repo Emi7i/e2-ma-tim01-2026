@@ -18,6 +18,7 @@ import android.widget.TextView;
 
 import com.example.slagalica.R;
 import com.example.slagalica.databinding.FragmentGameKorakPoKorakBinding;
+import com.example.slagalica.domain.model.match.games.korakpokorak.KorakPoKorak;
 import com.example.slagalica.presentation.viewmodels.KorakPoKorakViewModel;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 
@@ -31,7 +32,6 @@ public class KorakPoKorakFragment extends Fragment {
     MatchViewModel matchViewModel;
     KorakPoKorakViewModel gameViewModel;
     FragmentGameKorakPoKorakBinding binding;
-
 
     int[] points;
     String answer;
@@ -57,7 +57,7 @@ public class KorakPoKorakFragment extends Fragment {
         gameViewModel = new ViewModelProvider(this).get(KorakPoKorakViewModel.class);
 
         points = gameViewModel.getPoints();
-        answer = gameViewModel.getAnswer();
+//        answer = gameViewModel.getAnswer();
         setupListeners();
         observeViewModel();
     }
@@ -73,39 +73,58 @@ public class KorakPoKorakFragment extends Fragment {
         gameViewModel.getRevealAllHints().observe(getViewLifecycleOwner(), reveal -> {
             if (reveal) revealAllHints();
         });
+
+        // If the match triggered this game to be started, start the timer and other stuff
+        matchViewModel.getCurrentGame().observe(getViewLifecycleOwner(), igame -> {
+            if (igame instanceof KorakPoKorak) {
+                gameViewModel.start((KorakPoKorak) igame);
+            }
+        });
+
+        gameViewModel.getLatestHint().observe(getViewLifecycleOwner(), hint -> {
+            if (hint != null) revealNextHint(hint);
+        });
+
+        gameViewModel.getRevealAllHints().observe(getViewLifecycleOwner(), reveal -> {
+            if (reveal) revealAllHints();
+        });
+
+        gameViewModel.getGameOver().observe(getViewLifecycleOwner(), over -> {
+            if (over) {
+                // TODO: notify Match / navigate to next game
+            }
+        });
     }
 
-    private void revealNextHint(){
-        String nextHint = gameViewModel.getNextHint();
-        if(nextHint == null) revealAnswer();
-        int index = gameViewModel.getLastRevealedHint();
+    private void revealNextHint(String hint){
+        int index = gameViewModel.getGame().getCurrentHint() - 1;
         switch (index) {
             case 0:
-                binding.hint1.setText(nextHint);
+                binding.hint1.setText(hint);
                 binding.points1.setText(String.valueOf(points[0]));
                 break;
             case 1:
-                binding.hint2.setText(nextHint);
+                binding.hint2.setText(hint);
                 binding.points2.setText(String.valueOf(points[1]));
                 break;
             case 2:
-                binding.hint3.setText(nextHint);
+                binding.hint3.setText(hint);
                 binding.points3.setText(String.valueOf(points[2]));
                 break;
             case 3:
-                binding.hint4.setText(nextHint);
+                binding.hint4.setText(hint);
                 binding.points4.setText(String.valueOf(points[3]));
                 break;
             case 4:
-                binding.hint5.setText(nextHint);
+                binding.hint5.setText(hint);
                 binding.points5.setText(String.valueOf(points[4]));
                 break;
             case 5:
-                binding.hint6.setText(nextHint);
+                binding.hint6.setText(hint);
                 binding.points6.setText(String.valueOf(points[5]));
                 break;
             case 6:
-                binding.hint7.setText(nextHint);
+                binding.hint7.setText(hint);
                 binding.points7.setText(String.valueOf(points[6]));
                 break;
         }
@@ -128,28 +147,22 @@ public class KorakPoKorakFragment extends Fragment {
         binding.hint7.setText(hints.get(6));
         binding.points7.setText(String.valueOf(points[6]));
 
-        revealAnswer();
+        revealAnswer(gameViewModel.getGame().getTerm());
     }
 
-    private void revealAnswer(){
+    private void revealAnswer(String answer){
         binding.answer.setEnabled(false);
         binding.answer.setText(answer);
     }
 
     // temp
     private void setupListeners(){
-        View.OnClickListener appendListener = v -> {
-            revealNextHint();
-        };
-
-        binding.hint1.setOnClickListener(appendListener);
         binding.answer.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE ||
                     (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
                 String input = binding.answer.getText().toString().trim();
-                if (input.equalsIgnoreCase(answer)) {
-                    gameViewModel.revealAll();
-                } else {
+                gameViewModel.submitAnswer(input);
+                if (!Boolean.TRUE.equals(gameViewModel.getRevealAllHints().getValue())) {
                     ColorStateList originalTint = binding.answer.getBackgroundTintList();
                     binding.answer.setBackgroundTintList(ColorStateList.valueOf(Color.RED));
                     binding.answer.postDelayed(() -> {
