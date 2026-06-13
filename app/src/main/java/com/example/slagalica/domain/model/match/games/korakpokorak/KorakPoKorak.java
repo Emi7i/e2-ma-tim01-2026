@@ -42,6 +42,9 @@ public class KorakPoKorak extends AbstractGame {
             updateSessionData();
             return;
         }
+        if(session.getCurrentRound() == 2){
+            notifyActivePlayerChanged(getOtherPlayer());
+        }
         gameService.getRandomTermWithHints()
                 .thenAccept(termWithHints -> {
                     this.hints = termWithHints.getHints();

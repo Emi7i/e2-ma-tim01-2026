@@ -24,7 +24,6 @@ public class KorakPoKorakViewModel extends ViewModel {
     private CountDownTimer timer;
 
     private static final long REVEAL_PAUSE_MS = 8000L;
-    private final Handler handler = new Handler(Looper.getMainLooper());
 
     @Inject
     public KorakPoKorakViewModel() {}
@@ -40,7 +39,8 @@ public class KorakPoKorakViewModel extends ViewModel {
     private final MutableLiveData<Boolean> revealAllHints = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> stealWindowOpen = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> gameOver = new MutableLiveData<>(false);
-
+    private final MutableLiveData<Integer> timeLeft = new MutableLiveData<>();
+    public LiveData<Integer> getTimeLeft() { return timeLeft; }
     public LiveData<String> getLatestHint() { return latestHint; }
     public LiveData<Boolean> getRevealAllHints() { return revealAllHints; }
     public LiveData<Boolean> getStealWindowOpen() { return stealWindowOpen; }
@@ -70,7 +70,7 @@ public class KorakPoKorakViewModel extends ViewModel {
             @Override
             public void onTick(long millisUntilFinished) {
                 elapsedSeconds++;
-
+                timeLeft.postValue((int) (millisUntilFinished / 1000));
                 if (isMyTurn() && elapsedSeconds % KorakPoKorak.SECONDS_PER_ANSWER == 0) {
                     String hint = game.revealNextHint();
                     latestHint.postValue(hint);
@@ -102,7 +102,9 @@ public class KorakPoKorakViewModel extends ViewModel {
     private void startStealTimer() {
         timer = new CountDownTimer(KorakPoKorak.SECONDS_PER_ANSWER * 1000L, 1000) {
             @Override
-            public void onTick(long millisUntilFinished) {}
+            public void onTick(long millisUntilFinished) {
+                timeLeft.postValue((int) (millisUntilFinished / 1000));
+            }
 
             @Override
             public void onFinish() {
@@ -116,27 +118,35 @@ public class KorakPoKorakViewModel extends ViewModel {
     }
 
     private void advanceRound() {
-        handler.postDelayed(() -> {
-            game.startNewRound(() -> {
-                if (!game.hasEnded()) {
-                    String hint = game.getHints().get(0);
-                    latestHint.postValue(hint);
-                }
-            });
-            if (game.hasEnded()) {
-                gameOver.postValue(true);
-            } else {
-                revealAllHints.postValue(false);
-                stealWindowOpen.postValue(false);
-                startTimer();
+        new CountDownTimer(REVEAL_PAUSE_MS, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                timeLeft.postValue((int) (millisUntilFinished / 1000));
             }
-        }, REVEAL_PAUSE_MS);
+
+            @Override
+            public void onFinish() {
+                timeLeft.postValue(0);
+                game.startNewRound(() -> {
+                    if (!game.hasEnded()) {
+                        latestHint.postValue(game.getHints().get(0));
+                    }
+                });
+                if (game.hasEnded()) {
+                    gameOver.postValue(true);
+                } else {
+                    revealAllHints.postValue(false);
+                    stealWindowOpen.postValue(false);
+                    startTimer();
+                }
+            }
+        }.start();
     }
 
     /**
      * Called by fragment when user submits an answer.
      */
-    public void submitAnswer(String answer) {
+    public boolean submitAnswer(String answer) {
         boolean correct = game.isAnswerCorrect(answer);
         if (correct) {
             timer.cancel();
@@ -144,6 +154,7 @@ public class KorakPoKorakViewModel extends ViewModel {
             advanceRound();
         }
         // if incorrect: nothing happens, fragment shows red flash, timer keeps running
+        return correct;
     }
 
     @Override

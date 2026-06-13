@@ -95,6 +95,13 @@ public class KorakPoKorakFragment extends Fragment {
             }
         });
 
+        gameViewModel.getTimeLeft().observe(getViewLifecycleOwner(), timeLeft -> {
+            com.example.slagalica.presentation.views.GameHeaderView gameHeader = requireActivity().findViewById(R.id.gameHeader);
+            if (gameHeader != null) {
+                gameHeader.setTimer(String.format("00:%02d", timeLeft));
+            }
+        });
+
         gameViewModel.getGameOver().observe(getViewLifecycleOwner(), over -> {
             if (over) {
                 // TODO: notify Match / navigate to next game
@@ -184,8 +191,7 @@ public class KorakPoKorakFragment extends Fragment {
             if (actionId == EditorInfo.IME_ACTION_DONE ||
                     (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
                 String input = binding.answer.getText().toString().trim();
-                boolean correct = gameViewModel.getGame().isAnswerCorrect(input); // peek, or refactor submitAnswer to return boolean
-                gameViewModel.submitAnswer(input);
+                boolean correct = gameViewModel.submitAnswer(input);
                 if (!correct) {
                     ColorStateList originalTint = binding.answer.getBackgroundTintList();
                     binding.answer.setBackgroundTintList(ColorStateList.valueOf(Color.RED));

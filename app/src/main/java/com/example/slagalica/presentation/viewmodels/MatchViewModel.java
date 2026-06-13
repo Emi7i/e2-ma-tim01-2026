@@ -51,6 +51,8 @@ public class MatchViewModel extends ViewModel {
     public void startKorakPoKorak() {
         GameSession session = new GameSession(matchId, player1Id, player2Id);
         KorakPoKorak game = new KorakPoKorak(session, korakPoKorakService);
+        game.setOnActivePlayerChangedListener(this::onActivePlayerChanged);
+        game.setOnPointsChangedListener(this::onPointsChanged);
         currentGame.setValue(game);
     }
 
@@ -79,5 +81,19 @@ public class MatchViewModel extends ViewModel {
 
     public void setPlayer2Score(int score) {
         player2Score.setValue(score);
+    }
+
+    private void onPointsChanged(long playerId, int amount){
+        if(playerId == player1Id){
+            updatePlayer1Score(amount);
+        }
+        else if(playerId == player2Id){
+            updatePlayer2Score(amount);
+        }
+    }
+
+    // TODO: BAD
+    private void onActivePlayerChanged(long playerId){
+        setActivePlayer(2);
     }
 }

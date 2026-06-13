@@ -17,4 +17,5 @@ public interface IGame {
     long getOtherPlayer();
     void setOnPointsChangedListener(OnPointsChangedListener listener);
     void setOnGameEndedListener(OnGameEndedListener listener);
+    void setOnActivePlayerChangedListener(OnActivePlayerChangedListener listener);
 }
