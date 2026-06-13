@@ -62,7 +62,7 @@ public class SpojniceFragment extends Fragment {
                 binding.rightCard1, binding.rightCard2, binding.rightCard3,
                 binding.rightCard4, binding.rightCard5
         );
-        
+
         for (Button btn : leftButtons) btn.setTextColor(ContextCompat.getColor(requireContext(), R.color.black));
         for (Button btn : rightButtons) btn.setTextColor(ContextCompat.getColor(requireContext(), R.color.black));
     }
@@ -73,7 +73,7 @@ public class SpojniceFragment extends Fragment {
             gameHeader.setVisibility(View.VISIBLE);
             updateHeaderScores(matchViewModel.getPlayer1Score().getValue(), matchViewModel.getPlayer2Score().getValue());
         }
-        
+
         android.widget.TextView toolbarTitle = requireActivity().findViewById(R.id.toolbarTitle);
         if (toolbarTitle != null) {
             toolbarTitle.setText("Spojnice");
@@ -124,10 +124,10 @@ public class SpojniceFragment extends Fragment {
             if (delta > 0) matchViewModel.updatePlayer2Score(delta);
         });
 
-        matchViewModel.getPlayer1Score().observe(getViewLifecycleOwner(), p1 -> 
+        matchViewModel.getPlayer1Score().observe(getViewLifecycleOwner(), p1 ->
             updateHeaderScores(p1, matchViewModel.getPlayer2Score().getValue()));
-        
-        matchViewModel.getPlayer2Score().observe(getViewLifecycleOwner(), p2 -> 
+
+        matchViewModel.getPlayer2Score().observe(getViewLifecycleOwner(), p2 ->
             updateHeaderScores(matchViewModel.getPlayer1Score().getValue(), p2));
 
         viewModel.getTimeLeft().observe(getViewLifecycleOwner(), timeLeft -> {
@@ -142,7 +142,7 @@ public class SpojniceFragment extends Fragment {
                 showNextPlayerDialog();
             }
         });
-        
+
         viewModel.getCurrentPlayerTurn().observe(getViewLifecycleOwner(), turn -> {
             highlightScoreInHeader(turn);
             Integer index = viewModel.getCurrentLeftIndex().getValue();
@@ -170,7 +170,7 @@ public class SpojniceFragment extends Fragment {
         Map<Integer, Integer> p1 = viewModel.getPlayer1Matches().getValue();
         Map<Integer, Integer> p2 = viewModel.getPlayer2Matches().getValue();
         Map<Integer, Integer> missed = viewModel.getMissedMatches().getValue();
-        return (p1 != null && p1.containsKey(index)) || 
+        return (p1 != null && p1.containsKey(index)) ||
                (p2 != null && p2.containsKey(index)) ||
                (missed != null && missed.containsKey(index));
     }

@@ -214,11 +214,11 @@ public class KoZnaZnaFragment extends Fragment {
             // Priority: Correct answer always green
             if (text.equalsIgnoreCase(correct.trim())) {
                 tint = android.content.res.ColorStateList.valueOf(greenColor);
-            } 
+            }
             // Then show player choices if they were wrong
             else if (p1Answer != null && text.equalsIgnoreCase(p1Answer.trim())) {
                 tint = android.content.res.ColorStateList.valueOf(blueColor);
-            } 
+            }
             else if (p2Answer != null && text.equalsIgnoreCase(p2Answer.trim())) {
                 tint = android.content.res.ColorStateList.valueOf(purpleColor);
             }
@@ -231,7 +231,7 @@ public class KoZnaZnaFragment extends Fragment {
                 }
             }
         }
-        
+
         highlightScoresInHeader();
     }
 
@@ -240,7 +240,7 @@ public class KoZnaZnaFragment extends Fragment {
         if (gameHeader != null) {
             android.widget.TextView p1Stars = gameHeader.findViewById(R.id.player1Stars);
             android.widget.TextView p2Stars = gameHeader.findViewById(R.id.player2Stars);
-            
+
             if (p1Stars != null) p1Stars.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.blue_light));
             if (p2Stars != null) p2Stars.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.field_border));
         }

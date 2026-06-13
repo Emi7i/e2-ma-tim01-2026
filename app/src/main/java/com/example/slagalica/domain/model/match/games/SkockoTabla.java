@@ -1,53 +1,41 @@
 package com.example.slagalica.domain.model.match.games;
 
+import com.example.slagalica.domain.model.match.TwoPlayerGameState;
+
 import java.util.List;
 
 public class SkockoTabla {
 
-    private final String playerOneName;
-    private final String playerTwoName;
-    private final String timerText;
+    private final TwoPlayerGameState gameState;
     private final List<String> secretCombination;
     private final List<SkockoPokusaj> attempts;
+    private final SkockoPokusaj bonusAttempt;
 
     private int currentRow;
-    private int currentPlayer;
     private boolean solved;
-    private boolean finished;
-    private String winnerName;
+    private boolean bonusAttemptActive;
+    private boolean bonusAttemptUsed;
 
-    public SkockoTabla(String playerOneName,
-                       String playerTwoName,
-                       String timerText,
+    public SkockoTabla(TwoPlayerGameState gameState,
                        List<String> secretCombination,
                        List<SkockoPokusaj> attempts,
+                       SkockoPokusaj bonusAttempt,
                        int currentRow,
-                       int currentPlayer,
                        boolean solved,
-                       boolean finished,
-                       String winnerName) {
-        this.playerOneName = playerOneName;
-        this.playerTwoName = playerTwoName;
-        this.timerText = timerText;
+                       boolean bonusAttemptActive,
+                       boolean bonusAttemptUsed) {
+        this.gameState = gameState;
         this.secretCombination = secretCombination;
         this.attempts = attempts;
+        this.bonusAttempt = bonusAttempt;
         this.currentRow = currentRow;
-        this.currentPlayer = currentPlayer;
         this.solved = solved;
-        this.finished = finished;
-        this.winnerName = winnerName;
+        this.bonusAttemptActive = bonusAttemptActive;
+        this.bonusAttemptUsed = bonusAttemptUsed;
     }
 
-    public String getPlayerOneName() {
-        return playerOneName;
-    }
-
-    public String getPlayerTwoName() {
-        return playerTwoName;
-    }
-
-    public String getTimerText() {
-        return timerText;
+    public TwoPlayerGameState getGameState() {
+        return gameState;
     }
 
     public List<String> getSecretCombination() {
@@ -58,20 +46,16 @@ public class SkockoTabla {
         return attempts;
     }
 
+    public SkockoPokusaj getBonusAttempt() {
+        return bonusAttempt;
+    }
+
     public int getCurrentRow() {
         return currentRow;
     }
 
     public void setCurrentRow(int currentRow) {
         this.currentRow = currentRow;
-    }
-
-    public int getCurrentPlayer() {
-        return currentPlayer;
-    }
-
-    public void setCurrentPlayer(int currentPlayer) {
-        this.currentPlayer = currentPlayer;
     }
 
     public boolean isSolved() {
@@ -82,19 +66,19 @@ public class SkockoTabla {
         this.solved = solved;
     }
 
-    public boolean isFinished() {
-        return finished;
+    public boolean isBonusAttemptActive() {
+        return bonusAttemptActive;
     }
 
-    public void setFinished(boolean finished) {
-        this.finished = finished;
+    public void setBonusAttemptActive(boolean bonusAttemptActive) {
+        this.bonusAttemptActive = bonusAttemptActive;
     }
 
-    public String getWinnerName() {
-        return winnerName;
+    public boolean isBonusAttemptUsed() {
+        return bonusAttemptUsed;
     }
 
-    public void setWinnerName(String winnerName) {
-        this.winnerName = winnerName;
+    public void setBonusAttemptUsed(boolean bonusAttemptUsed) {
+        this.bonusAttemptUsed = bonusAttemptUsed;
     }
 }
