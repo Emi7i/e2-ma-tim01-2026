@@ -7,4 +7,6 @@ import java.util.concurrent.CompletableFuture;
 public interface KoZnaZnaRepository {
     CompletableFuture<List<KoZnaZna>> getAllKoZnaZna();
     CompletableFuture<KoZnaZna> getRandomKoZnaZna();
+    CompletableFuture<List<KoZnaZna>> getRandomQuestions(int count);
+    CompletableFuture<Void> seedData(List<KoZnaZna> questions);
 }

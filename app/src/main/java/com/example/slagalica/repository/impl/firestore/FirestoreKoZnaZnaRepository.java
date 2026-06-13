@@ -37,9 +37,28 @@ public class FirestoreKoZnaZnaRepository implements KoZnaZnaRepository {
 
     @Override
     public CompletableFuture<KoZnaZna> getRandomKoZnaZna() {
+        return getRandomQuestions(1).thenApply(list -> list.isEmpty() ? null : list.get(0));
+    }
+
+    @Override
+    public CompletableFuture<List<KoZnaZna>> getRandomQuestions(int count) {
         return getAllKoZnaZna().thenApply(list -> {
-            if (list.isEmpty()) return null;
-            return list.get(new Random().nextInt(list.size()));
+            if (list.isEmpty()) return new ArrayList<>();
+            java.util.Collections.shuffle(list);
+            return list.subList(0, Math.min(count, list.size()));
         });
+    }
+
+    @Override
+    public CompletableFuture<Void> seedData(List<KoZnaZna> questions) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        com.google.firebase.firestore.WriteBatch batch = db.batch();
+        for (KoZnaZna q : questions) {
+            batch.set(db.collection(COLLECTION_KO_ZNA_ZNA).document(), q);
+        }
+        batch.commit()
+                .addOnSuccessListener(aVoid -> future.complete(null))
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
     }
 }

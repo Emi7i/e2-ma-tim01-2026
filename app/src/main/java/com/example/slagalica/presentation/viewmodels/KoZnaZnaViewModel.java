@@ -1,0 +1,253 @@
+package com.example.slagalica.presentation.viewmodels;
+
+import android.os.CountDownTimer;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModel;
+import com.example.slagalica.domain.model.match.games.KoZnaZna;
+import com.example.slagalica.domain.model.config.KoZnaZnaConfig;
+import com.example.slagalica.repository.impl.KoZnaZnaRepository;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import javax.inject.Inject;
+import dagger.hilt.android.lifecycle.HiltViewModel;
+
+@HiltViewModel
+public class KoZnaZnaViewModel extends ViewModel {
+
+    private final KoZnaZnaRepository repository;
+    
+    private final MutableLiveData<List<KoZnaZna>> questions = new MutableLiveData<>();
+    private final MutableLiveData<Integer> currentQuestionIndex = new MutableLiveData<>(-1);
+    private final MutableLiveData<KoZnaZna> currentQuestion = new MutableLiveData<>();
+    private final MutableLiveData<List<String>> currentAnswers = new MutableLiveData<>();
+    private final MutableLiveData<Integer> score = new MutableLiveData<>(0);
+    private final MutableLiveData<Integer> timeLeft = new MutableLiveData<>(KoZnaZnaConfig.TIME_PER_QUESTION_SECONDS);
+    private final MutableLiveData<Boolean> gameFinished = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> isLoading = new MutableLiveData<>(true);
+    private final MutableLiveData<Integer> player1Delta = new MutableLiveData<>(0);
+    private final MutableLiveData<Integer> player2Delta = new MutableLiveData<>(0);
+    private final MutableLiveData<Boolean> canAnswer = new MutableLiveData<>(true);
+    private final MutableLiveData<String> lastSelectedAnswer = new MutableLiveData<>(null);
+    private final MutableLiveData<Integer> currentPlayerTurn = new MutableLiveData<>(1); // 1 or 2
+    private final MutableLiveData<Boolean> waitingForNextPlayer = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> revealingAnswer = new MutableLiveData<>(false);
+
+    private final MutableLiveData<String> player1AnswerLiveData = new MutableLiveData<>(null);
+    private final MutableLiveData<String> player2AnswerLiveData = new MutableLiveData<>(null);
+
+    private CountDownTimer timer;
+    private long lastQuestionStartTime;
+    
+    private String player1Answer = null;
+    private long player1Time = Long.MAX_VALUE;
+    private String player2Answer = null;
+    private long player2Time = Long.MAX_VALUE;
+
+    @Inject
+    public KoZnaZnaViewModel(KoZnaZnaRepository repository) {
+        this.repository = repository;
+        loadQuestions();
+    }
+
+    public LiveData<KoZnaZna> getCurrentQuestion() { return currentQuestion; }
+    public LiveData<List<String>> getCurrentAnswers() { return currentAnswers; }
+    public LiveData<Integer> getCurrentQuestionIndex() { return currentQuestionIndex; }
+    public LiveData<Integer> getScore() { return score; }
+    public LiveData<Integer> getTimeLeft() { return timeLeft; }
+    public LiveData<Boolean> isGameFinished() { return gameFinished; }
+    public LiveData<Boolean> getIsLoading() { return isLoading; }
+    public LiveData<Integer> getPlayer1Delta() { return player1Delta; }
+    public LiveData<Integer> getPlayer2Delta() { return player2Delta; }
+    public LiveData<Boolean> getCanAnswer() { return canAnswer; }
+    public LiveData<String> getLastSelectedAnswer() { return lastSelectedAnswer; }
+    public LiveData<Integer> getCurrentPlayerTurn() { return currentPlayerTurn; }
+    public LiveData<Boolean> isWaitingForNextPlayer() { return waitingForNextPlayer; }
+    public LiveData<Boolean> isRevealingAnswer() { return revealingAnswer; }
+    public LiveData<String> getPlayer1Answer() { return player1AnswerLiveData; }
+    public LiveData<String> getPlayer2Answer() { return player2AnswerLiveData; }
+
+    private void loadQuestions() {
+        isLoading.setValue(true);
+        repository.getRandomQuestions(KoZnaZnaConfig.QUESTIONS_COUNT).thenAccept(loadedQuestions -> {
+            List<KoZnaZna> questionsToUse = loadedQuestions;
+            if (questionsToUse == null || questionsToUse.isEmpty()) {
+                android.util.Log.w("KoZnaZnaViewModel", "No questions in Firestore, seeding data...");
+                List<KoZnaZna> demoQuestions = new com.example.slagalica.domain.service.match.KoZnaZnaDemoFactory().createDemoQuestions();
+                repository.seedData(demoQuestions).thenAccept(v -> {
+                    android.util.Log.d("KoZnaZnaViewModel", "Data seeded successfully");
+                }).exceptionally(ex -> {
+                    android.util.Log.e("KoZnaZnaViewModel", "Error seeding data", ex);
+                    return null;
+                });
+                questionsToUse = demoQuestions;
+            }
+            
+            // Shuffle all available questions
+            java.util.Collections.shuffle(questionsToUse);
+            
+            // Limit to QUESTIONS_COUNT defined in config
+            final List<KoZnaZna> finalQuestions = questionsToUse.subList(0, Math.min(KoZnaZnaConfig.QUESTIONS_COUNT, questionsToUse.size()));
+            
+            android.util.Log.d("KoZnaZnaViewModel", "Starting game with " + finalQuestions.size() + " shuffled questions");
+            questions.postValue(finalQuestions);
+            isLoading.postValue(false);
+            
+            android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            mainHandler.post(() -> startWithQuestions(finalQuestions));
+        }).exceptionally(ex -> {
+            android.util.Log.e("KoZnaZnaViewModel", "Error loading questions", ex);
+            isLoading.postValue(false);
+            
+            List<KoZnaZna> demoQuestions = new com.example.slagalica.domain.service.match.KoZnaZnaDemoFactory().createDemoQuestions();
+            java.util.Collections.shuffle(demoQuestions);
+            List<KoZnaZna> finalQuestions = demoQuestions.subList(0, Math.min(KoZnaZnaConfig.QUESTIONS_COUNT, demoQuestions.size()));
+            
+            questions.postValue(finalQuestions);
+            android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            mainHandler.post(() -> startWithQuestions(finalQuestions));
+            return null;
+        });
+    }
+
+    private void startWithQuestions(List<KoZnaZna> loadedQuestions) {
+        currentQuestionIndex.setValue(-1);
+        nextQuestionInternal(loadedQuestions);
+    }
+
+    public void nextQuestion() {
+        List<KoZnaZna> questionList = questions.getValue();
+        nextQuestionInternal(questionList);
+    }
+
+    private void nextQuestionInternal(List<KoZnaZna> questionList) {
+        Integer index = currentQuestionIndex.getValue();
+        if (index == null) index = -1;
+        index++;
+        
+        if (questionList != null && index < questionList.size()) {
+            player1Answer = null;
+            player1Time = Long.MAX_VALUE;
+            player2Answer = null;
+            player2Time = Long.MAX_VALUE;
+            revealingAnswer.postValue(false);
+            waitingForNextPlayer.postValue(false);
+            currentPlayerTurn.postValue(1);
+            
+            canAnswer.postValue(true);
+            lastSelectedAnswer.postValue(null);
+            player1Delta.postValue(0);
+            player2Delta.postValue(0);
+            currentQuestionIndex.postValue(index);
+            KoZnaZna q = questionList.get(index);
+            currentQuestion.postValue(q);
+            
+            List<String> allAnswers = new ArrayList<>(q.getOtherAnswers());
+            allAnswers.add(q.getCorrectAnswer());
+            Collections.shuffle(allAnswers);
+            currentAnswers.postValue(allAnswers);
+            
+            startPlayerTurn(1);
+        } else if (questionList != null) {
+            gameFinished.postValue(true);
+        }
+    }
+
+    private void startPlayerTurn(int player) {
+        currentPlayerTurn.postValue(player);
+        waitingForNextPlayer.postValue(false);
+        canAnswer.postValue(true);
+        lastSelectedAnswer.postValue(null);
+        lastQuestionStartTime = System.currentTimeMillis();
+        startTimer();
+    }
+
+    public void startNextPlayerTurn() {
+        startPlayerTurn(2);
+    }
+
+    private void startTimer() {
+        if (timer != null) {
+            timer.cancel();
+        }
+        timeLeft.postValue(KoZnaZnaConfig.TIME_PER_QUESTION_SECONDS);
+        timer = new CountDownTimer(KoZnaZnaConfig.TIME_PER_QUESTION_SECONDS * 1000L, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                timeLeft.postValue((int) (millisUntilFinished / 1000) + 1);
+            }
+
+            @Override
+            public void onFinish() {
+                timeLeft.postValue(0);
+                submitAnswer(null); // Time out
+            }
+        }.start();
+    }
+
+    public void submitAnswer(String answer) {
+        if (Boolean.FALSE.equals(canAnswer.getValue())) return;
+        canAnswer.postValue(false);
+        lastSelectedAnswer.postValue(answer);
+        
+        if (timer != null) {
+            timer.cancel();
+        }
+
+        long timeTaken = System.currentTimeMillis() - lastQuestionStartTime;
+        
+        if (currentPlayerTurn.getValue() == 1) {
+            player1Answer = answer;
+            player1Time = timeTaken;
+            waitingForNextPlayer.postValue(true);
+        } else {
+            player2Answer = answer;
+            player2Time = timeTaken;
+            calculateResults();
+        }
+    }
+
+    private void calculateResults() {
+        KoZnaZna q = currentQuestion.getValue();
+        if (q != null) {
+            String correct = q.getCorrectAnswer();
+            boolean p1Correct = correct.equalsIgnoreCase(player1Answer);
+            boolean p2Correct = correct.equalsIgnoreCase(player2Answer);
+            
+            int p1D = 0;
+            int p2D = 0;
+
+            if (p1Correct && p2Correct) {
+                if (player1Time <= player2Time) {
+                    p1D = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
+                } else {
+                    p2D = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
+                }
+            } else {
+                if (p1Correct) p1D = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
+                else if (player1Answer != null) p1D = KoZnaZnaConfig.INCORRECT_ANSWER_POINTS;
+
+                if (p2Correct) p2D = KoZnaZnaConfig.CORRECT_ANSWER_POINTS;
+                else if (player2Answer != null) p2D = KoZnaZnaConfig.INCORRECT_ANSWER_POINTS;
+            }
+
+            player1Delta.postValue(p1D);
+            player2Delta.postValue(p2D);
+            player1AnswerLiveData.postValue(player1Answer);
+            player2AnswerLiveData.postValue(player2Answer);
+        }
+        
+        revealingAnswer.postValue(true);
+        // Delay before moving to next question
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this::nextQuestion, 2000);
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        if (timer != null) {
+            timer.cancel();
+        }
+    }
+}
