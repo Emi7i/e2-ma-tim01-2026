@@ -155,15 +155,12 @@ public class SpojniceFragment extends Fragment {
     }
 
     private void updateHighlights(int activeIndex) {
-        int p1Color = ContextCompat.getColor(requireContext(), R.color.blue_light);
-        int p2Color = ContextCompat.getColor(requireContext(), R.color.field_border);
-        int currentPlayer = viewModel.getCurrentPlayerTurn().getValue() != null ? viewModel.getCurrentPlayerTurn().getValue() : 1;
-        int activeColor = (currentPlayer == 1) ? p1Color : p2Color;
+        int focusColor = ContextCompat.getColor(requireContext(), R.color.blue_dark);
 
         for (int i = 0; i < leftButtons.size(); i++) {
             Button btn = leftButtons.get(i);
             if (i == activeIndex) {
-                btn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(activeColor));
+                btn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(focusColor));
             } else {
                 if (!isLeftIndexMatched(i)) {
                     btn.setBackgroundTintList(null);
