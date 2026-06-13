@@ -95,6 +95,7 @@ public class NotificationsFragment extends Fragment {
 
                         for (NotificationDocument doc : documents) {
                             notificationItems.add(notificationsMapper.toRuntime(doc));
+                            notificationItems.add(notificationsMapper.toRuntime(doc));
                         }
 
                         renderNotifications();

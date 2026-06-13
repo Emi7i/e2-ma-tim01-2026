@@ -312,11 +312,13 @@ public class SkockoFragment extends Fragment {
             @Override
             public void onTick(long millisUntilFinished) {
                 round.getGameState().setRemainingSeconds((int) (millisUntilFinished / 1000));
+                updateGameHeader();
             }
 
             @Override
             public void onFinish() {
                 round.getGameState().setRemainingSeconds(0);
+                updateGameHeader();
                 SkockoService.ActionResult result = skockoService.onTimeExpired();
                 Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
                 renderWholeScreen();
