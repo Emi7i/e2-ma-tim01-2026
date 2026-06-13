@@ -38,4 +38,28 @@ public class AsocijacijaKolona {
     public void setSolved(boolean solved) {
         this.solved = solved;
     }
+
+    public int getOpenedFieldsCount() {
+        int count = 0;
+        for (AsocijacijaPolje field : fields) {
+            if (field.isOpened()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public int getUnopenedFieldsCount() {
+        return fields.size() - getOpenedFieldsCount();
+    }
+
+    public boolean isUntouched() {
+        return getOpenedFieldsCount() == 0;
+    }
+
+    public void openAllFields() {
+        for (AsocijacijaPolje field : fields) {
+            field.setOpened(true);
+        }
+    }
 }
