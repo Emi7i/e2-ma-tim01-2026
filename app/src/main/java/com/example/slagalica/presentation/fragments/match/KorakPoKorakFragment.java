@@ -58,7 +58,6 @@ public class KorakPoKorakFragment extends Fragment {
         gameViewModel = new ViewModelProvider(this).get(KorakPoKorakViewModel.class);
 
         points = gameViewModel.getPoints();
-//        answer = gameViewModel.getAnswer();
         setupListeners();
         observeViewModel();
     }
@@ -71,10 +70,6 @@ public class KorakPoKorakFragment extends Fragment {
     }
 
     private void observeViewModel(){
-        gameViewModel.getRevealAllHints().observe(getViewLifecycleOwner(), reveal -> {
-            if (reveal) revealAllHints();
-        });
-
         // If the match triggered this game to be started, start the timer and other stuff
         matchViewModel.getCurrentGame().observe(getViewLifecycleOwner(), igame -> {
             if (igame instanceof KorakPoKorak) {
@@ -88,6 +83,16 @@ public class KorakPoKorakFragment extends Fragment {
 
         gameViewModel.getRevealAllHints().observe(getViewLifecycleOwner(), reveal -> {
             if (reveal) revealAllHints();
+            else {
+                binding.answer.setEnabled(true);
+                resetAllHints();
+            }
+        });
+
+        gameViewModel.getStealWindowOpen().observe(getViewLifecycleOwner(), steal -> {
+            if (steal) {
+                Toast.makeText(requireContext(), "Protivnikov red", Toast.LENGTH_SHORT).show();
+            }
         });
 
         gameViewModel.getGameOver().observe(getViewLifecycleOwner(), over -> {
@@ -151,10 +156,26 @@ public class KorakPoKorakFragment extends Fragment {
         revealAnswer(gameViewModel.getGame().getTerm());
     }
 
+    private void resetAllHints(){
+        binding.hint1.setText("");
+        binding.points1.setText("");
+        binding.hint2.setText("");
+        binding.points2.setText("");
+        binding.hint3.setText("");
+        binding.points3.setText("");
+        binding.hint4.setText("");
+        binding.points4.setText("");
+        binding.hint5.setText("");
+        binding.points5.setText("");
+        binding.hint6.setText("");
+        binding.points6.setText("");
+        binding.hint7.setText("");
+        binding.points7.setText("");
+    }
+
     private void revealAnswer(String answer){
         binding.answer.setEnabled(false);
         binding.answer.setText(answer);
-        Toast.makeText(requireContext(), "Answer " + answer + "revealed!", Toast.LENGTH_SHORT).show();
     }
 
     // temp
@@ -163,8 +184,9 @@ public class KorakPoKorakFragment extends Fragment {
             if (actionId == EditorInfo.IME_ACTION_DONE ||
                     (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
                 String input = binding.answer.getText().toString().trim();
+                boolean correct = gameViewModel.getGame().isAnswerCorrect(input); // peek, or refactor submitAnswer to return boolean
                 gameViewModel.submitAnswer(input);
-                if (!Boolean.TRUE.equals(gameViewModel.getRevealAllHints().getValue())) {
+                if (!correct) {
                     ColorStateList originalTint = binding.answer.getBackgroundTintList();
                     binding.answer.setBackgroundTintList(ColorStateList.valueOf(Color.RED));
                     binding.answer.postDelayed(() -> {

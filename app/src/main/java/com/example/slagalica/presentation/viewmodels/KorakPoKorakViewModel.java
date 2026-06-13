@@ -1,6 +1,8 @@
 package com.example.slagalica.presentation.viewmodels;
 
 import android.os.CountDownTimer;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -21,13 +23,14 @@ public class KorakPoKorakViewModel extends ViewModel {
     private KorakPoKorak game;
     private CountDownTimer timer;
 
+    private static final long REVEAL_PAUSE_MS = 8000L;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+
     @Inject
     public KorakPoKorakViewModel() {}
 
     @Getter
     private final int[] points = {20, 18, 16, 14, 12, 10, 8};
-    @Getter
-    private final String answer = "sezame";
 
 
     // hardcoded for now - stands in for "is it my turn" check
@@ -104,6 +107,7 @@ public class KorakPoKorakViewModel extends ViewModel {
             @Override
             public void onFinish() {
                 if (isMyTurn()) {
+                    revealAllHints.postValue(true);
                     advanceRound();
                 }
             }
@@ -112,19 +116,21 @@ public class KorakPoKorakViewModel extends ViewModel {
     }
 
     private void advanceRound() {
-        game.startNewRound(() -> {
-            if (!game.hasEnded()) {
-                String hint = game.getHints().get(0);
-                latestHint.postValue(hint);
+        handler.postDelayed(() -> {
+            game.startNewRound(() -> {
+                if (!game.hasEnded()) {
+                    String hint = game.getHints().get(0);
+                    latestHint.postValue(hint);
+                }
+            });
+            if (game.hasEnded()) {
+                gameOver.postValue(true);
+            } else {
+                revealAllHints.postValue(false);
+                stealWindowOpen.postValue(false);
+                startTimer();
             }
-        });
-        if (game.hasEnded()) {
-            gameOver.postValue(true);
-        } else {
-            revealAllHints.postValue(false);
-            stealWindowOpen.postValue(false);
-            startTimer(); // restart for round 2
-        }
+        }, REVEAL_PAUSE_MS);
     }
 
     /**

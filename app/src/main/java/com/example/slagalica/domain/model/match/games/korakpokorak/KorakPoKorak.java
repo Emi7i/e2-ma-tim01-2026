@@ -14,8 +14,8 @@ public class KorakPoKorak extends AbstractGame {
     private static final int MAX_POINTS_PER_HINT = 20;
     private static final int POINTS_LOST_PER_HINT = 2;
     private static final int POINTS_FOR_STEAL = 5;
-    public static final int SECONDS_PER_ANSWER = 5; // 10
-    private static final int ROUND_LENGTH = 70;
+    public static final int SECONDS_PER_ANSWER = 5;
+    private static final int ROUND_LENGTH = 35;
     private static final int ROUNDS = 2;
     private static final int MAX_POINTS = 40;
     private static final int MIN_POINTS = 0;
