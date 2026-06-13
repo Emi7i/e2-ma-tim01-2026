@@ -14,8 +14,8 @@ public class KorakPoKorak extends AbstractGame {
     private static final int MAX_POINTS_PER_HINT = 20;
     private static final int POINTS_LOST_PER_HINT = 2;
     private static final int POINTS_FOR_STEAL = 5;
-    public static final int SECONDS_PER_ANSWER = 5;
-    private static final int ROUND_LENGTH = 35;
+    public static final int SECONDS_PER_ANSWER = 2;
+    private static final int ROUND_LENGTH = 14;
     private static final int ROUNDS = 2;
     private static final int MAX_POINTS = 40;
     private static final int MIN_POINTS = 0;
@@ -42,11 +42,13 @@ public class KorakPoKorak extends AbstractGame {
             updateSessionData();
             return;
         }
+        stealOpportunity = false;
         if(session.getCurrentRound() == 2){
-            // TODO: BAD
-            setCurrentPlayer(getOtherPlayer());
-            notifyActivePlayerChanged(getOtherPlayer());
+            // TODO: BAD?
+            setCurrentPlayer(getPlayer2Id());
         }
+        notifyActivePlayerChanged(getCurrentPlayer());
+
         gameService.getRandomTermWithHints()
                 .thenAccept(termWithHints -> {
                     this.hints = termWithHints.getHints();
@@ -76,6 +78,8 @@ public class KorakPoKorak extends AbstractGame {
 
     public void openStealOpportunity() {
         stealOpportunity = true;
+        setCurrentPlayer(getOtherPlayer());
+        notifyActivePlayerChanged(getCurrentPlayer());
         updateSessionData();
     }
 
@@ -103,7 +107,7 @@ public class KorakPoKorak extends AbstractGame {
     }
 
     private void awardStealPoints(){
-        notifyPointsChanged(getOtherPlayer(), POINTS_FOR_STEAL);
+        notifyPointsChanged(getCurrentPlayer(), POINTS_FOR_STEAL);
     }
 
     private void updateSessionData(){

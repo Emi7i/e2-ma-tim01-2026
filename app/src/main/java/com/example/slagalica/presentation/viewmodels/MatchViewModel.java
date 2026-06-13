@@ -94,6 +94,6 @@ public class MatchViewModel extends ViewModel {
 
     // TODO: BAD
     private void onActivePlayerChanged(long playerId){
-        setActivePlayer(2);
+        setActivePlayer((int)playerId);
     }
 }
