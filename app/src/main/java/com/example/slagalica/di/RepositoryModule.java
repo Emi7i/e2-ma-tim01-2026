@@ -2,16 +2,20 @@ package com.example.slagalica.di;
 
 import com.example.slagalica.repository.impl.AsocijacijeContentRepository;
 import com.example.slagalica.repository.impl.KoZnaZnaRepository;
+import com.example.slagalica.repository.impl.KorakPoKorakRepository;
 import com.example.slagalica.repository.impl.NotificationsRepository;
 import com.example.slagalica.repository.impl.SkockoContentRepository;
 import com.example.slagalica.repository.impl.SpojniceRepository;
+import com.example.slagalica.repository.impl.TermRepository;
 import com.example.slagalica.repository.impl.UserProfileRepository;
 import com.example.slagalica.repository.impl.UserStatisticsRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreAsocijacijeContentRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreKoZnaZnaRepository;
+import com.example.slagalica.repository.impl.firestore.FirestoreKorakPoKorakRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreNotificationsRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreSkockoContentRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreSpojniceRepository;
+import com.example.slagalica.repository.impl.firestore.FirestoreTermRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreUserProfileRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreUserStatisticsRepository;
 import dagger.Binds;
@@ -39,6 +43,14 @@ public abstract class RepositoryModule {
     @Binds
     @Singleton
     public abstract KoZnaZnaRepository bindKoZnaZnaRepository(FirestoreKoZnaZnaRepository impl);
+
+    @Binds
+    @Singleton
+    public abstract TermRepository bindTermRepository(FirestoreTermRepository impl);
+
+    @Binds
+    @Singleton
+    public abstract KorakPoKorakRepository bindKorakPoKorakRepository(FirestoreKorakPoKorakRepository impl);
 
     @Binds
     @Singleton

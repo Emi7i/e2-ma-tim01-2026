@@ -5,6 +5,7 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,12 +19,13 @@ import com.example.slagalica.presentation.fragments.match.KorakPoKorakFragment;
 import com.example.slagalica.presentation.fragments.match.MojBrojFragment;
 import com.example.slagalica.presentation.fragments.match.SpojniceFragment;
 import com.example.slagalica.presentation.fragments.match.SkockoFragment;
+import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 
 import dagger.hilt.android.AndroidEntryPoint;
 
 @AndroidEntryPoint
 public class HomeFragment extends Fragment {
-
+    MatchViewModel matchViewModel;
     FragmentHomeBinding binding;
 
     public HomeFragment() {
@@ -42,6 +44,8 @@ public class HomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        matchViewModel = new ViewModelProvider(requireActivity()).get(MatchViewModel.class);
+
         // Temporary access to all games from home
         binding.koZnaZna.setOnClickListener(v -> {
             FragmentTransition.to(new KoZnaZnaFragment(), requireActivity(), true, R.id.appContainer);
@@ -50,6 +54,7 @@ public class HomeFragment extends Fragment {
             FragmentTransition.to(new SpojniceFragment(), requireActivity(), true, R.id.appContainer);
         });
         binding.korakPoKorak.setOnClickListener(v -> {
+            matchViewModel.startKorakPoKorak();
             FragmentTransition.to(new KorakPoKorakFragment(), requireActivity(), true, R.id.appContainer);
         });
 

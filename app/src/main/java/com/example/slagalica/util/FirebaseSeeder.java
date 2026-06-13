@@ -7,6 +7,7 @@ import com.example.slagalica.domain.model.match.games.AsocijacijaDocument;
 import com.example.slagalica.domain.model.match.games.KoZnaZna;
 import com.example.slagalica.domain.model.match.games.SkockoCombinationDocument;
 import com.example.slagalica.domain.model.match.games.Spojnice;
+import com.example.slagalica.domain.model.match.games.korakpokorak.TermWithHints;
 import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.domain.model.progression.UserStatistics;
 import com.example.slagalica.domain.model.social.NotificationDocument;
@@ -17,6 +18,7 @@ import com.example.slagalica.repository.impl.KoZnaZnaRepository;
 import com.example.slagalica.repository.impl.NotificationsRepository;
 import com.example.slagalica.repository.impl.SkockoContentRepository;
 import com.example.slagalica.repository.impl.SpojniceRepository;
+import com.example.slagalica.repository.impl.TermRepository;
 import com.example.slagalica.repository.impl.UserProfileRepository;
 import com.example.slagalica.repository.impl.UserStatisticsRepository;
 
@@ -36,15 +38,17 @@ public class FirebaseSeeder {
     private final AsocijacijeContentRepository asocijacijeContentRepository;
     private final SkockoContentRepository skockoContentRepository;
     private final NotificationsRepository notificationsRepository;
+    private final TermRepository termRepository;
 
     @Inject
-    public FirebaseSeeder(UserProfileRepository userProfileRepository, 
+    public FirebaseSeeder(UserProfileRepository userProfileRepository,
                           UserStatisticsRepository userStatisticsRepository,
                           KoZnaZnaRepository koZnaZnaRepository,
                           SpojniceRepository spojniceRepository,
                           AsocijacijeContentRepository asocijacijeContentRepository,
                           SkockoContentRepository skockoContentRepository,
-                          NotificationsRepository notificationsRepository) {
+                          NotificationsRepository notificationsRepository,
+                          TermRepository termRepository) {
         this.userProfileRepository = userProfileRepository;
         this.userStatisticsRepository = userStatisticsRepository;
         this.koZnaZnaRepository = koZnaZnaRepository;
@@ -52,6 +56,7 @@ public class FirebaseSeeder {
         this.asocijacijeContentRepository = asocijacijeContentRepository;
         this.skockoContentRepository = skockoContentRepository;
         this.notificationsRepository = notificationsRepository;
+        this.termRepository = termRepository;
     }
 
     public void seedTestData() {
@@ -116,8 +121,93 @@ public class FirebaseSeeder {
 
         // 7. Notifications
         seedNotifications();
+
+        // 8. Terms for Korak po korak
+        termRepository.getAllTerms().thenAccept(data -> {
+            Log.d("FirebaseSeeder", "getAllTerms returned size: " + data.size());
+            if(data.isEmpty()){
+                seedTerms();
+            }
+        }).exceptionally(e -> {
+            Log.e("FirebaseSeeder", "FAIL: getAllTerms", e);
+            return null;
+        });
     }
 
+    // Korak po korak terms and hints
+    public void seedTerms() {
+        TermWithHints t1 = new TermWithHints("Sunce", Arrays.asList(
+                "Ima veze sa danom i noći.",
+                "Bez ovoga ne bi bilo života na Zemlji.",
+                "Pojavljuje se ujutru, nestaje uveče.",
+                "Daje svetlost i toplotu.",
+                "Žuto je i okruglo na nebu.",
+                "Ne sme se gledati direktno u ovo.",
+                "Centar je Sunčevog sistema."
+        ));
+
+        TermWithHints t2 = new TermWithHints("Knjiga", Arrays.asList(
+                "Ima veze sa pričama i znanjem.",
+                "Može biti tanka ili debela.",
+                "Često se čuva na polici.",
+                "U nazivima predmeta u školi često se pominje ova reč.",
+                "Sadrži stranice i naslov.",
+                "Otvara se da bi se čitala.",
+                "Ima korice i stranice."
+        ));
+
+        TermWithHints t3 = new TermWithHints("Kafa", Arrays.asList(
+                "Ima veze sa jutrom i budnošću.",
+                "Može biti crna ili sa mlekom.",
+                "Sadrži kofein.",
+                "Pravi se od zrna koja se prže.",
+                "U imenima pića često se pominje ova reč, npr. espreso.",
+                "Pije se topla, najčešće ujutru.",
+                "Ima jak miris koji budi ljude."
+        ));
+
+        TermWithHints t4 = new TermWithHints("Kišobran", Arrays.asList(
+                "Ima veze sa kišom i lošim vremenom.",
+                "Može biti savijen ili otvoren.",
+                "Štiti od nečega što pada s neba.",
+                "Ima ručku i šipke ispod tkanine.",
+                "Otvara se pritiskom na dugme.",
+                "Najčešće se koristi kad pada kiša.",
+                "Kad se otvori, liči na kupolu."
+        ));
+
+        TermWithHints t5 = new TermWithHints("Planina", Arrays.asList(
+                "Ima veze sa prirodom i visinama.",
+                "Može biti prekrivena snegom i ledom.",
+                "Osvaja se penjanjem.",
+                "Veća je od brda.",
+                "Ima vrh, padine i podnožje.",
+                "U imenima poznatih vrhova često se pominje ova reč, npr. Everest.",
+                "Često ima stene i šume."
+        ));
+
+        TermWithHints t6 = new TermWithHints("Sat", Arrays.asList(
+                "Ima veze sa vremenom i tačnošću.",
+                "Može biti na zidu, ruci ili telefonu.",
+                "Ima kazaljke ili prikazuje brojeve.",
+                "Prati protok vremena.",
+                "Otkucava svaku sekundu.",
+                "U nazivu narukvice koja pokazuje vreme nalazi se ova reč.",
+                "Zvoni ujutru da signalizira ustajanje."
+        ));
+
+        termRepository.saveTerm(t1)
+                .thenCompose(v -> termRepository.saveTerm(t2))
+                .thenCompose(v -> termRepository.saveTerm(t3))
+                .thenCompose(v -> termRepository.saveTerm(t4))
+                .thenCompose(v -> termRepository.saveTerm(t5))
+                .thenCompose(v -> termRepository.saveTerm(t6))
+                .thenAccept(v -> Log.d("FirebaseSeeder", "SUCCESS: Terms seeded!"))
+                .exceptionally(e -> {
+                    Log.e("FirebaseSeeder", "FAIL: Terms seed", e);
+                    return null;
+                });
+    }
     private void seedAsocijacije() {
         AsocijacijaDocument a1 = new AsocijacijaDocument(
                 null,
