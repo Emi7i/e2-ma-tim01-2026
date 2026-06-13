@@ -114,10 +114,12 @@ public class SpojniceFragment extends Fragment {
         viewModel.getPlayer2Matches().observe(getViewLifecycleOwner(), matches -> updateMatchColors());
         viewModel.getMissedMatches().observe(getViewLifecycleOwner(), matches -> updateMatchColors());
 
+        // Add score to P1
         viewModel.getP1ScoreDelta().observe(getViewLifecycleOwner(), delta -> {
             if (delta > 0) matchViewModel.updatePlayer1Score(delta);
         });
 
+        // Add score to P2
         viewModel.getP2ScoreDelta().observe(getViewLifecycleOwner(), delta -> {
             if (delta > 0) matchViewModel.updatePlayer2Score(delta);
         });
@@ -138,12 +140,6 @@ public class SpojniceFragment extends Fragment {
         viewModel.isWaitingForNextPlayer().observe(getViewLifecycleOwner(), waiting -> {
             if (waiting) {
                 showNextPlayerDialog();
-            }
-        });
-
-        viewModel.isGameFinished().observe(getViewLifecycleOwner(), finished -> {
-            if (finished) {
-                Toast.makeText(requireContext(), "Spojnice završene!", Toast.LENGTH_LONG).show();
             }
         });
         
@@ -245,9 +241,9 @@ public class SpojniceFragment extends Fragment {
         int currentPlayer = viewModel.getCurrentPlayerTurn().getValue();
         int nextPlayer = (currentPlayer == 1) ? 2 : 1;
         new AlertDialog.Builder(requireContext())
-                .setTitle("Potez protivnika")
-                .setMessage("Igrač " + nextPlayer + ", pokušaj da spojiš pojam koji je protivnik promašio!")
-                .setPositiveButton("Spreman sam", (dialog, which) -> viewModel.startSecondPlayerTurn())
+                .setTitle(" Igrač " + nextPlayer)
+                .setMessage("TVOJ RED.!")
+                .setPositiveButton("Sve znam", (dialog, which) -> viewModel.startSecondPlayerTurn())
                 .setCancelable(false)
                 .show();
     }
