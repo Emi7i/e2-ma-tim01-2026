@@ -100,6 +100,7 @@ public class MojBroj extends AbstractGame {
      * Called when the active player submits their answer (tokens).
      * Stores the result, awards points, and ends the round.
      */
+    // TODO: somehow submit other player's answer :)
     public void submitAnswer(List<String> tokens) {
         int result;
         if (tokens == null || tokens.isEmpty()) {

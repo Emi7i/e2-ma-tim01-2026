@@ -1,6 +1,7 @@
 package com.example.slagalica.presentation.viewmodels;
 
 import android.os.CountDownTimer;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -187,11 +188,13 @@ public class MojBrojViewModel extends ViewModel {
 
     private void finishRound(List<String> tokens) {
         try {
+            Log.d("MojBroj", "Tokens found!! " + tokens);
             game.submitAnswer(tokens);
             myNumber = game.getCurrentPlayerResult();
             isCorrect.postValue(myNumber == goalNumber && myNumber != 0);
         } catch (IllegalArgumentException e) {
             // invalid expression - treat as no answer (0), per current UI constraints
+            Log.d("MojBroj", "invalid >:(: " + e);
             game.submitAnswer(new ArrayList<>());
             myNumber = 0;
             isCorrect.postValue(false);
