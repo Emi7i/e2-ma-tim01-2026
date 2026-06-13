@@ -121,15 +121,15 @@ public class KoZnaZnaViewModel extends ViewModel {
             player1Time = Long.MAX_VALUE;
             player2Answer = null;
             player2Time = Long.MAX_VALUE;
-            revealingAnswer.postValue(false);
-            waitingForNextPlayer.postValue(false);
-            currentPlayerTurn.postValue(1);
+            revealingAnswer.setValue(false);
+            waitingForNextPlayer.setValue(false);
+            currentPlayerTurn.setValue(1);
             
-            canAnswer.postValue(true);
-            lastSelectedAnswer.postValue(null);
-            player1Delta.postValue(0);
-            player2Delta.postValue(0);
-            currentQuestionIndex.postValue(index);
+            canAnswer.setValue(true);
+            lastSelectedAnswer.setValue(null);
+            player1Delta.setValue(0);
+            player2Delta.setValue(0);
+            currentQuestionIndex.setValue(index);
             KoZnaZna q = questionList.get(index);
             currentQuestion.postValue(q);
             
@@ -215,7 +215,7 @@ public class KoZnaZnaViewModel extends ViewModel {
         if (currentPlayerTurn.getValue() == 1) {
             player1Answer = answer;
             player1Time = timeTaken;
-            waitingForNextPlayer.postValue(true);
+            waitingForNextPlayer.setValue(true);
         } else {
             player2Answer = answer;
             player2Time = timeTaken;
@@ -248,16 +248,16 @@ public class KoZnaZnaViewModel extends ViewModel {
                 else if (player2Answer != null) p2D = KoZnaZnaConfig.INCORRECT_ANSWER_POINTS;
             }
 
-            player1Delta.postValue(p1D);
-            player2Delta.postValue(p2D);
-            player1AnswerLiveData.postValue(player1Answer);
-            player2AnswerLiveData.postValue(player2Answer);
+            player1Delta.setValue(p1D);
+            player2Delta.setValue(p2D);
+            player1AnswerLiveData.setValue(player1Answer);
+            player2AnswerLiveData.setValue(player2Answer);
             
             player1TotalScore += p1D;
-            score.postValue(player1TotalScore);
+            score.setValue(player1TotalScore);
         }
         
-        revealingAnswer.postValue(true);
+        revealingAnswer.setValue(true);
         // Delay before moving to next question
         new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(this::nextQuestion, 2000);
     }

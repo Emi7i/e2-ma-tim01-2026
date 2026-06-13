@@ -179,16 +179,16 @@ public class SpojniceViewModel extends ViewModel {
                 Map<Integer, Integer> matches = player1Matches.getValue();
                 if (matches == null) matches = new HashMap<>();
                 matches.put(leftIdx, rightIndex);
-                player1Matches.postValue(matches);
+                player1Matches.setValue(matches);
                 player1TotalScore += SpojniceConfig.POINTS_PER_MATCH;
                 player1CorrectAccumulated++;
-                p1ScoreDelta.postValue(SpojniceConfig.POINTS_PER_MATCH);
+                p1ScoreDelta.setValue(SpojniceConfig.POINTS_PER_MATCH);
             } else {
                 Map<Integer, Integer> matches = player2Matches.getValue();
                 if (matches == null) matches = new HashMap<>();
                 matches.put(leftIdx, rightIndex);
-                player2Matches.postValue(matches);
-                p2ScoreDelta.postValue(SpojniceConfig.POINTS_PER_MATCH);
+                player2Matches.setValue(matches);
+                p2ScoreDelta.setValue(SpojniceConfig.POINTS_PER_MATCH);
             }
         } else if (currentPlayer != startingPlayerOfRound.getValue()) {
             // If second player misses, mark as missed immediately
@@ -216,7 +216,7 @@ public class SpojniceViewModel extends ViewModel {
         }
 
         if (nextIndex < SpojniceConfig.TERMS_COUNT) {
-            currentLeftIndex.postValue(nextIndex);
+            currentLeftIndex.setValue(nextIndex);
         } else {
             handleTurnEnd();
         }
@@ -231,7 +231,7 @@ public class SpojniceViewModel extends ViewModel {
         if (currentPlayer == startingPlayer) {
             // Check if there's anything left for the second player
             if (hasUnmatchedTerms()) {
-                waitingForNextPlayer.postValue(true);
+                waitingForNextPlayer.setValue(true);
             } else {
                 endRound();
             }
@@ -276,7 +276,7 @@ public class SpojniceViewModel extends ViewModel {
             String correctRightTerm = pairMap.get(leftList.get(leftIdx));
             int correctRightIdx = rightList.indexOf(correctRightTerm);
             missed.put(leftIdx, correctRightIdx);
-            missedMatches.postValue(missed);
+            missedMatches.setValue(missed);
         }
     }
 
@@ -298,12 +298,9 @@ public class SpojniceViewModel extends ViewModel {
                 
                 // Accuracy Update: Each pair in Spojnice is a 'question'
                 // Total questions = ROUNDS_COUNT * TERMS_COUNT
-                long roundQuestions = SpojniceConfig.TERMS_COUNT * SpojniceConfig.ROUNDS_COUNT;
-                long roundCorrect = player1Matches.getValue() != null ? player1Matches.getValue().size() : 0;
-                // Wait, player1Matches is cleared each round in setupRoundData. 
-                // I need to accumulate it.
+                long totalPossibleMatches = SpojniceConfig.TERMS_COUNT * SpojniceConfig.ROUNDS_COUNT;
                 
-                long newTotal = stats.getSpojniceTotal() + roundQuestions;
+                long newTotal = stats.getSpojniceTotal() + totalPossibleMatches;
                 long newCorrect = stats.getSpojniceCorrect() + player1CorrectAccumulated;
                 stats.setSpojniceTotal(newTotal);
                 stats.setSpojniceCorrect(newCorrect);

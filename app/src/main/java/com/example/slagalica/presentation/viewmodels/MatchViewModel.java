@@ -47,4 +47,12 @@ public class MatchViewModel extends ViewModel {
         Integer current = player2Score.getValue();
         player2Score.setValue((current != null ? current : 0) + delta);
     }
+
+    public void setPlayer1Score(int score) {
+        player1Score.setValue(score);
+    }
+
+    public void setPlayer2Score(int score) {
+        player2Score.setValue(score);
+    }
 }

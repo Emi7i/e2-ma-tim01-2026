@@ -213,10 +213,8 @@ public class AsocijacijeFragment extends Fragment {
                 round.getGameState().getCurrentPlayer()
         );
 
-        activity.getBinding().gameHeader.setStars(
-                round.getGameState().getPlayerOneScore(),
-                round.getGameState().getPlayerTwoScore()
-        );
+        matchViewModel.setPlayer1Score(round.getGameState().getPlayerOneScore());
+        matchViewModel.setPlayer2Score(round.getGameState().getPlayerTwoScore());
 
         activity.getBinding().gameHeader.setTimer(
                 formatTime(round.getGameState().getRemainingSeconds())

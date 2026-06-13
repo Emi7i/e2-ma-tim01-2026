@@ -58,9 +58,6 @@ public class KoZnaZnaFragment extends Fragment {
         com.example.slagalica.presentation.views.GameHeaderView gameHeader = requireActivity().findViewById(R.id.gameHeader);
         if (gameHeader != null) {
             gameHeader.setVisibility(View.VISIBLE);
-            Integer p1 = matchViewModel.getPlayer1Score().getValue();
-            Integer p2 = matchViewModel.getPlayer2Score().getValue();
-            gameHeader.setStars(p1 != null ? p1 : 0, p2 != null ? p2 : 0);
         }
     }
 
@@ -105,11 +102,11 @@ public class KoZnaZnaFragment extends Fragment {
         });
 
         matchViewModel.getPlayer1Score().observe(getViewLifecycleOwner(), p1Score -> {
-            updateHeader(p1Score, matchViewModel.getPlayer2Score().getValue() != null ? matchViewModel.getPlayer2Score().getValue() : 0);
+            // Header is updated automatically by AppActivity via MatchViewModel
         });
 
         matchViewModel.getPlayer2Score().observe(getViewLifecycleOwner(), p2Score -> {
-            updateHeader(matchViewModel.getPlayer1Score().getValue() != null ? matchViewModel.getPlayer1Score().getValue() : 0, p2Score);
+            // Header is updated automatically by AppActivity via MatchViewModel
         });
 
         viewModel.getTimeLeft().observe(getViewLifecycleOwner(), timeLeft -> {
@@ -164,13 +161,6 @@ public class KoZnaZnaFragment extends Fragment {
                 .setPositiveButton("Ma moze", (dialog, which) -> viewModel.startNextPlayerTurn())
                 .setCancelable(false)
                 .show();
-    }
-
-    private void updateHeader(int p1Score, int p2Score) {
-        com.example.slagalica.presentation.views.GameHeaderView gameHeader = requireActivity().findViewById(R.id.gameHeader);
-        if (gameHeader != null) {
-            gameHeader.setStars(p1Score, p2Score);
-        }
     }
 
     private void resetButtonBackground(android.widget.Button button) {

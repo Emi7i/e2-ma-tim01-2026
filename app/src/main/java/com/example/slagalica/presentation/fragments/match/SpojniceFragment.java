@@ -71,7 +71,6 @@ public class SpojniceFragment extends Fragment {
         GameHeaderView gameHeader = requireActivity().findViewById(R.id.gameHeader);
         if (gameHeader != null) {
             gameHeader.setVisibility(View.VISIBLE);
-            updateHeaderScores(matchViewModel.getPlayer1Score().getValue(), matchViewModel.getPlayer2Score().getValue());
         }
 
         android.widget.TextView toolbarTitle = requireActivity().findViewById(R.id.toolbarTitle);
@@ -124,11 +123,13 @@ public class SpojniceFragment extends Fragment {
             if (delta > 0) matchViewModel.updatePlayer2Score(delta);
         });
 
-        matchViewModel.getPlayer1Score().observe(getViewLifecycleOwner(), p1 ->
-            updateHeaderScores(p1, matchViewModel.getPlayer2Score().getValue()));
+        matchViewModel.getPlayer1Score().observe(getViewLifecycleOwner(), p1 -> {
+            // Header is updated automatically by AppActivity via MatchViewModel
+        });
 
-        matchViewModel.getPlayer2Score().observe(getViewLifecycleOwner(), p2 ->
-            updateHeaderScores(matchViewModel.getPlayer1Score().getValue(), p2));
+        matchViewModel.getPlayer2Score().observe(getViewLifecycleOwner(), p2 -> {
+            // Header is updated automatically by AppActivity via MatchViewModel
+        });
 
         viewModel.getTimeLeft().observe(getViewLifecycleOwner(), timeLeft -> {
             GameHeaderView gameHeader = requireActivity().findViewById(R.id.gameHeader);
@@ -218,13 +219,6 @@ public class SpojniceFragment extends Fragment {
 
     private void highlightScoreInHeader(int turn) {
         matchViewModel.setActivePlayer(turn);
-    }
-
-    private void updateHeaderScores(Integer p1, Integer p2) {
-        GameHeaderView gameHeader = requireActivity().findViewById(R.id.gameHeader);
-        if (gameHeader != null) {
-            gameHeader.setStars(p1 != null ? p1 : 0, p2 != null ? p2 : 0);
-        }
     }
 
     private void showNextPlayerDialog() {
