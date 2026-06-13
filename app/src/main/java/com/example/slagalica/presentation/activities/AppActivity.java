@@ -1,11 +1,17 @@
 package com.example.slagalica.presentation.activities;
 
+import android.Manifest;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.GravityCompat;
 import androidx.core.view.ViewCompat;
@@ -14,12 +20,17 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.slagalica.R;
 import com.example.slagalica.databinding.ActivityAppBinding;
+import com.example.slagalica.domain.model.social.NotificationItem;
+import com.example.slagalica.domain.service.social.NotificationsService;
 import com.example.slagalica.presentation.fragments.auth.LoginFragment;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
 import com.example.slagalica.presentation.fragments.common.HomeFragment;
 import com.example.slagalica.presentation.fragments.profile.ProfileFragment;
+import com.example.slagalica.presentation.fragments.social.NotificationTargetPlaceholderFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationsFragment;
+import com.example.slagalica.presentation.notifications.AppNotificationHelper;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
+import com.example.slagalica.repository.impl.InMemoryNotificationsRepository;
 
 import dagger.hilt.android.AndroidEntryPoint;
 
@@ -106,6 +117,8 @@ public class AppActivity extends AppCompatActivity {
             FragmentTransition.to(new NotificationsFragment(), this, true, R.id.appContainer);
             binding.main.closeDrawer(GravityCompat.START);
         });
+        handleNotificationIntent(getIntent());
+        requestNotificationPermission();
     }
 
     private void showLeaveGameConfirmationDialog(Runnable onConfirm) {
@@ -138,5 +151,44 @@ public class AppActivity extends AppCompatActivity {
 
     public ActivityAppBinding getBinding() {
         return binding;
+    }
+
+    private void handleNotificationIntent(Intent intent) {
+        if (intent == null) {
+            return;
+        }
+
+        String notificationId = intent.getStringExtra(AppNotificationHelper.EXTRA_NOTIFICATION_ID);
+        if (notificationId == null) {
+            return;
+        }
+
+        NotificationsService service = new NotificationsService(InMemoryNotificationsRepository.getInstance());
+        NotificationItem item = InMemoryNotificationsRepository.getInstance().findById(notificationId);
+
+        if (item == null) {
+            return;
+        }
+
+        service.markAsRead(item);
+
+        FragmentTransition.to(
+                NotificationTargetPlaceholderFragment.newInstance(item.getId()),
+                this,
+                true,
+                R.id.appContainer
+        );
+    }
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                        this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        1001
+                );
+            }
+        }
     }
 }

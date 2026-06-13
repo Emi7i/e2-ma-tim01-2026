@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface NotificationsRepository {
     List<NotificationItem> getNotifications();
+    void addNotification(NotificationItem item);
+    NotificationItem findById(String id);
 }

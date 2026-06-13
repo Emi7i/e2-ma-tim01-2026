@@ -4,47 +4,33 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.slagalica.databinding.FragmentNotificationTargetPlaceholderBinding;
+import com.example.slagalica.domain.model.social.NotificationActionStatus;
+import com.example.slagalica.domain.model.social.NotificationItem;
+import com.example.slagalica.domain.service.social.NotificationsService;
+import com.example.slagalica.repository.impl.InMemoryNotificationsRepository;
 
-import dagger.hilt.android.AndroidEntryPoint;
-
-@AndroidEntryPoint
 public class NotificationTargetPlaceholderFragment extends Fragment {
 
-    private static final String ARG_TITLE = "arg_title";
-    private static final String ARG_MESSAGE = "arg_message";
-    private static final String ARG_TYPE = "arg_type";
-    private static final String ARG_SENDER = "arg_sender";
-    private static final String ARG_TIME = "arg_time";
-    private static final String ARG_STATUS = "arg_status";
-    private static final String ARG_ACTIONS = "arg_actions";
+    private static final String ARG_NOTIFICATION_ID = "arg_notification_id";
 
     private FragmentNotificationTargetPlaceholderBinding binding;
+    private NotificationsService notificationsService;
+    private NotificationItem notificationItem;
 
     public NotificationTargetPlaceholderFragment() {
     }
 
-    public static NotificationTargetPlaceholderFragment newInstance(String title,
-                                                                    String message,
-                                                                    String type,
-                                                                    String sender,
-                                                                    String time,
-                                                                    String status,
-                                                                    String actions) {
+    public static NotificationTargetPlaceholderFragment newInstance(String notificationId) {
         NotificationTargetPlaceholderFragment fragment = new NotificationTargetPlaceholderFragment();
         Bundle args = new Bundle();
-        args.putString(ARG_TITLE, title);
-        args.putString(ARG_MESSAGE, message);
-        args.putString(ARG_TYPE, type);
-        args.putString(ARG_SENDER, sender);
-        args.putString(ARG_TIME, time);
-        args.putString(ARG_STATUS, status);
-        args.putString(ARG_ACTIONS, actions);
+        args.putString(ARG_NOTIFICATION_ID, notificationId);
         fragment.setArguments(args);
         return fragment;
     }
@@ -60,16 +46,55 @@ public class NotificationTargetPlaceholderFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        Bundle args = getArguments();
-        if (args != null) {
-            binding.tvPlaceholderTitle.setText(args.getString(ARG_TITLE, "Detalji notifikacije"));
-            binding.tvPlaceholderType.setText(args.getString(ARG_TYPE, ""));
-            binding.tvPlaceholderSender.setText(args.getString(ARG_SENDER, ""));
-            binding.tvPlaceholderTime.setText(args.getString(ARG_TIME, ""));
-            binding.tvPlaceholderStatus.setText(args.getString(ARG_STATUS, ""));
-            binding.tvPlaceholderMessage.setText(args.getString(ARG_MESSAGE, ""));
-            binding.tvPlaceholderActions.setText(args.getString(ARG_ACTIONS, ""));
+        notificationsService = new NotificationsService(InMemoryNotificationsRepository.getInstance());
+
+        String notificationId = null;
+        if (getArguments() != null) {
+            notificationId = getArguments().getString(ARG_NOTIFICATION_ID);
         }
+
+        notificationItem = InMemoryNotificationsRepository.getInstance().findById(notificationId);
+
+        if (notificationItem == null) {
+            Toast.makeText(requireContext(), "Notifikacija nije pronađena", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        notificationsService.markAsRead(notificationItem);
+
+        renderNotification();
+        setupActions();
+    }
+
+    private void renderNotification() {
+        binding.tvPlaceholderNotificationTitle.setText(notificationItem.getTitle());
+        binding.tvPlaceholderType.setText(notificationsService.getTypeLabel(notificationItem.getType()));
+        binding.tvPlaceholderSender.setText(notificationItem.getSender());
+        binding.tvPlaceholderTime.setText(notificationsService.formatTimestamp(notificationItem.getTimestampMillis()));
+        binding.tvPlaceholderStatus.setText(notificationsService.getStatusLabel(notificationItem));
+        binding.tvPlaceholderActionStatus.setText(notificationsService.getActionStatusLabel(notificationItem));
+        binding.tvPlaceholderMessage.setText(notificationItem.getMessage());
+
+        if (notificationItem.hasDecisionAction()
+                && notificationItem.getActionStatus() == NotificationActionStatus.PENDING) {
+            binding.actionsContainer.setVisibility(View.VISIBLE);
+        } else {
+            binding.actionsContainer.setVisibility(View.GONE);
+        }
+    }
+
+    private void setupActions() {
+        binding.btnAcceptInvite.setOnClickListener(v -> {
+            notificationsService.acceptInvitation(notificationItem);
+            Toast.makeText(requireContext(), "Poziv prihvaćen", Toast.LENGTH_SHORT).show();
+            renderNotification();
+        });
+
+        binding.btnDeclineInvite.setOnClickListener(v -> {
+            notificationsService.declineInvitation(notificationItem);
+            Toast.makeText(requireContext(), "Poziv odbijen", Toast.LENGTH_SHORT).show();
+            renderNotification();
+        });
     }
 
     @Override

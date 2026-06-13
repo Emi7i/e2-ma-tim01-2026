@@ -18,27 +18,26 @@ import androidx.fragment.app.Fragment;
 
 import com.example.slagalica.R;
 import com.example.slagalica.databinding.FragmentNotificationsBinding;
+import com.example.slagalica.domain.model.social.NotificationActionStatus;
 import com.example.slagalica.domain.model.social.NotificationFilter;
 import com.example.slagalica.domain.model.social.NotificationItem;
+import com.example.slagalica.domain.model.social.NotificationTarget;
+import com.example.slagalica.domain.model.social.NotificationType;
 import com.example.slagalica.domain.service.social.NotificationsService;
 import com.example.slagalica.presentation.activities.AppActivity;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
-import com.example.slagalica.repository.impl.NotificationsRepository;
-import com.example.slagalica.repository.impl.stub.StubNotificationsRepository;
+import com.example.slagalica.presentation.notifications.AppNotificationHelper;
+import com.example.slagalica.repository.impl.InMemoryNotificationsRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import dagger.hilt.android.AndroidEntryPoint;
-
-@AndroidEntryPoint
 public class NotificationsFragment extends Fragment {
 
     private FragmentNotificationsBinding binding;
-
-    private NotificationsRepository notificationsRepository;
     private NotificationsService notificationsService;
     private NotificationFilter currentFilter = NotificationFilter.ALL;
+    private int demoNotificationIndex = 0;
 
     public NotificationsFragment() {
     }
@@ -56,10 +55,11 @@ public class NotificationsFragment extends Fragment {
 
         ((AppActivity) requireActivity()).setToolbarTitle("Notifikacije");
 
-        notificationsRepository = new StubNotificationsRepository();
-        notificationsService = new NotificationsService(
-                new ArrayList<>(notificationsRepository.getNotifications())
-        );
+        notificationsService = new NotificationsService(InMemoryNotificationsRepository.getInstance());
+
+        binding.btnSendDemoNotification.setOnClickListener(v -> {
+            sendDemoNotification();
+        });
 
         setupFilterButtons();
         renderNotifications();
@@ -69,6 +69,78 @@ public class NotificationsFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+    }
+
+    private void sendDemoNotification() {
+        NotificationItem demoItem;
+
+        int caseIndex = demoNotificationIndex % 4;
+
+        if (caseIndex == 0) {
+            demoItem = new NotificationItem(
+                    "runtime_chat_" + System.currentTimeMillis(),
+                    NotificationType.CHAT,
+                    "Nova poruka",
+                    "Ivana vam je poslala poruku u čet.",
+                    "Ivana",
+                    System.currentTimeMillis(),
+                    false,
+                    true,
+                    false,
+                    NotificationTarget.CHAT,
+                    NotificationActionStatus.NONE
+            );
+        } else if (caseIndex == 1) {
+            demoItem = new NotificationItem(
+                    "runtime_ranking_" + System.currentTimeMillis(),
+                    NotificationType.RANKING,
+                    "Rang lista",
+                    "Završili ste ciklus na 2. mestu.",
+                    "Sistem",
+                    System.currentTimeMillis(),
+                    false,
+                    true,
+                    false,
+                    NotificationTarget.RANKING,
+                    NotificationActionStatus.NONE
+            );
+        } else if (caseIndex == 2) {
+            demoItem = new NotificationItem(
+                    "runtime_reward_" + System.currentTimeMillis(),
+                    NotificationType.REWARD,
+                    "Nagrada",
+                    "Osvojili ste 10 tokena za plasman na rang listi.",
+                    "Sistem",
+                    System.currentTimeMillis(),
+                    false,
+                    true,
+                    false,
+                    NotificationTarget.REWARD,
+                    NotificationActionStatus.NONE
+            );
+        } else {
+            demoItem = new NotificationItem(
+                    "runtime_invite_" + System.currentTimeMillis(),
+                    NotificationType.GAME_INVITE,
+                    "Poziv u igru",
+                    "Petar vas je pozvao u partiju.",
+                    "Petar",
+                    System.currentTimeMillis(),
+                    false,
+                    true,
+                    true,
+                    NotificationTarget.GAME_INVITE,
+                    NotificationActionStatus.PENDING
+            );
+        }
+
+        demoNotificationIndex++;
+
+        InMemoryNotificationsRepository.getInstance().addNotification(demoItem);
+        AppNotificationHelper.showSystemNotification(requireContext(), demoItem);
+
+        Toast.makeText(requireContext(), "Demo notifikacija poslata", Toast.LENGTH_SHORT).show();
+        renderNotifications();
     }
 
     private void setupFilterButtons() {
@@ -148,7 +220,7 @@ public class NotificationsFragment extends Fragment {
         senderView.setTextColor(0xFF666666);
 
         TextView timeView = new TextView(requireContext());
-        timeView.setText("Vreme: " + item.getTimestamp());
+        timeView.setText("Vreme: " + notificationsService.formatTimestamp(item.getTimestampMillis()));
         timeView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         timeView.setTextColor(0xFF666666);
 
@@ -156,6 +228,11 @@ public class NotificationsFragment extends Fragment {
         statusView.setText(notificationsService.getStatusLabel(item));
         statusView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         statusView.setTextColor(item.isRead() ? 0xFF2E7D32 : 0xFFC62828);
+
+        TextView actionStatusView = new TextView(requireContext());
+        actionStatusView.setText(notificationsService.getActionStatusLabel(item));
+        actionStatusView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        actionStatusView.setTextColor(0xFF666666);
 
         TextView messageView = new TextView(requireContext());
         messageView.setText(item.getMessage());
@@ -174,42 +251,8 @@ public class NotificationsFragment extends Fragment {
 
         if (item.hasOpenAction()) {
             com.google.android.material.button.MaterialButton openButton = createActionButton("Otvori", true);
-            openButton.setOnClickListener(v -> {
-                notificationsService.markAsRead(item);
-                FragmentTransition.to(
-                        NotificationTargetPlaceholderFragment.newInstance(
-                                item.getTitle(),
-                                item.getMessage(),
-                                notificationsService.getTypeLabel(item.getType()),
-                                item.getSender(),
-                                item.getTimestamp(),
-                                notificationsService.getStatusLabel(item),
-                                notificationsService.getAvailableActionsLabel(item)
-                        ),
-                        requireActivity(),
-                        true,
-                        R.id.appContainer
-                );
-            });
+            openButton.setOnClickListener(v -> openNotification(item));
             buttons.add(openButton);
-        }
-
-        if (item.hasDecisionAction()) {
-            com.google.android.material.button.MaterialButton acceptButton = createActionButton("Prihvati", true);
-            acceptButton.setOnClickListener(v -> {
-                notificationsService.markAsRead(item);
-                Toast.makeText(requireContext(), "Poziv prihvaćen (GUI)", Toast.LENGTH_SHORT).show();
-                renderNotifications();
-            });
-            buttons.add(acceptButton);
-
-            com.google.android.material.button.MaterialButton declineButton = createActionButton("Odbij", true);
-            declineButton.setOnClickListener(v -> {
-                notificationsService.markAsRead(item);
-                Toast.makeText(requireContext(), "Poziv odbijen (GUI)", Toast.LENGTH_SHORT).show();
-                renderNotifications();
-            });
-            buttons.add(declineButton);
         }
 
         com.google.android.material.button.MaterialButton markButton =
@@ -242,33 +285,29 @@ public class NotificationsFragment extends Fragment {
             actionsContainer.addView(secondRow);
         }
 
-        card.setOnClickListener(v -> {
-            notificationsService.markAsRead(item);
-            FragmentTransition.to(
-                    NotificationTargetPlaceholderFragment.newInstance(
-                            item.getTitle(),
-                            item.getMessage(),
-                            notificationsService.getTypeLabel(item.getType()),
-                            item.getSender(),
-                            item.getTimestamp(),
-                            notificationsService.getStatusLabel(item),
-                            notificationsService.getAvailableActionsLabel(item)
-                    ),
-                    requireActivity(),
-                    true,
-                    R.id.appContainer
-            );
-        });
+        card.setOnClickListener(v -> openNotification(item));
 
         card.addView(titleView);
         card.addView(typeView);
         card.addView(senderView);
         card.addView(timeView);
         card.addView(statusView);
+        card.addView(actionStatusView);
         card.addView(messageView);
         card.addView(actionsContainer);
 
         return card;
+    }
+
+    private void openNotification(NotificationItem item) {
+        notificationsService.markAsRead(item);
+
+        FragmentTransition.to(
+                NotificationTargetPlaceholderFragment.newInstance(item.getId()),
+                requireActivity(),
+                true,
+                R.id.appContainer
+        );
     }
 
     private LinearLayout createActionsRow() {
