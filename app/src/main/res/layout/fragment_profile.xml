@@ -44,14 +44,15 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:background="@color/field_border"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="6dp"
+                    android:paddingHorizontal="28dp"
+                    android:paddingVertical="10dp"
                     android:gravity="center_vertical">
 
                     <TextView
+                        android:id="@+id/tokensText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="534 tokena"
+                        android:text="0 tokena"
                         android:textStyle="bold"
                         android:textColor="@color/white"
                         android:textSize="14sp" />
@@ -60,8 +61,8 @@
 
                 <ImageButton
                     android:id="@+id/shopButton"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
                     android:layout_marginStart="8dp"
                     android:background="@color/white"
                     android:src="@android:drawable/ic_menu_add" />
@@ -76,14 +77,26 @@
                 android:gravity="center"
                 android:layout_marginBottom="32dp">
 
-                <ImageView
-                    android:id="@+id/profileAvatar"
-                    android:layout_width="128dp"
-                    android:layout_height="128dp"
-                    android:layout_marginBottom="16dp"
-                    android:background="@drawable/circular_profile_with_border"
-                    android:scaleType="centerCrop"
-                    android:contentDescription="@string/profile_avatar" />
+                <FrameLayout
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
+                    android:layout_marginBottom="16dp">
+
+                    <ImageView
+                        android:id="@+id/profileAvatar"
+                        android:layout_width="110dp"
+                        android:layout_height="110dp"
+                        android:layout_gravity="center"
+                        android:scaleType="centerCrop"
+                        android:contentDescription="@string/profile_avatar" />
+
+                    <ImageView
+                        android:id="@+id/leagueBorder"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="fitCenter" />
+
+                </FrameLayout>
 
                 <TextView
                     android:id="@+id/usernameText"
@@ -121,12 +134,14 @@
                     android:background="@color/light_gray"
                     android:layout_marginBottom="16dp">
 
-                    <View
+                    <ImageView
+                        android:id="@+id/rankIcon"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:background="@color/blue_light" />
+                        android:src="@android:color/darker_gray" />
 
                     <TextView
+                        android:id="@+id/rankText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Rank"
@@ -145,12 +160,14 @@
                     android:background="@color/light_gray"
                     android:layout_marginBottom="16dp">
 
-                    <View
+                    <ImageView
+                        android:id="@+id/starsIcon"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:background="@color/purple_light" />
+                        android:src="@android:color/darker_gray" />
 
                     <TextView
+                        android:id="@+id/starsText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Broj zvezdica"
@@ -169,12 +186,14 @@
                     android:background="@color/light_gray"
                     android:layout_marginBottom="16dp">
 
-                    <View
+                    <ImageView
+                        android:id="@+id/leagueIcon"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:background="@color/purple_light" />
+                        android:src="@android:color/darker_gray" />
 
                     <TextView
+                        android:id="@+id/leagueText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Liga"
@@ -192,12 +211,14 @@
                     android:padding="12dp"
                     android:background="@color/light_gray">
 
-                    <View
+                    <ImageView
+                        android:id="@+id/regionIcon"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:background="@color/blue_light" />
+                        android:src="@android:color/darker_gray" />
 
                     <TextView
+                        android:id="@+id/regionText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Region"
