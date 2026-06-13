@@ -62,6 +62,7 @@ public abstract class AbstractGame implements IGame {
         return session.getCurrentPlayer();
     }
 
+    @Override
     public long getOtherPlayer() {
         if(getPlayer1Id() == session.getCurrentPlayer())
             return getPlayer2Id();
@@ -83,6 +84,7 @@ public abstract class AbstractGame implements IGame {
         this.endedListener = listener;
     }
 
+    @Override
     public void startNewRound(){
         int currentRound = session.getCurrentRound();
         currentRound++;

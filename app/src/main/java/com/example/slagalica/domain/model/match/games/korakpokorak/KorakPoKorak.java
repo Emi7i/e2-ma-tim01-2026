@@ -18,14 +18,15 @@ public class KorakPoKorak extends AbstractGame {
     private static final int MAX_POINTS = 40;
     private static final int MIN_POINTS = 0;
 
-    private KorakPoKorakService gameService;
+    private final KorakPoKorakService gameService;
     private int currentHint = 1;
     private List<String> hints;
     private String term;
     private boolean stealOpportunity = false;
 
-    public KorakPoKorak(GameSession session) {
+    public KorakPoKorak(GameSession session, KorakPoKorakService service) {
         super(new GameConfig(5, ROUND_LENGTH, ROUNDS, MAX_POINTS, MIN_POINTS), session);
+        gameService = service;
     }
 
     @Override
@@ -52,6 +53,7 @@ public class KorakPoKorak extends AbstractGame {
 
     public String revealNextHint(){
         currentHint++;
+        updateSessionData();
         return hints.get(currentHint - 1);
     }
 
@@ -85,5 +87,20 @@ public class KorakPoKorak extends AbstractGame {
     private void updateSessionData(){
         KorakPoKorakSessionData data = new KorakPoKorakSessionData(getCurrentRound(), getCurrentPlayer(), hasEnded(), currentHint, stealOpportunity, term, hints);
         gameService.updateSessionData(getMatchId(), data);
+    }
+
+    public void applyRemoteUpdate(KorakPoKorakSessionData data) {
+        this.currentHint = data.getCurrentHint();
+        this.hints = data.getHints();
+        this.term = data.getTerm();
+        this.stealOpportunity = data.isStealOpportunity();
+
+        session.setCurrentRound(data.getCurrentRound());
+        session.setCurrentPlayer(data.getCurrentPlayer());
+        session.setHasEnded(data.isHasEnded());
+
+        if (data.isHasEnded()) {
+            notifyGameEnded();
+        }
     }
 }
