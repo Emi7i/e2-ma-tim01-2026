@@ -42,6 +42,24 @@ public class ProfileViewModel extends ViewModel {
                 });
     }
 
+    public void updateAvatar(String newAvatarUrl) {
+        UserProfile current = userProfile.getValue();
+        if (current != null) {
+            isLoading.setValue(true);
+            current.setAvatar(newAvatarUrl);
+            userProfileRepository.saveProfile(current)
+                .thenAccept(v -> {
+                    userProfile.postValue(current);
+                    isLoading.postValue(false);
+                })
+                .exceptionally(e -> {
+                    error.postValue(e.getMessage());
+                    isLoading.postValue(false);
+                    return null;
+                });
+        }
+    }
+
     public LiveData<UserProfile> getUserProfile() {
         return userProfile;
     }

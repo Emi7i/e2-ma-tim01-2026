@@ -105,6 +105,10 @@ public class ProfileFragment extends Fragment {
     }
 
     private void setupClickListeners() {
+        binding.avatarContainer.setOnClickListener(v -> {
+            showAvatarSelectionDialog();
+        });
+
         binding.statisticsButton.setOnClickListener(v -> {
             // Switch to statistics fragment in the drawer
             FragmentTransition.to(new StatisticsFragment(), requireActivity(), true, R.id.rightDrawer);
@@ -115,6 +119,31 @@ public class ProfileFragment extends Fragment {
             androidx.drawerlayout.widget.DrawerLayout drawerLayout = requireActivity().findViewById(R.id.main);
             drawerLayout.closeDrawer(GravityCompat.END);
         });
+    }
+
+    private void showAvatarSelectionDialog() {
+        String[] avatarUrls = {
+            "https://media1.tenor.com/m/kqLCp6Ow_dQAAAAd/bug-cat-capoo-blue.gif",
+            "https://media1.tenor.com/m/_Af1fysbSW4AAAAd/bugcat-bugcat-shine.gif",
+            "https://media1.tenor.com/m/8V5_7dB1jsYAAAAd/capoo-waiting.gif",
+            "https://media1.tenor.com/m/xPy26qAy0xYAAAAd/capoo-bugcat.gif",
+            "https://media1.tenor.com/m/rBVT1zDLGJwAAAAd/bugcat-capoo-happy.gif"
+        };
+
+        String[] avatarNames = {
+            "Bugcat 1",
+            "Bugcat 2",
+            "Bugcat 3",
+            "Bugcat 4",
+            "Bugcat 5"
+        };
+
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(requireContext());
+        builder.setTitle("Izaberi avatar");
+        builder.setItems(avatarNames, (dialog, which) -> {
+            viewModel.updateAvatar(avatarUrls[which]);
+        });
+        builder.show();
     }
 
     @Override
