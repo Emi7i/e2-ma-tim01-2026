@@ -58,7 +58,7 @@ public class KoZnaZnaFragment extends Fragment {
         com.example.slagalica.presentation.views.GameHeaderView gameHeader = requireActivity().findViewById(R.id.gameHeader);
         if (gameHeader != null) {
             gameHeader.setVisibility(View.VISIBLE);
-            gameHeader.setStars(starNum1, starNum2);
+            gameHeader.setScores(starNum1, starNum2);
             gameHeader.setTimer("00:00");
         }
 
