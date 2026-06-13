@@ -19,4 +19,5 @@ public class UserProfile {
     private String league;
     private String region;
     private String qrCode;
+    private long rank;
 }
