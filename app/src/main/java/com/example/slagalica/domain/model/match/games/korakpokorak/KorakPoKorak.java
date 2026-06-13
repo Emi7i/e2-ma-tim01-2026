@@ -50,11 +50,12 @@ public class KorakPoKorak extends AbstractGame {
                 });
     }
 
-    private int getPointsForAnswer(){
-        return MAX_POINTS_PER_HINT - currentHint * POINTS_LOST_PER_HINT;
+    public String revealNextHint(){
+        currentHint++;
+        return hints.get(currentHint - 1);
     }
 
-    private boolean isAnswerCorrect(String answer){
+    public boolean isAnswerCorrect(String answer){
         if(Objects.equals(answer, term)){
             if(!stealOpportunity){
                 awardCurrentPlayerPoints();
@@ -69,9 +70,8 @@ public class KorakPoKorak extends AbstractGame {
         return false;
     }
 
-    public String revealNextHint(){
-        currentHint++;
-        return hints.get(currentHint - 1);
+    private int getPointsForAnswer(){
+        return MAX_POINTS_PER_HINT - currentHint * POINTS_LOST_PER_HINT;
     }
 
     private void awardCurrentPlayerPoints(){
