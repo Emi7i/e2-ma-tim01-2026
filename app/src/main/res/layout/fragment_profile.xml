@@ -49,9 +49,10 @@
                     android:gravity="center_vertical">
 
                     <TextView
+                        android:id="@+id/tokensText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="534 tokena"
+                        android:text="0 tokena"
                         android:textStyle="bold"
                         android:textColor="@color/white"
                         android:textSize="14sp" />
@@ -127,6 +128,7 @@
                         android:background="@color/blue_light" />
 
                     <TextView
+                        android:id="@+id/rankText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Rank"
@@ -151,6 +153,7 @@
                         android:background="@color/purple_light" />
 
                     <TextView
+                        android:id="@+id/starsText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Broj zvezdica"
@@ -175,6 +178,7 @@
                         android:background="@color/purple_light" />
 
                     <TextView
+                        android:id="@+id/leagueText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Liga"
@@ -198,6 +202,7 @@
                         android:background="@color/blue_light" />
 
                     <TextView
+                        android:id="@+id/regionText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Region"

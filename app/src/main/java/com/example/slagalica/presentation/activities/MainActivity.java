@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
 
         // 1. Test Profile
         UserProfile testProfile = new UserProfile(
-                testUserId, "FirebaseTester", "test@example.com", "avatar_url", 100, 10, "Gold", "Global", "qr_code_data"
+                testUserId, "FirebaseTester", "test@example.com", "avatar_url", 100, 10, "Gold", "Global", "qr_code_data", 42
         );
 
         userProfileRepository.saveProfile(testProfile)
