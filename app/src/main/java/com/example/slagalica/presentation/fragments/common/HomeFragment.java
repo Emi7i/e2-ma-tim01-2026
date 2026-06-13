@@ -59,6 +59,7 @@ public class HomeFragment extends Fragment {
         });
 
         binding.mojBroj.setOnClickListener(v -> {
+            matchViewModel.startMojBroj();
             FragmentTransition.to(new MojBrojFragment(), requireActivity(), true, R.id.appContainer);
         });
 

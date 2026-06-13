@@ -7,7 +7,9 @@ import androidx.lifecycle.ViewModel;
 import com.example.slagalica.domain.model.match.games.common.GameSession;
 import com.example.slagalica.domain.model.match.games.common.IGame;
 import com.example.slagalica.domain.model.match.games.korakpokorak.KorakPoKorak;
+import com.example.slagalica.domain.model.match.games.mojbroj.MojBroj;
 import com.example.slagalica.domain.service.match.KorakPoKorakService;
+import com.example.slagalica.domain.service.match.MojBrojService;
 
 import javax.inject.Inject;
 
@@ -17,6 +19,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel;
 public class MatchViewModel extends ViewModel {
     private final MutableLiveData<IGame> currentGame = new MutableLiveData<>();
     private final KorakPoKorakService korakPoKorakService;
+    private final MojBrojService mojBrojService;
 
     // MOCKED FOR NOW
     long matchId = 1;
@@ -25,9 +28,11 @@ public class MatchViewModel extends ViewModel {
 
     @Inject
     public MatchViewModel(
-            KorakPoKorakService korakPoKorakService
+            KorakPoKorakService korakPoKorakService,
+            MojBrojService mojBrojService
     ) {
         this.korakPoKorakService = korakPoKorakService;
+        this.mojBrojService = mojBrojService;
     }
 
     private final MutableLiveData<Boolean> isGameActive = new MutableLiveData<>(false);
@@ -51,6 +56,14 @@ public class MatchViewModel extends ViewModel {
     public void startKorakPoKorak() {
         GameSession session = new GameSession(matchId, player1Id, player2Id);
         KorakPoKorak game = new KorakPoKorak(session, korakPoKorakService);
+        game.setOnActivePlayerChangedListener(this::onActivePlayerChanged);
+        game.setOnPointsChangedListener(this::onPointsChanged);
+        currentGame.setValue(game);
+    }
+
+    public void startMojBroj() {
+        GameSession session = new GameSession(matchId, player1Id, player2Id);
+        MojBroj game = new MojBroj(session, mojBrojService);
         game.setOnActivePlayerChangedListener(this::onActivePlayerChanged);
         game.setOnPointsChangedListener(this::onPointsChanged);
         currentGame.setValue(game);

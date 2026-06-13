@@ -16,6 +16,7 @@ import android.widget.Button;
 import android.widget.EditText;
 
 import com.example.slagalica.databinding.FragmentGameMojBrojBinding;
+import com.example.slagalica.domain.model.match.games.mojbroj.MojBroj;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 import com.example.slagalica.presentation.viewmodels.MojBrojViewModel;
 
@@ -71,6 +72,8 @@ public class MojBrojFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         matchViewModel.setGameActive(false);
+        handler.removeCallbacksAndMessages(null);
+        binding = null;
     }
 
     private final Runnable spinGoalRunnable = new Runnable() {
@@ -90,40 +93,96 @@ public class MojBrojFragment extends Fragment {
     };
 
     private void observeViewModel() {
-        gameViewModel.getIsCorrect().observe(getViewLifecycleOwner(), isCorrect -> {
-            if (isCorrect) finishGame();
+        matchViewModel.getCurrentGame().observe(getViewLifecycleOwner(), igame -> {
+            if (igame instanceof MojBroj) {
+                gameViewModel.start((MojBroj) igame);
+            }
         });
 
         gameViewModel.getIsGoalSpinning().observe(getViewLifecycleOwner(), isSpinning -> {
             if (isSpinning) {
+                resetRoundUi();
                 handler.post(spinGoalRunnable);
             } else {
                 handler.removeCallbacks(spinGoalRunnable);
+                setGoalNumber();
             }
         });
 
         gameViewModel.getAreOperandsSpinning().observe(getViewLifecycleOwner(), isSpinning -> {
             if (isSpinning) {
+                binding.stopSpinning.setVisibility(View.VISIBLE);
                 handler.post(spinOperandsRunnable);
             } else {
+                handler.removeCallbacks(spinOperandsRunnable);
+                setOperands();
                 binding.stopSpinning.setVisibility(View.INVISIBLE);
                 binding.confirmButton.setVisibility(View.VISIBLE);
                 binding.backspaceButton.setEnabled(true);
-                handler.removeCallbacks(spinOperandsRunnable);
+                for (Button btn : operandButtons) btn.setEnabled(true);
+                for (Button btn : operatorButtons) btn.setEnabled(true);
+                binding.myAnswer.setEnabled(true);
             }
+
+            gameViewModel.getRoundOver().observe(getViewLifecycleOwner(), over -> {
+                if (over) showRoundResults();
+            });
+
+            gameViewModel.getTimeLeft().observe(getViewLifecycleOwner(), timeLeft -> {
+                com.example.slagalica.presentation.views.GameHeaderView gameHeader = requireActivity().findViewById(com.example.slagalica.R.id.gameHeader);
+                if (gameHeader != null && timeLeft != null) {
+                    gameHeader.setTimer(String.format("00:%02d", timeLeft));
+                }
+            });
+
+            gameViewModel.getGameOver().observe(getViewLifecycleOwner(), over -> {
+                if (over) {
+                    // TODO: notify Match / navigate to next game
+                }
+            });
         });
     }
 
-    private void finishGame() {
+    private void resetRoundUi() {
+        tokens.clear();
+        usedOperandStack.clear();
+        binding.myAnswer.setText("");
+        binding.opponentLayout.setVisibility(View.INVISIBLE);
+        binding.confirmButton.setVisibility(View.INVISIBLE);
+        binding.stopSpinning.setVisibility(View.INVISIBLE);
+        binding.backspaceButton.setEnabled(false);
+        binding.myAnswer.setEnabled(false);
+        for (Button btn : operandButtons) {
+            btn.setEnabled(false);
+            btn.setText("");
+        }
+        for (Button btn : operatorButtons) btn.setEnabled(false);
+        binding.goalNumber.setText("");
+        binding.myNumber.setText("");
+        binding.opponentNumber.setText("");
+        binding.opponentAnswer.setText("");
+    }
+
+    private void showRoundResults() {
         binding.opponentNumber.setText(String.valueOf(gameViewModel.getOpponentNumber()));
         binding.myNumber.setText(String.valueOf(gameViewModel.getMyNumber()));
-        binding.opponentAnswer.setText(String.valueOf(gameViewModel.getOpponentAnswer()));
+        binding.opponentAnswer.setText(gameViewModel.getOpponentAnswer());
         binding.myAnswer.setEnabled(false);
         binding.backspaceButton.setEnabled(false);
         binding.opponentLayout.setVisibility(View.VISIBLE);
         binding.confirmButton.setVisibility(View.INVISIBLE);
+        binding.stopSpinning.setVisibility(View.INVISIBLE);
         for (Button btn : operandButtons) btn.setEnabled(false);
         for (Button btn : operatorButtons) btn.setEnabled(false);
+
+        // brief pause to let the player see results, then advance
+        handler.postDelayed(() -> {
+            if (gameViewModel.getGame().hasEnded()) {
+                // game over handled via getGameOver()
+            } else {
+                gameViewModel.nextRound();
+            }
+        }, 3000);
     }
 
     private void setupListeners() {
@@ -199,14 +258,15 @@ public class MojBrojFragment extends Fragment {
 //        gameViewModel.stopGoalSpinning();
     }
 
-    private void setOperands(){
-        binding.digit1.setText(String.valueOf(gameViewModel.getSingleDigits()[0]));
-        binding.digit2.setText(String.valueOf(gameViewModel.getSingleDigits()[1]));
-        binding.digit3.setText(String.valueOf(gameViewModel.getSingleDigits()[2]));
-        binding.digit4.setText(String.valueOf(gameViewModel.getSingleDigits()[3]));
-        binding.doubleDigit1.setText(String.valueOf(gameViewModel.getDoubleDigits()[0]));
-        binding.doubleDigit2.setText(String.valueOf(gameViewModel.getDoubleDigits()[1]));
-
-//        gameViewModel.stopDigitsSpinning();
+    private void setOperands() {
+        List<Integer> single = gameViewModel.getSingleDigits();
+        List<Integer> doubleDigits = gameViewModel.getDoubleDigits();
+        if (single.size() < 4 || doubleDigits.size() < 2) return;
+        binding.digit1.setText(String.valueOf(single.get(0)));
+        binding.digit2.setText(String.valueOf(single.get(1)));
+        binding.digit3.setText(String.valueOf(single.get(2)));
+        binding.digit4.setText(String.valueOf(single.get(3)));
+        binding.doubleDigit1.setText(String.valueOf(doubleDigits.get(0)));
+        binding.doubleDigit2.setText(String.valueOf(doubleDigits.get(1)));
     }
 }
