@@ -56,17 +56,23 @@
                 android:layout_marginBottom="24dp">
 
                 <FrameLayout
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/circular_profile_background">
+                    android:layout_width="80dp"
+                    android:layout_height="80dp">
 
                     <ImageView
                         android:id="@+id/avatar"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
+                        android:layout_width="35dp"
+                        android:layout_height="35dp"
+                        android:layout_gravity="center"
                         android:background="@drawable/profile_icon"
                         android:scaleType="centerCrop"
                         android:contentDescription="@string/profile_avatar" />
+
+                    <ImageView
+                        android:id="@+id/leagueBorder"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="fitCenter" />
 
                 </FrameLayout>
 

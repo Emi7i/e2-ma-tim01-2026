@@ -57,6 +57,8 @@ public class ProfileFragment extends Fragment {
                 binding.regionText.setText(String.format("Region: %s", profile.getRegion()));
                 binding.rankText.setText(String.format("Rank: %d", profile.getRank()));
 
+                updateLeagueVisuals(profile);
+
                 if (profile.getAvatar() != null && !profile.getAvatar().isEmpty()) {
                     Glide.with(this)
                             .load(profile.getAvatar())
@@ -76,6 +78,30 @@ public class ProfileFragment extends Fragment {
                 // Show error message
             }
         });
+    }
+
+    private void updateLeagueVisuals(com.example.slagalica.domain.model.profile.UserProfile profile) {
+        String league = profile.getLeague().toLowerCase();
+        
+        // 1. Set League Border
+        int borderResId = getResources().getIdentifier("league_border_" + league, "drawable", requireContext().getPackageName());
+        if (borderResId != 0) {
+            binding.leagueBorder.setImageResource(borderResId);
+        } else {
+            // Default border or shape if image not found
+            binding.leagueBorder.setImageResource(R.drawable.circular_profile_background);
+        }
+
+        // 2. Set League Badge/Icon
+        int badgeResId = getResources().getIdentifier("league_badge_" + league, "drawable", requireContext().getPackageName());
+        if (badgeResId != 0) {
+            binding.leagueIcon.setImageResource(badgeResId);
+        }
+
+        // 3. Set Static Icons
+        binding.starsIcon.setImageResource(R.drawable.icon_stars);
+        binding.rankIcon.setImageResource(R.drawable.icon_rank);
+        binding.regionIcon.setImageResource(R.drawable.icon_region);
     }
 
     private void setupClickListeners() {

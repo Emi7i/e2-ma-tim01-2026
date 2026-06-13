@@ -54,6 +54,9 @@ public class StatisticsFragment extends Fragment {
         profileViewModel.getUserProfile().observe(getViewLifecycleOwner(), profile -> {
             if (profile != null) {
                 binding.username.setText(profile.getUsername());
+                
+                updateLeagueVisuals(profile);
+
                 if (profile.getAvatar() != null && !profile.getAvatar().isEmpty()) {
                     Glide.with(this)
                             .load(profile.getAvatar())
@@ -70,6 +73,18 @@ public class StatisticsFragment extends Fragment {
                 updateUI(stats);
             }
         });
+    }
+
+    private void updateLeagueVisuals(com.example.slagalica.domain.model.profile.UserProfile profile) {
+        String league = profile.getLeague().toLowerCase();
+        
+        // Set League Border for mini-avatar
+        int borderResId = getResources().getIdentifier("league_border_" + league, "drawable", requireContext().getPackageName());
+        if (borderResId != 0) {
+            binding.leagueBorder.setImageResource(borderResId);
+        } else {
+            binding.leagueBorder.setImageResource(R.drawable.circular_profile_background);
+        }
     }
 
     private void updateUI(com.example.slagalica.domain.model.progression.UserStatistics stats) {
