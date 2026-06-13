@@ -17,6 +17,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel;
 public class KoZnaZnaViewModel extends ViewModel {
 
     private final KoZnaZnaRepository repository;
+    private final com.example.slagalica.repository.impl.UserStatisticsRepository statsRepository;
+    private static final String MOCK_USER_ID = "test_user_123";
     
     private final MutableLiveData<List<KoZnaZna>> questions = new MutableLiveData<>();
     private final MutableLiveData<Integer> currentQuestionIndex = new MutableLiveData<>(-1);
@@ -42,12 +44,15 @@ public class KoZnaZnaViewModel extends ViewModel {
     
     private String player1Answer = null;
     private long player1Time = Long.MAX_VALUE;
+    private int player1TotalScore = 0;
+    private int player1CorrectCount = 0;
     private String player2Answer = null;
     private long player2Time = Long.MAX_VALUE;
 
     @Inject
-    public KoZnaZnaViewModel(KoZnaZnaRepository repository) {
+    public KoZnaZnaViewModel(KoZnaZnaRepository repository, com.example.slagalica.repository.impl.UserStatisticsRepository statsRepository) {
         this.repository = repository;
+        this.statsRepository = statsRepository;
         loadQuestions();
     }
 
@@ -136,7 +141,32 @@ public class KoZnaZnaViewModel extends ViewModel {
             startPlayerTurn(1);
         } else if (questionList != null) {
             gameFinished.postValue(true);
+            updateUserStatistics();
         }
+    }
+
+    private void updateUserStatistics() {
+        statsRepository.getStatistics(MOCK_USER_ID).thenAccept(stats -> {
+            if (stats != null) {
+                stats.setGamesPlayed(stats.getGamesPlayed() + 1);
+                
+                // Accuracy Update
+                long newTotal = stats.getKoZnaZnaTotal() + (questions.getValue() != null ? questions.getValue().size() : 0);
+                long newCorrect = stats.getKoZnaZnaCorrect() + player1CorrectCount;
+                stats.setKoZnaZnaTotal(newTotal);
+                stats.setKoZnaZnaCorrect(newCorrect);
+                if (newTotal > 0) {
+                    stats.setKoZnaZna((double) newCorrect / newTotal * 100.0);
+                }
+                
+                stats.calculateOverallStats();
+                
+                if (player1TotalScore > 0) {
+                    stats.setWonGames(stats.getWonGames() + 1);
+                }
+                statsRepository.saveStatistics(stats);
+            }
+        });
     }
 
     private void startPlayerTurn(int player) {
@@ -198,6 +228,7 @@ public class KoZnaZnaViewModel extends ViewModel {
         if (q != null) {
             String correct = q.getCorrectAnswer();
             boolean p1Correct = correct.equalsIgnoreCase(player1Answer);
+            if (p1Correct) player1CorrectCount++;
             boolean p2Correct = correct.equalsIgnoreCase(player2Answer);
             
             int p1D = 0;
@@ -221,6 +252,9 @@ public class KoZnaZnaViewModel extends ViewModel {
             player2Delta.postValue(p2D);
             player1AnswerLiveData.postValue(player1Answer);
             player2AnswerLiveData.postValue(player2Answer);
+            
+            player1TotalScore += p1D;
+            score.postValue(player1TotalScore);
         }
         
         revealingAnswer.postValue(true);

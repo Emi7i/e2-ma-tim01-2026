@@ -53,7 +53,8 @@ public class FirebaseSeeder {
 
         // 2. Test Statistics
         UserStatistics testStats = new UserStatistics(
-                testUserId, 85.5, 90.0, 75.0, 80.0, 95.0, 88.0, 82.0, 50, 30
+                testUserId, 85.5, 90.0, 75.0, 80.0, 95.0, 88.0, 82.0, 50, 30,
+                100, 90, 100, 75, 100, 80, 100, 95, 100, 88, 100, 82
         );
 
         userStatisticsRepository.saveStatistics(testStats)

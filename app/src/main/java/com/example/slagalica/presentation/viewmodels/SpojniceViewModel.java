@@ -23,6 +23,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel;
 public class SpojniceViewModel extends ViewModel {
 
     private final SpojniceRepository repository;
+    private final com.example.slagalica.repository.impl.UserStatisticsRepository statsRepository;
+    private static final String MOCK_USER_ID = "test_user_123";
     
     private final MutableLiveData<List<Spojnice>> allSpojnice = new MutableLiveData<>();
     private final MutableLiveData<Integer> currentRound = new MutableLiveData<>(1);
@@ -45,11 +47,14 @@ public class SpojniceViewModel extends ViewModel {
     private final MutableLiveData<Boolean> waitingForNextPlayer = new MutableLiveData<>(false);
 
     private CountDownTimer timer;
+    private int player1TotalScore = 0;
+    private int player1CorrectAccumulated = 0;
     private final Map<String, String> pairMap = new HashMap<>(); // Question -> Answer
 
     @Inject
-    public SpojniceViewModel(SpojniceRepository repository) {
+    public SpojniceViewModel(SpojniceRepository repository, com.example.slagalica.repository.impl.UserStatisticsRepository statsRepository) {
         this.repository = repository;
+        this.statsRepository = statsRepository;
         loadData();
     }
 
@@ -175,6 +180,8 @@ public class SpojniceViewModel extends ViewModel {
                 if (matches == null) matches = new HashMap<>();
                 matches.put(leftIdx, rightIndex);
                 player1Matches.postValue(matches);
+                player1TotalScore += SpojniceConfig.POINTS_PER_MATCH;
+                player1CorrectAccumulated++;
                 p1ScoreDelta.postValue(SpojniceConfig.POINTS_PER_MATCH);
             } else {
                 Map<Integer, Integer> matches = player2Matches.getValue();
@@ -280,7 +287,38 @@ public class SpojniceViewModel extends ViewModel {
             }, 2000);
         } else {
             gameFinished.postValue(true);
+            updateUserStatistics();
         }
+    }
+
+    private void updateUserStatistics() {
+        statsRepository.getStatistics(MOCK_USER_ID).thenAccept(stats -> {
+            if (stats != null) {
+                stats.setGamesPlayed(stats.getGamesPlayed() + 1);
+                
+                // Accuracy Update: Each pair in Spojnice is a 'question'
+                // Total questions = ROUNDS_COUNT * TERMS_COUNT
+                long roundQuestions = SpojniceConfig.TERMS_COUNT * SpojniceConfig.ROUNDS_COUNT;
+                long roundCorrect = player1Matches.getValue() != null ? player1Matches.getValue().size() : 0;
+                // Wait, player1Matches is cleared each round in setupRoundData. 
+                // I need to accumulate it.
+                
+                long newTotal = stats.getSpojniceTotal() + roundQuestions;
+                long newCorrect = stats.getSpojniceCorrect() + player1CorrectAccumulated;
+                stats.setSpojniceTotal(newTotal);
+                stats.setSpojniceCorrect(newCorrect);
+                if (newTotal > 0) {
+                    stats.setSpojnice((double) newCorrect / newTotal * 100.0);
+                }
+                
+                stats.calculateOverallStats();
+                
+                if (player1TotalScore > 0) {
+                    stats.setWonGames(stats.getWonGames() + 1);
+                }
+                statsRepository.saveStatistics(stats);
+            }
+        });
     }
 
     public void startSecondPlayerTurn() {
