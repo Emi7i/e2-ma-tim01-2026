@@ -71,24 +71,17 @@ public class KoZnaZnaViewModel extends ViewModel {
     private void loadQuestions() {
         isLoading.setValue(true);
         repository.getRandomQuestions(KoZnaZnaConfig.QUESTIONS_COUNT).thenAccept(loadedQuestions -> {
-            List<KoZnaZna> questionsToUse = loadedQuestions;
-            if (questionsToUse == null || questionsToUse.isEmpty()) {
-                android.util.Log.w("KoZnaZnaViewModel", "No questions in Firestore, seeding data...");
-                List<KoZnaZna> demoQuestions = new com.example.slagalica.domain.service.match.KoZnaZnaDemoFactory().createDemoQuestions();
-                repository.seedData(demoQuestions).thenAccept(v -> {
-                    android.util.Log.d("KoZnaZnaViewModel", "Data seeded successfully");
-                }).exceptionally(ex -> {
-                    android.util.Log.e("KoZnaZnaViewModel", "Error seeding data", ex);
-                    return null;
-                });
-                questionsToUse = demoQuestions;
+            if (loadedQuestions == null || loadedQuestions.isEmpty()) {
+                android.util.Log.e("KoZnaZnaViewModel", "No questions found in Firestore!");
+                isLoading.postValue(false);
+                return;
             }
             
             // Shuffle all available questions
-            java.util.Collections.shuffle(questionsToUse);
+            java.util.Collections.shuffle(loadedQuestions);
             
             // Limit to QUESTIONS_COUNT defined in config
-            final List<KoZnaZna> finalQuestions = questionsToUse.subList(0, Math.min(KoZnaZnaConfig.QUESTIONS_COUNT, questionsToUse.size()));
+            final List<KoZnaZna> finalQuestions = loadedQuestions.subList(0, Math.min(KoZnaZnaConfig.QUESTIONS_COUNT, loadedQuestions.size()));
             
             android.util.Log.d("KoZnaZnaViewModel", "Starting game with " + finalQuestions.size() + " shuffled questions");
             questions.postValue(finalQuestions);
@@ -99,14 +92,6 @@ public class KoZnaZnaViewModel extends ViewModel {
         }).exceptionally(ex -> {
             android.util.Log.e("KoZnaZnaViewModel", "Error loading questions", ex);
             isLoading.postValue(false);
-            
-            List<KoZnaZna> demoQuestions = new com.example.slagalica.domain.service.match.KoZnaZnaDemoFactory().createDemoQuestions();
-            java.util.Collections.shuffle(demoQuestions);
-            List<KoZnaZna> finalQuestions = demoQuestions.subList(0, Math.min(KoZnaZnaConfig.QUESTIONS_COUNT, demoQuestions.size()));
-            
-            questions.postValue(finalQuestions);
-            android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-            mainHandler.post(() -> startWithQuestions(finalQuestions));
             return null;
         });
     }

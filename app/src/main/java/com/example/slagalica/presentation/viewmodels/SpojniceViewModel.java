@@ -73,14 +73,17 @@ public class SpojniceViewModel extends ViewModel {
         isLoading.setValue(true);
         repository.getRandomSpojnice(SpojniceConfig.ROUNDS_COUNT).thenAccept(loaded -> {
             if (loaded == null || loaded.isEmpty()) {
-                Log.w("SpojniceViewModel", "No data in Firestore, seeding...");
-                List<Spojnice> demo = new SpojniceDemoFactory().createDemoSpojnice();
-                repository.seedData(demo);
-                loaded = demo.subList(0, Math.min(SpojniceConfig.ROUNDS_COUNT, demo.size()));
+                Log.e("SpojniceViewModel", "No data found in Firestore!");
+                isLoading.postValue(false);
+                return;
             }
             allSpojnice.postValue(loaded);
             isLoading.postValue(false);
             startRound(1, loaded);
+        }).exceptionally(ex -> {
+            Log.e("SpojniceViewModel", "Error loading Spojnice data", ex);
+            isLoading.postValue(false);
+            return null;
         });
     }
 
