@@ -60,29 +60,6 @@ public class FirebaseSeeder {
     }
 
     public void seedTestData() {
-        String testUserId = "test_user_123";
-
-        // 1. Test Profile
-        UserProfile testProfile = new UserProfile(
-                testUserId, "Bugcat", "bug@cat.com",
-                "https://media1.tenor.com/m/kqLCp6Ow_dQAAAAd/bug-cat-capoo-blue.gif",  // BUGCAT!!!!!!!! DO NOT TOUCH
-                100L, 10L, "Gold", "Global", "qr_code_data", 42L
-        );
-
-        userProfileRepository.saveProfile(testProfile)
-                .thenAccept(aVoid -> Log.d("FirebaseSeeder", "SUCCESS: Profile created!"))
-                .exceptionally(e -> { Log.e("FirebaseSeeder", "FAIL: Profile", e); return null; });
-
-        // 2. Test Statistics
-        UserStatistics testStats = new UserStatistics(
-                testUserId, 85.5, 90.0, 75.0, 80.0, 95.0, 88.0, 82.0, 50L, 30L,
-                100L, 90L, 100L, 75L, 100L, 80L, 100L, 95L, 100L, 88L, 100L, 82L
-        );
-
-        userStatisticsRepository.saveStatistics(testStats)
-                .thenAccept(aVoid -> Log.d("FirebaseSeeder", "SUCCESS: Statistics created!"))
-                .exceptionally(e -> { Log.e("FirebaseSeeder", "FAIL: Statistics", e); return null; });
-
         // 3. KoZnaZna Questions
         koZnaZnaRepository.getAllKoZnaZna().thenAccept(questions -> {
             if (questions.isEmpty()) {
