@@ -77,6 +77,11 @@ public class RegisterFragment extends Fragment {
             return;
         }
 
+        if (password.length() < 6) {
+            Toast.makeText(getContext(), "Lozinka mora imati najmanje 6 karaktera.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         RegistrationDTO dto = new RegistrationDTO(email, username, region, password, repeatedPassword);
 
         binding.registerButton.setEnabled(false);
@@ -93,7 +98,8 @@ public class RegisterFragment extends Fragment {
                 .exceptionally(ex -> {
                     requireActivity().runOnUiThread(() -> {
                         binding.registerButton.setEnabled(true);
-                        Toast.makeText(getContext(), "Registracija neuspešna: " + ex.getMessage(), Toast.LENGTH_LONG).show();
+                        Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+                        Toast.makeText(getContext(), "Registracija neuspešna: " + cause.getMessage(), Toast.LENGTH_LONG).show();
                     });
                     return null;
                 });

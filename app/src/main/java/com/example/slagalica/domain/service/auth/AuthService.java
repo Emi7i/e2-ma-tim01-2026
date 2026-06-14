@@ -43,7 +43,7 @@ public class AuthService {
     public CompletableFuture<Void> registerUser(RegistrationDTO dto) {
         if (!dto.getPassword().equals(dto.getRepeatedPassword())) {
             CompletableFuture<Void> failed = new CompletableFuture<>();
-            failed.completeExceptionally(new IllegalArgumentException("Passwords do not match"));
+            failed.completeExceptionally(new IllegalArgumentException("Šifre nisu iste"));
             return failed;
         }
 
@@ -51,7 +51,7 @@ public class AuthService {
                 .thenCompose(existing -> {
                     if (existing != null) {
                         CompletableFuture<Void> failed = new CompletableFuture<>();
-                        failed.completeExceptionally(new IllegalArgumentException("Username already taken"));
+                        failed.completeExceptionally(new IllegalArgumentException("Username već postoji"));
                         return failed;
                     }
 
@@ -60,7 +60,7 @@ public class AuthService {
                                 FirebaseUser firebaseUser = authResult.getUser();
                                 if (firebaseUser == null) {
                                     CompletableFuture<Void> failed = new CompletableFuture<>();
-                                    failed.completeExceptionally(new IllegalStateException("Registration failed: no user returned"));
+                                    failed.completeExceptionally(new IllegalStateException("Neuspešna registracija. Šta?"));
                                     return failed;
                                 }
 
@@ -97,7 +97,7 @@ public class AuthService {
                 .thenCompose(profile -> {
                     if (profile == null) {
                         CompletableFuture<AuthResult> failed = new CompletableFuture<>();
-                        failed.completeExceptionally(new IllegalStateException("User not found"));
+                        failed.completeExceptionally(new IllegalStateException("Korisnik ne posotji"));
                         return failed;
                     }
                     return signIn(profile.getEmail(), dto.getPassword());
@@ -115,14 +115,14 @@ public class AuthService {
     public CompletableFuture<Void> resetPassword(ResetPasswordDTO dto) {
         if (!dto.getNewPassword().equals(dto.getRepeatedNewPassword())) {
             CompletableFuture<Void> failed = new CompletableFuture<>();
-            failed.completeExceptionally(new IllegalArgumentException("New passwords do not match"));
+            failed.completeExceptionally(new IllegalArgumentException("Šifre nisu iste"));
             return failed;
         }
 
         FirebaseUser user = firebaseAuth.getCurrentUser();
         if (user == null || user.getEmail() == null) {
             CompletableFuture<Void> failed = new CompletableFuture<>();
-            failed.completeExceptionally(new IllegalStateException("No logged-in user"));
+            failed.completeExceptionally(new IllegalStateException("Niste ulogovani"));
             return failed;
         }
 
