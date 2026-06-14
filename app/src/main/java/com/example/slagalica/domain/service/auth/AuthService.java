@@ -4,7 +4,9 @@ import com.example.slagalica.domain.model.auth.LoginDTO;
 import com.example.slagalica.domain.model.auth.RegistrationDTO;
 import com.example.slagalica.domain.model.auth.ResetPasswordDTO;
 import com.example.slagalica.domain.model.profile.UserProfile;
+import com.example.slagalica.domain.model.progression.UserStatistics;
 import com.example.slagalica.repository.impl.UserProfileRepository;
+import com.example.slagalica.repository.impl.UserStatisticsRepository;
 import com.example.slagalica.util.AsyncUtils;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
@@ -27,11 +29,15 @@ public class AuthService {
 
     private final FirebaseAuth firebaseAuth;
     private final UserProfileRepository userProfileRepository;
+    private final UserStatisticsRepository userStatisticsRepository;
 
     @Inject
-    public AuthService(FirebaseAuth firebaseAuth, UserProfileRepository userProfileRepository) {
+    public AuthService(FirebaseAuth firebaseAuth,
+                       UserProfileRepository userProfileRepository,
+                       UserStatisticsRepository userStatisticsRepository) {
         this.firebaseAuth = firebaseAuth;
         this.userProfileRepository = userProfileRepository;
+        this.userStatisticsRepository = userStatisticsRepository;
     }
 
     /**
@@ -79,6 +85,9 @@ public class AuthService {
                                         null,
                                         DEFAULT_RANK
                                 );
+
+                                UserStatistics stats = new UserStatistics(firebaseUser.getUid());
+                                userStatisticsRepository.saveStatistics(stats);
 
                                 return userProfileRepository.saveProfile(profile);
                             });

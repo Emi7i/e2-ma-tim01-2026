@@ -45,6 +45,10 @@ public class SessionManager {
                 .exceptionally(ex -> { currentProfile.postValue(null); return null; });
     }
 
+    public String getCurrentUserId() {
+        return firebaseAuth.getCurrentUser() != null ? firebaseAuth.getCurrentUser().getUid() : null;
+    }
+
     public void clear() {
         firebaseAuth.signOut();
         currentProfile.postValue(null);
