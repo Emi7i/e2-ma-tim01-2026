@@ -123,23 +123,23 @@ public class MojBrojFragment extends Fragment {
                 for (Button btn : operatorButtons) btn.setEnabled(true);
                 binding.myAnswer.setEnabled(true);
             }
+        });
 
-            gameViewModel.getRoundOver().observe(getViewLifecycleOwner(), over -> {
-                if (over) showRoundResults();
-            });
+        gameViewModel.getRoundOver().observe(getViewLifecycleOwner(), over -> {
+            if (over) showRoundResults();
+        });
 
-            gameViewModel.getTimeLeft().observe(getViewLifecycleOwner(), timeLeft -> {
-                com.example.slagalica.presentation.views.GameHeaderView gameHeader = requireActivity().findViewById(com.example.slagalica.R.id.gameHeader);
-                if (gameHeader != null && timeLeft != null) {
-                    gameHeader.setTimer(String.format("00:%02d", timeLeft));
-                }
-            });
+        gameViewModel.getTimeLeft().observe(getViewLifecycleOwner(), timeLeft -> {
+            com.example.slagalica.presentation.views.GameHeaderView gameHeader = requireActivity().findViewById(com.example.slagalica.R.id.gameHeader);
+            if (gameHeader != null && timeLeft != null) {
+                gameHeader.setTimer(String.format("00:%02d", timeLeft));
+            }
+        });
 
-            gameViewModel.getGameOver().observe(getViewLifecycleOwner(), over -> {
-                if (over) {
-                    // TODO: notify Match / navigate to next game
-                }
-            });
+        gameViewModel.getGameOver().observe(getViewLifecycleOwner(), over -> {
+            if (over) {
+                // TODO: notify Match / navigate to next game
+            }
         });
     }
 
@@ -149,7 +149,7 @@ public class MojBrojFragment extends Fragment {
         binding.myAnswer.setText("");
         binding.opponentLayout.setVisibility(View.INVISIBLE);
         binding.confirmButton.setVisibility(View.INVISIBLE);
-        binding.stopSpinning.setVisibility(View.INVISIBLE);
+        binding.stopSpinning.setVisibility(View.VISIBLE);
         binding.backspaceButton.setEnabled(false);
         binding.myAnswer.setEnabled(false);
         for (Button btn : operandButtons) {
@@ -230,11 +230,9 @@ public class MojBrojFragment extends Fragment {
 
     private void stopSpinning(){
         if(Boolean.TRUE.equals(gameViewModel.getIsGoalSpinning().getValue())){
-            // TODO: save goal to db...
             gameViewModel.stopGoalSpinning();
         }
         else{
-            // TODO: save operands to db...
             gameViewModel.stopOperandsSpinning();
         }
     }

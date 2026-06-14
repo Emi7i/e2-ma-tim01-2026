@@ -13,7 +13,7 @@ import lombok.Getter;
 
 public class MojBroj extends AbstractGame {
 
-    private static final int ROUND_LENGTH = 60;
+    private static final int ROUND_LENGTH = 10;
     private static final int ROUNDS = 2;
     private static final int MAX_POINTS = 20;
     private static final int MIN_POINTS = 0;

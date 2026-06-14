@@ -84,7 +84,7 @@ public class MojBrojViewModel extends ViewModel {
         opponentNumber = 0;
 
         isGoalSpinning.postValue(true);
-        areOperandsSpinning.postValue(false);
+        areOperandsSpinning.postValue(true);
         isCorrect.postValue(false);
         roundOver.postValue(false);
 
