@@ -38,4 +38,5 @@
     <string name="moj_broj_stop">Zaustavi</string>
     <string name="opponent">Protivnik</string>
     <string name="backspace_text">Backspace</string>
+    <string name="register_region_hint">Region</string>
 </resources>

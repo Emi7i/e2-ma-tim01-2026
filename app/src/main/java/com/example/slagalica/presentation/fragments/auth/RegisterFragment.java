@@ -10,6 +10,8 @@ import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 
 import com.example.slagalica.R;
 import com.example.slagalica.databinding.FragmentAuthRegisterBinding;
@@ -38,6 +40,12 @@ public class RegisterFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        ArrayAdapter<String> regionAdapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_dropdown_item_1line,
+                getResources().getStringArray(R.array.regions)); // TODO: get from elsewhere
+        ((AutoCompleteTextView) binding.regionInput).setAdapter(regionAdapter);
+
         // Listeners
         binding.registerButton.setOnClickListener(v -> {
             // TODO: add auth logic
@@ -48,6 +56,7 @@ public class RegisterFragment extends Fragment {
         binding.loginLink.setOnClickListener(v -> {
             FragmentTransition.to(new LoginFragment(), requireActivity(), true, R.id.main);
         });
+
     }
 
     @Override
