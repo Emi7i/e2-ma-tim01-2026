@@ -35,6 +35,31 @@ public class UserStatistics {
     private long spojniceTotal;
     private long spojniceCorrect;
 
+    public UserStatistics(String userId) {
+        this.userId = userId;
+        this.overallStats = 0;
+        this.koZnaZna = 0;
+        this.mojBroj = 0;
+        this.korakPoKorak = 0;
+        this.asocijacije = 0;
+        this.skocko = 0;
+        this.spojnice = 0;
+        this.gamesPlayed = 0L;
+        this.wonGames = 0L;
+        this.koZnaZnaTotal = 0L;
+        this.koZnaZnaCorrect = 0L;
+        this.mojBrojTotal = 0L;
+        this.mojBrojCorrect = 0L;
+        this.korakPoKorakTotal = 0L;
+        this.korakPoKorakCorrect = 0L;
+        this.asocijacijeTotal = 0L;
+        this.asocijacijeCorrect = 0L;
+        this.skockoTotal = 0L;
+        this.skockoCorrect = 0L;
+        this.spojniceTotal = 0L;
+        this.spojniceCorrect = 0L;
+    }
+
     public void calculateOverallStats() {
         int count = 0;
         double sum = 0;
@@ -51,4 +76,6 @@ public class UserStatistics {
             overallStats = 0;
         }
     }
+
+
 }

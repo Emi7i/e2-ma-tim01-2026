@@ -39,4 +39,22 @@ public class FirestoreUserProfileRepository implements UserProfileRepository {
                 .addOnFailureListener(future::completeExceptionally);
         return future;
     }
+
+    @Override
+    public CompletableFuture<UserProfile> findByUsername(String username) {
+        CompletableFuture<UserProfile> future = new CompletableFuture<>();
+        db.collection(COLLECTION_USERS)
+                .whereEqualTo("username", username)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (!querySnapshot.isEmpty()) {
+                        future.complete(querySnapshot.getDocuments().get(0).toObject(UserProfile.class));
+                    } else {
+                        future.complete(null);
+                    }
+                })
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
+    }
 }

@@ -64,4 +64,22 @@
         android:textAlignment="textStart"
         android:padding="12dp"/>
 
+    <com.google.android.material.button.MaterialButton
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:id="@+id/reset_password"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/resetuj_ifru"
+        android:textAlignment="textStart"
+        android:padding="12dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:id="@+id/logout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/log_out"
+        android:textAlignment="textStart"
+        android:padding="12dp"/>
+
 </LinearLayout>

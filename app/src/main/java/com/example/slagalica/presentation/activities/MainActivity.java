@@ -5,6 +5,7 @@ import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.slagalica.domain.model.auth.SessionManager;
 import com.example.slagalica.domain.model.match.games.AsocijacijaColumnDocument;
 import com.example.slagalica.domain.model.match.games.AsocijacijaDocument;
 import com.example.slagalica.domain.model.match.games.KoZnaZna;
@@ -40,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
     @Inject SkockoContentRepository skockoContentRepository;
     @Inject NotificationsRepository notificationsRepository;
     @Inject FirebaseSeeder firebaseSeeder;
+    @Inject SessionManager sessionManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
         firebaseSeeder.seedTestData();
 
         if (isLoggedIn()) {
+            sessionManager.loadCurrentProfile();
             startActivity(new Intent(this, AppActivity.class));
         } else {
             startActivity(new Intent(this, AuthActivity.class));
@@ -56,6 +59,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean isLoggedIn(){
-        return false;
+        return sessionManager.isLoggedIn();
     }
 }

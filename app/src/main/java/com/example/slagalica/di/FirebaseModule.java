@@ -1,5 +1,6 @@
 package com.example.slagalica.di;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import dagger.Module;
 import dagger.Provides;
@@ -16,4 +17,11 @@ public class FirebaseModule {
     public FirebaseFirestore provideFirestore() {
         return FirebaseFirestore.getInstance();
     }
+
+    @Provides
+    @Singleton
+    public FirebaseAuth provideFirebaseAuth() {
+        return FirebaseAuth.getInstance();
+    }
+
 }
