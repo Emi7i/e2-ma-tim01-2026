@@ -50,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
         firebaseSeeder.seedTestData();
 
         if (isLoggedIn()) {
+            sessionManager.loadCurrentProfile();
             startActivity(new Intent(this, AppActivity.class));
         } else {
             startActivity(new Intent(this, AuthActivity.class));
