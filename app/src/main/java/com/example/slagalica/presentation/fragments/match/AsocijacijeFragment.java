@@ -232,7 +232,7 @@ public class AsocijacijeFragment extends Fragment {
         // Capture data on main thread
         int p1Score = matchViewModel.getPlayer1Score().getValue() != null ? matchViewModel.getPlayer1Score().getValue() : 0;
         int sessionPoints = p1Score - initialPlayer1Score;
-        long gameTotal = (long) (asocijacijeService.getCurrentRoundIndex() + 1) * 5;
+        long gameTotal = (long) (asocijacijeService.getCurrentRoundIndex() + 1);
         int gameCorrect = asocijacijeCorrectActions;
         boolean finalSolved = asocijacijeService.getCurrentRound().isFinalSolved();
 
@@ -429,10 +429,6 @@ public class AsocijacijeFragment extends Fragment {
             int currentPlayer = asocijacijeService.getCurrentRound().getGameState().getCurrentPlayer();
             AsocijacijeService.ActionResult result =
                     asocijacijeService.submitColumnSolution(columnIndex, editText.getText().toString());
-
-            if (result.isSuccess() && currentPlayer == 1) {
-                asocijacijeCorrectActions++;
-            }
 
             Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
 
