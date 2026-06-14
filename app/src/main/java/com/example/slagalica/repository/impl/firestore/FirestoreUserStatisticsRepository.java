@@ -22,7 +22,11 @@ public class FirestoreUserStatisticsRepository implements UserStatisticsReposito
         db.collection(COLLECTION_STATS).document(userId).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
-                        future.complete(documentSnapshot.toObject(UserStatistics.class));
+                        UserStatistics stats = documentSnapshot.toObject(UserStatistics.class);
+                        if (stats != null && stats.getUserId() == null) {
+                            stats.setUserId(documentSnapshot.getId());
+                        }
+                        future.complete(stats);
                     } else {
                         future.complete(null);
                     }

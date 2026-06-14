@@ -60,6 +60,55 @@ public class FirebaseSeeder {
     }
 
     public void seedTestData() {
+        String testUserId = "test_user_123";
+
+        // 1. Test Profile
+        userProfileRepository.getProfile(testUserId).thenAccept(profile -> {
+            if (profile == null) {
+                UserProfile testProfile = new UserProfile(
+                        testUserId, "Bugcat", "bug@cat.com",
+                        "https://media1.tenor.com/m/kqLCp6Ow_dQAAAAd/bug-cat-capoo-blue.gif",
+                        100L, 10L, "Gold", "Global", "qr_code_data", 42L
+                );
+                userProfileRepository.saveProfile(testProfile)
+                        .thenAccept(aVoid -> Log.d("FirebaseSeeder", "SUCCESS: Profile created!"))
+                        .exceptionally(e -> { Log.e("FirebaseSeeder", "FAIL: Profile", e); return null; });
+            }
+        });
+
+        // 2. Test Statistics
+        userStatisticsRepository.getStatistics(testUserId).thenAccept(stats -> {
+            if (stats == null) {
+                UserStatistics testStats = UserStatistics.createNew(testUserId);
+                testStats.setOverallStats(85.5);
+                testStats.setKoZnaZna(90.0);
+                testStats.setMojBroj(75.0);
+                testStats.setKorakPoKorak(80.0);
+                testStats.setAsocijacije(95.0);
+                testStats.setSkocko(88.0);
+                testStats.setSpojnice(82.0);
+                testStats.setGamesPlayed(50L);
+                testStats.setWonGames(30L);
+
+                testStats.setKoZnaZnaTotal(100L);
+                testStats.setKoZnaZnaCorrect(90L);
+                testStats.setMojBrojTotal(100L);
+                testStats.setMojBrojCorrect(75L);
+                testStats.setKorakPoKorakTotal(100L);
+                testStats.setKorakPoKorakCorrect(80L);
+                testStats.setAsocijacijeTotal(100L);
+                testStats.setAsocijacijeCorrect(95L);
+                testStats.setSkockoTotal(100L);
+                testStats.setSkockoCorrect(88L);
+                testStats.setSpojniceTotal(100L);
+                testStats.setSpojniceCorrect(82L);
+
+                userStatisticsRepository.saveStatistics(testStats)
+                        .thenAccept(aVoid -> Log.d("FirebaseSeeder", "SUCCESS: Statistics created!"))
+                        .exceptionally(e -> { Log.e("FirebaseSeeder", "FAIL: Statistics", e); return null; });
+            }
+        });
+
         // 3. KoZnaZna Questions
         koZnaZnaRepository.getAllKoZnaZna().thenAccept(questions -> {
             if (questions.isEmpty()) {

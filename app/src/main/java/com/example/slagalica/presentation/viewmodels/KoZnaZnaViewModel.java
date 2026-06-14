@@ -1,12 +1,17 @@
 package com.example.slagalica.presentation.viewmodels;
 
 import android.os.CountDownTimer;
+import android.util.Log;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import com.example.slagalica.domain.model.match.games.KoZnaZna;
 import com.example.slagalica.domain.model.config.KoZnaZnaConfig;
+import com.example.slagalica.domain.model.progression.UserStatistics;
 import com.example.slagalica.repository.impl.KoZnaZnaRepository;
+import com.example.slagalica.repository.impl.UserStatisticsRepository;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,7 +22,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel;
 public class KoZnaZnaViewModel extends ViewModel {
 
     private final KoZnaZnaRepository repository;
-    private final com.example.slagalica.repository.impl.UserStatisticsRepository statsRepository;
+    private final UserStatisticsRepository statsRepository;
     private static final String MOCK_USER_ID = "test_user_123";
     
     private final MutableLiveData<List<KoZnaZna>> questions = new MutableLiveData<>();
@@ -145,27 +150,39 @@ public class KoZnaZnaViewModel extends ViewModel {
         }
     }
 
+    private boolean statsUpdated = false;
+
     private void updateUserStatistics() {
+        if (statsUpdated) return;
+        statsUpdated = true;
         statsRepository.getStatistics(MOCK_USER_ID).thenAccept(stats -> {
-            if (stats != null) {
-                stats.setGamesPlayed(stats.getGamesPlayed() + 1);
-                
-                // Accuracy Update
-                long newTotal = stats.getKoZnaZnaTotal() + (questions.getValue() != null ? questions.getValue().size() : 0);
-                long newCorrect = stats.getKoZnaZnaCorrect() + player1CorrectCount;
-                stats.setKoZnaZnaTotal(newTotal);
-                stats.setKoZnaZnaCorrect(newCorrect);
-                if (newTotal > 0) {
-                    stats.setKoZnaZna((double) newCorrect / newTotal * 100.0);
-                }
-                
-                stats.calculateOverallStats();
-                
-                if (player1TotalScore > 0) {
-                    stats.setWonGames(stats.getWonGames() + 1);
-                }
-                statsRepository.saveStatistics(stats);
+            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(MOCK_USER_ID);
+            
+            int gameTotal = questions.getValue() != null ? questions.getValue().size() : 0;
+            int gameCorrect = player1CorrectCount;
+            double oldAccuracy = finalStats.getKoZnaZna();
+
+            long newTotal = finalStats.getKoZnaZnaTotal() + gameTotal;
+            long newCorrect = finalStats.getKoZnaZnaCorrect() + gameCorrect;
+            finalStats.setKoZnaZnaTotal(newTotal);
+            finalStats.setKoZnaZnaCorrect(newCorrect);
+            if (newTotal > 0) {
+                finalStats.setKoZnaZna((double) newCorrect / newTotal * 100.0);
             }
+            double newAccuracy = finalStats.getKoZnaZna();
+
+            // Track points and game count
+            finalStats.setKoZnaZnaPoints(finalStats.getKoZnaZnaPoints() + player1TotalScore);
+            finalStats.setKoZnaZnaPlayed(finalStats.getKoZnaZnaPlayed() + 1);
+
+            Log.d("UserStats", String.format("Stats changed: Ko Zna Zna - Game Correct: %d/%d | Total Accuracy: %.1f%% -> %.1f%%",
+                    gameCorrect, gameTotal, oldAccuracy, newAccuracy));
+            
+            finalStats.calculateOverallStats();
+            statsRepository.saveStatistics(finalStats).exceptionally(e -> {
+                Log.e("UserStats", "Failed to save statistics", e);
+                return null;
+            });
         });
     }
 

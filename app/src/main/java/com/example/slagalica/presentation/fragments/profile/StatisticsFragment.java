@@ -48,6 +48,14 @@ public class StatisticsFragment extends Fragment {
         observeViewModels();
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (statisticsViewModel != null) {
+            statisticsViewModel.loadUserStatistics();
+        }
+    }
+
     ///  Get all data from Firebase, otherwise set ot 0
     private void observeViewModels() {
         // Observe Profile for mini-header
@@ -70,6 +78,7 @@ public class StatisticsFragment extends Fragment {
         // Observe Statistics
         statisticsViewModel.getUserStatistics().observe(getViewLifecycleOwner(), stats -> {
             if (stats != null) {
+                android.util.Log.d("UserStats", "UI Received updated stats: overall=" + stats.getOverallStats() + ", played=" + stats.getGamesPlayed());
                 updateUI(stats);
             }
         });
@@ -88,19 +97,32 @@ public class StatisticsFragment extends Fragment {
     }
 
     private void updateUI(com.example.slagalica.domain.model.progression.UserStatistics stats) {
-        binding.successRateText.setText(String.format("Uspesnost: %d%%", (int) stats.getOverallStats()));
+        binding.successRateText.setText(String.format("Uspešnost: %.1f%%", stats.getOverallStats()));
         binding.totalGamesText.setText(String.format("Ukupno odigranih: %d partija", stats.getGamesPlayed()));
         
-        // Update progress bars
+        // Update progress bars and Percentage display only
         binding.progressKoZnaZna.setProgress((int) stats.getKoZnaZna());
+        binding.textKoZnaZnaCorrect.setText(String.format("%.1f%%", stats.getKoZnaZna()));
+        
         binding.progressMojBroj.setProgress((int) stats.getMojBroj());
+        binding.textMojBrojCorrect.setText(String.format("%.1f%%", stats.getMojBroj()));
+        
         binding.progressKorakPoKorak.setProgress((int) stats.getKorakPoKorak());
+        binding.textKorakPoKorakCorrect.setText(String.format("%.1f%%", stats.getKorakPoKorak()));
+        
         binding.progressAsocijacije.setProgress((int) stats.getAsocijacije());
+        binding.textAsocijacijeCorrect.setText(String.format("%.1f%%", stats.getAsocijacije()));
+        
         binding.progressSkocko.setProgress((int) stats.getSkocko());
+        binding.textSkockoCorrect.setText(String.format("%.1f%%", stats.getSkocko()));
+        
         binding.progressSpojnice.setProgress((int) stats.getSpojnice());
+        binding.textSpojniceCorrect.setText(String.format("%.1f%%", stats.getSpojnice()));
 
         // Update Winrate Pie Chart
         float winRate = stats.getGamesPlayed() > 0 ? (float) stats.getWonGames() / stats.getGamesPlayed() : 0f;
+        float lossRate = stats.getGamesPlayed() > 0 ? 1.0f - winRate : 0f;
+        
         binding.pieChart.post(() -> {
             PieChartDrawable pieChartDrawable = new PieChartDrawable(requireContext());
             pieChartDrawable.setProgress(winRate);

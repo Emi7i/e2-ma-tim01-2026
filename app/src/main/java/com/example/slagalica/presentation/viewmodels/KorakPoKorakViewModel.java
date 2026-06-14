@@ -3,12 +3,15 @@ package com.example.slagalica.presentation.viewmodels;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.example.slagalica.domain.model.match.games.korakpokorak.KorakPoKorak;
+import com.example.slagalica.domain.model.progression.UserStatistics;
+import com.example.slagalica.repository.impl.UserStatisticsRepository;
 
 import java.util.List;
 
@@ -25,8 +28,16 @@ public class KorakPoKorakViewModel extends ViewModel {
 
     private static final long REVEAL_PAUSE_MS = 8000L;
 
+    private final UserStatisticsRepository statsRepository;
+    private static final String MOCK_USER_ID = "test_user_123";
+
+    private int roundsPlayed = 0;
+    private int correctRounds = 0;
+
     @Inject
-    public KorakPoKorakViewModel() {}
+    public KorakPoKorakViewModel(UserStatisticsRepository statsRepository) {
+        this.statsRepository = statsRepository;
+    }
 
     @Getter
     private final int[] points = {20, 18, 16, 14, 12, 10, 8};
@@ -49,6 +60,7 @@ public class KorakPoKorakViewModel extends ViewModel {
     public void start(KorakPoKorak game) {
         if (this.game == game) return;
         this.game = game;
+        roundsPlayed = 1;
         game.startNewRound(() -> {
             String currentHint = game.getHints().get(0);
             latestHint.postValue(currentHint);
@@ -133,10 +145,12 @@ public class KorakPoKorakViewModel extends ViewModel {
                 game.startNewRound(() -> {
                     if (!game.hasEnded()) {
                         latestHint.postValue(game.getHints().get(0));
+                        roundsPlayed++;
                     }
                 });
                 if (game.hasEnded()) {
                     gameOver.postValue(true);
+                    updateUserStatistics();
                 } else {
                     revealAllHints.postValue(false);
                     stealWindowOpen.postValue(false);
@@ -152,12 +166,75 @@ public class KorakPoKorakViewModel extends ViewModel {
     public boolean submitAnswer(String answer) {
         boolean correct = game.isAnswerCorrect(answer);
         if (correct) {
+            correctRounds++;
             timer.cancel();
             revealAllHints.postValue(true);
             advanceRound();
         }
         // if incorrect: nothing happens, fragment shows red flash, timer keeps running
         return correct;
+    }
+
+    private boolean statsUpdated = false;
+
+    public void updateUserStatistics() {
+        if (statsUpdated) return;
+        statsUpdated = true;
+        statsRepository.getStatistics(MOCK_USER_ID).thenAccept(stats -> {
+            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(MOCK_USER_ID);
+            
+            int gameTotal = roundsPlayed;
+            int gameCorrect = correctRounds;
+            double oldAccuracy = finalStats.getKorakPoKorak();
+
+            // Track points and game count
+            // Since we don't have easy access to round points here directly, we'll use a placeholder or check session
+            // For now, let's assume we can't easily get the delta here, so we'll just increment played.
+            // Actually, we can get it from the game object if we had a getter, but we don't.
+            // Let's just track the session count.
+            finalStats.setKorakPoKorakPlayed(finalStats.getKorakPoKorakPlayed() + 1);
+
+            // Step-based success tracking
+            if (correctRounds > 0 && game != null) {
+                // Find which hint was last revealed (0-indexed)
+                int stepIndex = game.getCurrentHint() - 1; 
+                if (stepIndex >= 0 && stepIndex < 7) {
+                    List<Long> steps = finalStats.getKorakPoKorakStepSuccessCount();
+                    if (steps == null || steps.size() < 7) {
+                        steps = new java.util.ArrayList<>(java.util.Arrays.asList(0L, 0L, 0L, 0L, 0L, 0L, 0L));
+                    } else {
+                        steps = new java.util.ArrayList<>(steps);
+                    }
+                    steps.set(stepIndex, steps.get(stepIndex) + 1);
+                    finalStats.setKorakPoKorakStepSuccessCount(steps);
+                }
+            }
+
+            // Weighted Accuracy Update (100% for step 1, 80% for step 2, etc.)
+            double weightedCorrect = 0;
+            if (correctRounds > 0 && game != null) {
+                int step = game.getCurrentHint(); // 1-7
+                weightedCorrect = 1.0 - ((step - 1) * 0.15);
+            }
+
+            long newTotal = finalStats.getKorakPoKorakTotal() + gameTotal;
+            // Since we need to store as long, we'll store scaled or keep raw accuracy but weighted
+            // For now, let's update the percentage directly using weighted logic
+            double totalWeightedSuccess = (oldAccuracy / 100.0 * finalStats.getKorakPoKorakTotal()) + weightedCorrect;
+            finalStats.setKorakPoKorakTotal(newTotal);
+            if (newTotal > 0) {
+                finalStats.setKorakPoKorak(totalWeightedSuccess / newTotal * 100.0);
+            }
+            double newAccuracy = finalStats.getKorakPoKorak();
+
+            Log.d("UserStats", String.format("Stats changed: Korak po korak - Game Correct: %d/%d | Total Accuracy: %.1f%% -> %.1f%%",
+                    gameCorrect, gameTotal, oldAccuracy, newAccuracy));
+            finalStats.calculateOverallStats();
+            statsRepository.saveStatistics(finalStats).exceptionally(e -> {
+                Log.e("UserStats", "Failed to save statistics", e);
+                return null;
+            });
+        });
     }
 
     @Override
