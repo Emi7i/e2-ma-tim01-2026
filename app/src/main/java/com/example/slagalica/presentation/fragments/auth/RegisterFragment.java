@@ -91,7 +91,7 @@ public class RegisterFragment extends Fragment {
                     binding.registerButton.setEnabled(true);
                     Toast.makeText(getContext(), "Registracija uspešna! Proverite email za potvrdu.", Toast.LENGTH_LONG).show();
 
-                    FragmentTransition.to(new LoginFragment(), requireActivity(), true, R.id.main);
+                    FragmentTransition.to(new LoginFragment(), requireActivity(), false, R.id.main);
                 }))
                 .exceptionally(ex -> {
                     requireActivity().runOnUiThread(() -> {

@@ -54,7 +54,7 @@ public class LoginFragment extends Fragment {
         // Listeners
         binding.loginButton.setOnClickListener(v -> attemptLogin());
         binding.loginRegisterLink.setOnClickListener(v -> {
-            FragmentTransition.to(new RegisterFragment(), requireActivity(), true, R.id.main);
+            FragmentTransition.to(new RegisterFragment(), requireActivity(), false, R.id.main);
         });
     }
 

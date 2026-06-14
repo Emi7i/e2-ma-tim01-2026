@@ -135,7 +135,8 @@ public class AppActivity extends AppCompatActivity {
         // Log out
         leftDrawer.findViewById(R.id.logout).setOnClickListener(v -> {
             sessionManager.clear();
-            FragmentTransition.to(new LoginFragment(), this, true, R.id.appContainer);
+            startActivity(new Intent(this, AuthActivity.class));
+            finish();
             binding.main.closeDrawer(GravityCompat.START);
         });
     }
