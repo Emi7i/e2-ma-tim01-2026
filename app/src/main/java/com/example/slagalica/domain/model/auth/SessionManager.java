@@ -32,6 +32,10 @@ public class SessionManager {
         return currentProfile;
     }
 
+    public void setCurrentProfile(UserProfile profile) {
+        currentProfile.postValue(profile);
+    }
+
     public void loadCurrentProfile() {
         FirebaseUser user = firebaseAuth.getCurrentUser();
         if (user == null) return;
