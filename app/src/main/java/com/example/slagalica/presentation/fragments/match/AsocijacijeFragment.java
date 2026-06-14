@@ -25,11 +25,13 @@ import com.example.slagalica.databinding.FragmentGameAsocijacijeBinding;
 import com.example.slagalica.domain.model.match.games.Asocijacija;
 import com.example.slagalica.domain.model.match.games.AsocijacijaKolona;
 import com.example.slagalica.domain.model.match.games.AsocijacijaPolje;
+import com.example.slagalica.domain.model.progression.UserStatistics;
 import com.example.slagalica.domain.service.match.AsocijacijeFactory;
 import com.example.slagalica.domain.service.match.AsocijacijeService;
 import com.example.slagalica.presentation.activities.AppActivity;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 import com.example.slagalica.repository.impl.AsocijacijeContentRepository;
+import com.example.slagalica.repository.impl.UserStatisticsRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +48,12 @@ public class AsocijacijeFragment extends Fragment {
 
     @Inject
     AsocijacijeContentRepository asocijacijeContentRepository;
+
+    @Inject
+    UserStatisticsRepository statsRepository;
+
+    private static final String MOCK_USER_ID = "test_user_123";
+    private int asocijacijeCorrectActions = 0;
 
     private AsocijacijeService asocijacijeService;
 
@@ -170,7 +178,9 @@ public class AsocijacijeFragment extends Fragment {
 
             renderWholeScreen();
 
-            if (!asocijacijeService.getCurrentRound().getGameState().isRoundFinished()) {
+            if (asocijacijeService.isMatchFinished()) {
+                updateUserStatistics();
+            } else if (!asocijacijeService.getCurrentRound().getGameState().isRoundFinished()) {
                 startRoundTimer();
             }
         });
@@ -182,8 +192,13 @@ public class AsocijacijeFragment extends Fragment {
                 return;
             }
 
+            int currentPlayer = asocijacijeService.getCurrentRound().getGameState().getCurrentPlayer();
             AsocijacijeService.ActionResult result =
                     asocijacijeService.submitFinalSolution(binding.etAsocijacijeFinalSolution.getText().toString());
+
+            if (result.isSuccess() && currentPlayer == 1) {
+                asocijacijeCorrectActions++;
+            }
 
             Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
 
@@ -194,6 +209,69 @@ public class AsocijacijeFragment extends Fragment {
             }
 
             renderWholeScreen();
+            if (asocijacijeService.isMatchFinished()) {
+                updateUserStatistics();
+            }
+        });
+    }
+
+    private String getCurrentUserId() {
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null) {
+            return com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        return "test_user_123";
+    }
+
+    private boolean statsUpdated = false;
+
+    private void updateUserStatistics() {
+        if (statsUpdated) return;
+        statsUpdated = true;
+        String userId = getCurrentUserId();
+        
+        // Capture data on main thread
+        int p1Score = matchViewModel.getPlayer1Score().getValue() != null ? matchViewModel.getPlayer1Score().getValue() : 0;
+        int sessionPoints = p1Score - initialPlayer1Score;
+        long gameTotal = (long) (asocijacijeService.getCurrentRoundIndex() + 1);
+        int gameCorrect = asocijacijeCorrectActions;
+        boolean finalSolved = asocijacijeService.getCurrentRound().isFinalSolved();
+
+        statsRepository.getStatistics(userId).thenAccept(stats -> {
+            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(userId);
+            
+            double oldAccuracy = finalStats.getAsocijacije();
+
+            long newTotal = finalStats.getAsocijacijeTotal() + gameTotal;
+            long newCorrect = finalStats.getAsocijacijeCorrect() + gameCorrect;
+            finalStats.setAsocijacijeTotal(newTotal);
+            finalStats.setAsocijacijeCorrect(newCorrect);
+            if (newTotal > 0) {
+                finalStats.setAsocijacije((double) newCorrect / newTotal * 100.0);
+            }
+            double newAccuracy = finalStats.getAsocijacije();
+
+            // Track points and game count (Requirement i)
+            // Points = score accumulated IN THIS GAME only
+            finalStats.setAsocijacijePoints(finalStats.getAsocijacijePoints() + sessionPoints);
+            finalStats.setAsocijacijePlayed(finalStats.getAsocijacijePlayed() + 1);
+
+            // Track solved rounds (Requirement v)
+            if (finalSolved) {
+                finalStats.setAsocijacijeSolved(finalStats.getAsocijacijeSolved() + 1);
+            }
+            finalStats.setAsocijacijeTotalRounds(finalStats.getAsocijacijeTotalRounds() + 1);
+
+            android.util.Log.d("UserStats", String.format("Stats changed: Asocijacije - Game Correct: %d/%d | Total Accuracy: %.1f%% -> %.1f%%",
+                    gameCorrect, (int)gameTotal, oldAccuracy, newAccuracy));
+
+            finalStats.calculateOverallStats();
+            statsRepository.saveStatistics(finalStats).exceptionally(e -> {
+                android.util.Log.e("UserStats", "Failed to save statistics", e);
+                return null;
+            });
+        }).exceptionally(e -> {
+            android.util.Log.e("UserStats", "Failed to get statistics", e);
+            return null;
         });
     }
 
@@ -348,6 +426,7 @@ public class AsocijacijeFragment extends Fragment {
         }
 
         button.setOnClickListener(v -> {
+            int currentPlayer = asocijacijeService.getCurrentRound().getGameState().getCurrentPlayer();
             AsocijacijeService.ActionResult result =
                     asocijacijeService.submitColumnSolution(columnIndex, editText.getText().toString());
 
@@ -360,6 +439,9 @@ public class AsocijacijeFragment extends Fragment {
             }
 
             renderWholeScreen();
+            if (asocijacijeService.isMatchFinished()) {
+                updateUserStatistics();
+            }
         });
 
         wrapper.addView(editText);
@@ -428,6 +510,9 @@ public class AsocijacijeFragment extends Fragment {
                 AsocijacijeService.ActionResult result = asocijacijeService.onTimeExpired();
                 Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
                 renderWholeScreen();
+                if (asocijacijeService.isMatchFinished()) {
+                    updateUserStatistics();
+                }
             }
         }.start();
     }

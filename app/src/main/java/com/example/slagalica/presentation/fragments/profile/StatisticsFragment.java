@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
@@ -40,12 +41,35 @@ public class StatisticsFragment extends Fragment {
         return binding.getRoot();
     }
 
+    private DrawerLayout.DrawerListener drawerListener;
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
         setupClickListeners();
         observeViewModels();
+
+        DrawerLayout drawer = requireActivity().findViewById(R.id.main);
+        if (drawer != null) {
+            drawerListener = new DrawerLayout.SimpleDrawerListener() {
+                @Override
+                public void onDrawerOpened(View drawerView) {
+                    if (drawerView.getId() == R.id.rightDrawer && statisticsViewModel != null) {
+                        statisticsViewModel.loadUserStatistics();
+                    }
+                }
+            };
+            drawer.addDrawerListener(drawerListener);
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (statisticsViewModel != null) {
+            statisticsViewModel.loadUserStatistics();
+        }
     }
 
     ///  Get all data from Firebase, otherwise set ot 0
@@ -70,6 +94,7 @@ public class StatisticsFragment extends Fragment {
         // Observe Statistics
         statisticsViewModel.getUserStatistics().observe(getViewLifecycleOwner(), stats -> {
             if (stats != null) {
+                android.util.Log.d("UserStats", "UI Received updated stats: overall=" + stats.getOverallStats() + ", played=" + stats.getGamesPlayed());
                 updateUI(stats);
             }
         });
@@ -88,19 +113,32 @@ public class StatisticsFragment extends Fragment {
     }
 
     private void updateUI(com.example.slagalica.domain.model.progression.UserStatistics stats) {
-        binding.successRateText.setText(String.format("Uspesnost: %d%%", (int) stats.getOverallStats()));
+        binding.successRateText.setText(String.format("Uspešnost: %.1f%%", stats.getOverallStats()));
         binding.totalGamesText.setText(String.format("Ukupno odigranih: %d partija", stats.getGamesPlayed()));
         
-        // Update progress bars
+        // Update progress bars and Percentage display only
         binding.progressKoZnaZna.setProgress((int) stats.getKoZnaZna());
+        binding.textKoZnaZnaCorrect.setText(String.format("%.1f%%", stats.getKoZnaZna()));
+        
         binding.progressMojBroj.setProgress((int) stats.getMojBroj());
+        binding.textMojBrojCorrect.setText(String.format("%.1f%%", stats.getMojBroj()));
+        
         binding.progressKorakPoKorak.setProgress((int) stats.getKorakPoKorak());
+        binding.textKorakPoKorakCorrect.setText(String.format("%.1f%%", stats.getKorakPoKorak()));
+        
         binding.progressAsocijacije.setProgress((int) stats.getAsocijacije());
+        binding.textAsocijacijeCorrect.setText(String.format("%.1f%%", stats.getAsocijacije()));
+        
         binding.progressSkocko.setProgress((int) stats.getSkocko());
+        binding.textSkockoCorrect.setText(String.format("%.1f%%", stats.getSkocko()));
+        
         binding.progressSpojnice.setProgress((int) stats.getSpojnice());
+        binding.textSpojniceCorrect.setText(String.format("%.1f%%", stats.getSpojnice()));
 
         // Update Winrate Pie Chart
         float winRate = stats.getGamesPlayed() > 0 ? (float) stats.getWonGames() / stats.getGamesPlayed() : 0f;
+        float lossRate = stats.getGamesPlayed() > 0 ? 1.0f - winRate : 0f;
+        
         binding.pieChart.post(() -> {
             PieChartDrawable pieChartDrawable = new PieChartDrawable(requireContext());
             pieChartDrawable.setProgress(winRate);
@@ -127,6 +165,10 @@ public class StatisticsFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        DrawerLayout drawer = requireActivity().findViewById(R.id.main);
+        if (drawer != null && drawerListener != null) {
+            drawer.removeDrawerListener(drawerListener);
+        }
         binding = null;
     }
 }

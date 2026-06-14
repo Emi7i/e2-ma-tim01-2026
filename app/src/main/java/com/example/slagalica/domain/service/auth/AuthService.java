@@ -86,7 +86,7 @@ public class AuthService {
                                         DEFAULT_RANK
                                 );
 
-                                UserStatistics stats = new UserStatistics(firebaseUser.getUid());
+                                UserStatistics stats = UserStatistics.createNew(firebaseUser.getUid());
                                 userStatisticsRepository.saveStatistics(stats);
 
                                 return userProfileRepository.saveProfile(profile);

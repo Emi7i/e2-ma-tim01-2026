@@ -115,12 +115,12 @@ public class SpojniceFragment extends Fragment {
 
         // Add score to P1
         viewModel.getP1ScoreDelta().observe(getViewLifecycleOwner(), delta -> {
-            if (delta > 0) matchViewModel.updatePlayer1Score(delta);
+            matchViewModel.updatePlayer1Score(delta);
         });
 
         // Add score to P2
         viewModel.getP2ScoreDelta().observe(getViewLifecycleOwner(), delta -> {
-            if (delta > 0) matchViewModel.updatePlayer2Score(delta);
+            matchViewModel.updatePlayer2Score(delta);
         });
 
         matchViewModel.getPlayer1Score().observe(getViewLifecycleOwner(), p1 -> {

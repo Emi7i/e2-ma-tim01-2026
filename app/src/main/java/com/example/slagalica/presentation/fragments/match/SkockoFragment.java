@@ -22,11 +22,13 @@ import com.example.slagalica.R;
 import com.example.slagalica.databinding.FragmentGameSkockoBinding;
 import com.example.slagalica.domain.model.match.games.SkockoPokusaj;
 import com.example.slagalica.domain.model.match.games.SkockoTabla;
+import com.example.slagalica.domain.model.progression.UserStatistics;
 import com.example.slagalica.domain.service.match.SkockoFactory;
 import com.example.slagalica.domain.service.match.SkockoService;
 import com.example.slagalica.presentation.activities.AppActivity;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 import com.example.slagalica.repository.impl.SkockoContentRepository;
+import com.example.slagalica.repository.impl.UserStatisticsRepository;
 
 import java.util.List;
 
@@ -42,6 +44,12 @@ public class SkockoFragment extends Fragment {
 
     @Inject
     SkockoContentRepository skockoContentRepository;
+
+    @Inject
+    UserStatisticsRepository statsRepository;
+
+    private static final String MOCK_USER_ID = "test_user_123";
+    private int skockoCorrectRounds = 0;
 
     private SkockoService skockoService;
     private CountDownTimer roundTimer;
@@ -164,7 +172,13 @@ public class SkockoFragment extends Fragment {
                 return;
             }
 
+            int currentPlayer = round.getGameState().getCurrentPlayer();
             SkockoService.ActionResult result = skockoService.submitCurrentRow();
+            
+            if (result.isSuccess() && result.isRoundFinished() && round.isSolved() && currentPlayer == 1) {
+                skockoCorrectRounds++;
+            }
+
             Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
 
             renderWholeScreen();
@@ -178,7 +192,83 @@ public class SkockoFragment extends Fragment {
                 if (roundTimer != null) {
                     roundTimer.cancel();
                 }
+                if (skockoService.isMatchFinished()) {
+                    updateUserStatistics();
+                }
             }
+        });
+    }
+
+    private String getCurrentUserId() {
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null) {
+            return com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        return "test_user_123";
+    }
+
+    private boolean statsUpdated = false;
+
+    private void updateUserStatistics() {
+        if (statsUpdated) return;
+        statsUpdated = true;
+        String userId = getCurrentUserId();
+        
+        int p1Score = matchViewModel.getPlayer1Score().getValue() != null ? matchViewModel.getPlayer1Score().getValue() : 0;
+        int sessionPoints = p1Score - initialPlayer1Score;
+        long gameTotal = skockoService.getCurrentRound().getGameState().getRoundNumber();
+        int gameCorrect = skockoCorrectRounds;
+        boolean isSolved = skockoService.getCurrentRound().isSolved();
+        boolean isBonusActive = skockoService.getCurrentRound().isBonusAttemptActive();
+        int currentRow = skockoService.getCurrentRound().getCurrentRow();
+
+        statsRepository.getStatistics(userId).thenAccept(stats -> {
+            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(userId);
+            
+            double oldAccuracy = finalStats.getSkocko();
+
+            finalStats.setSkockoPoints(finalStats.getSkockoPoints() + sessionPoints);
+            finalStats.setSkockoPlayed(finalStats.getSkockoPlayed() + 1);
+
+            double weightedCorrect = 0;
+            if (isSolved) {
+                int attemptIndex = currentRow; 
+                if (isBonusActive) {
+                    attemptIndex = 6;
+                }
+                
+                if (attemptIndex >= 0 && attemptIndex < 7) {
+                    List<Long> attempts = finalStats.getSkockoAttemptSuccessCount();
+                    if (attempts == null || attempts.size() < 7) {
+                        attempts = new java.util.ArrayList<>(java.util.Arrays.asList(0L, 0L, 0L, 0L, 0L, 0L, 0L));
+                    } else {
+                        attempts = new java.util.ArrayList<>(attempts);
+                    }
+                    attempts.set(attemptIndex, attempts.get(attemptIndex) + 1);
+                    finalStats.setSkockoAttemptSuccessCount(attempts);
+                }
+
+                double[] weights = {1.0, 0.8, 0.6, 0.4, 0.2, 0.1, 0.0};
+                weightedCorrect = weights[Math.min(6, attemptIndex)];
+            }
+
+            long newTotal = finalStats.getSkockoTotal() + gameTotal;
+            double totalWeightedSuccess = (oldAccuracy / 100.0 * finalStats.getSkockoTotal()) + weightedCorrect;
+            finalStats.setSkockoTotal(newTotal);
+            if (newTotal > 0) {
+                finalStats.setSkocko(totalWeightedSuccess / newTotal * 100.0);
+            }
+            double newAccuracy = finalStats.getSkocko();
+
+            android.util.Log.d("UserStats", String.format("Stats changed: Skocko - Game Correct: %d/%d | Total Accuracy: %.1f%% -> %.1f%%",
+                    gameCorrect, (int)gameTotal, oldAccuracy, newAccuracy));
+            finalStats.calculateOverallStats();
+            statsRepository.saveStatistics(finalStats).exceptionally(e -> {
+                android.util.Log.e("UserStats", "Failed to save statistics", e);
+                return null;
+            });
+        }).exceptionally(e -> {
+            android.util.Log.e("UserStats", "Failed to get statistics", e);
+            return null;
         });
     }
 
@@ -331,6 +421,8 @@ public class SkockoFragment extends Fragment {
 
                 if (result.isBonusActivated()) {
                     startRoundTimer();
+                } else if (skockoService.isMatchFinished()) {
+                    updateUserStatistics();
                 }
             }
         }.start();

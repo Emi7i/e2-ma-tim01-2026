@@ -8,7 +8,9 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.example.slagalica.domain.model.match.games.mojbroj.MojBroj;
+import com.example.slagalica.domain.model.progression.UserStatistics;
 import com.example.slagalica.domain.service.match.MojBrojService;
+import com.example.slagalica.repository.impl.UserStatisticsRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,9 +30,22 @@ public class MojBrojViewModel extends ViewModel {
     private CountDownTimer stopTimer;
     private CountDownTimer roundTimer;
 
-    @Inject
-    public MojBrojViewModel(){
+    private final UserStatisticsRepository statsRepository;
+    private static final String MOCK_USER_ID = "test_user_123";
 
+    private String getCurrentUserId() {
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null) {
+            return com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        return MOCK_USER_ID;
+    }
+
+    private int roundsPlayed = 0;
+    private int correctRounds = 0;
+
+    @Inject
+    public MojBrojViewModel(UserStatisticsRepository statsRepository){
+        this.statsRepository = statsRepository;
     }
     @Getter
     private int goalNumber = 0;
@@ -187,11 +202,14 @@ public class MojBrojViewModel extends ViewModel {
     }
 
     private void finishRound(List<String> tokens) {
+        roundsPlayed++;
         try {
             Log.d("MojBroj", "Tokens found!! " + tokens);
             game.submitAnswer(tokens);
             myNumber = game.getCurrentPlayerResult();
-            isCorrect.postValue(myNumber == goalNumber && myNumber != 0);
+            boolean correct = myNumber == goalNumber && myNumber != 0;
+            if (correct) correctRounds++;
+            isCorrect.postValue(correct);
         } catch (IllegalArgumentException e) {
             // invalid expression - treat as no answer (0), per current UI constraints
             Log.d("MojBroj", "invalid >:(: " + e);
@@ -204,6 +222,63 @@ public class MojBrojViewModel extends ViewModel {
         opponentAnswer = String.join(" ", game.getOtherPlayerTokens());
 
         roundOver.postValue(true);
+        if (game.hasEnded()) {
+            gameOver.postValue(true);
+        }
+    }
+
+    private boolean statsUpdated = false;
+
+    public void updateUserStatistics(int player1Score, int player2Score) {
+        if (statsUpdated) return;
+        statsUpdated = true;
+        String userId = getCurrentUserId();
+        statsRepository.getStatistics(userId).thenAccept(stats -> {
+            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(userId);
+            
+            // Overall match win/loss (Assume we are player 1)
+            double oldWinRate = (finalStats.getGamesPlayed() > 0) ? (double) finalStats.getWonGames() / finalStats.getGamesPlayed() * 100.0 : 0.0;
+            
+            finalStats.setGamesPlayed(finalStats.getGamesPlayed() + 1);
+            if (player1Score > player2Score) {
+                finalStats.setWonGames(finalStats.getWonGames() + 1);
+            }
+            double newWinRate = (double) finalStats.getWonGames() / finalStats.getGamesPlayed() * 100.0;
+            
+            Log.d("UserStats", String.format("Stats changed: Overall Match - Result: %s | Played: %d | Win Rate: %.1f%% -> %.1f%%",
+                    (player1Score > player2Score ? "WON" : (player1Score < player2Score ? "LOST" : "DRAW")),
+                    finalStats.getGamesPlayed(), oldWinRate, newWinRate));
+
+            // Accuracy Update for Moj Broj
+            int gameTotal = roundsPlayed;
+            int gameCorrect = correctRounds; // Exact matches
+            if (gameTotal > 0) {
+                double oldAccuracy = finalStats.getMojBroj();
+                long newTotal = finalStats.getMojBrojTotal() + gameTotal;
+                long newCorrect = finalStats.getMojBrojCorrect() + gameCorrect;
+                finalStats.setMojBrojTotal(newTotal);
+                finalStats.setMojBrojCorrect(newCorrect);
+                finalStats.setMojBroj((double) newCorrect / newTotal * 100.0);
+                double newAccuracy = finalStats.getMojBroj();
+
+                // Track points and game count
+                finalStats.setMojBrojPoints(finalStats.getMojBrojPoints() + player1Score); 
+                finalStats.setMojBrojPlayed(finalStats.getMojBrojPlayed() + 1);
+
+                Log.d("UserStats", String.format("Stats changed: Moj Broj - Game Correct: %d/%d | Total Accuracy: %.1f%% -> %.1f%%",
+                        gameCorrect, gameTotal, oldAccuracy, newAccuracy));
+            }
+            
+            finalStats.calculateOverallStats();
+            
+            statsRepository.saveStatistics(finalStats).exceptionally(e -> {
+                Log.e("UserStats", "Failed to save statistics", e);
+                return null;
+            });
+        }).exceptionally(e -> {
+            Log.e("UserStats", "Failed to get statistics", e);
+            return null;
+        });
     }
 
     /**

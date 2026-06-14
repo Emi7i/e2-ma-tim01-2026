@@ -9,8 +9,11 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import com.example.slagalica.domain.model.config.SpojniceConfig;
 import com.example.slagalica.domain.model.match.games.Spojnice;
+import com.example.slagalica.domain.model.progression.UserStatistics;
 import com.example.slagalica.domain.service.match.SpojniceDemoFactory;
 import com.example.slagalica.repository.impl.SpojniceRepository;
+import com.example.slagalica.repository.impl.UserStatisticsRepository;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,8 +26,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel;
 public class SpojniceViewModel extends ViewModel {
 
     private final SpojniceRepository repository;
-    private final com.example.slagalica.repository.impl.UserStatisticsRepository statsRepository;
-    private static final String MOCK_USER_ID = "test_user_123";
+    private final UserStatisticsRepository statsRepository;
+    private String getCurrentUserId() {
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null) {
+            return com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        return null;
+    }
+
     
     private final MutableLiveData<List<Spojnice>> allSpojnice = new MutableLiveData<>();
     private final MutableLiveData<Integer> currentRound = new MutableLiveData<>(1);
@@ -286,35 +295,51 @@ public class SpojniceViewModel extends ViewModel {
                 startRound(currentRound.getValue() + 1, allSpojnice.getValue());
             }, 2000);
         } else {
+            p1ScoreDelta.postValue(0);
+            p2ScoreDelta.postValue(0);
             gameFinished.postValue(true);
             updateUserStatistics();
         }
     }
 
+    private boolean statsUpdated = false;
+
     private void updateUserStatistics() {
-        statsRepository.getStatistics(MOCK_USER_ID).thenAccept(stats -> {
-            if (stats != null) {
-                stats.setGamesPlayed(stats.getGamesPlayed() + 1);
-                
-                // Accuracy Update: Each pair in Spojnice is a 'question'
-                // Total questions = ROUNDS_COUNT * TERMS_COUNT
-                long totalPossibleMatches = SpojniceConfig.TERMS_COUNT * SpojniceConfig.ROUNDS_COUNT;
-                
-                long newTotal = stats.getSpojniceTotal() + totalPossibleMatches;
-                long newCorrect = stats.getSpojniceCorrect() + player1CorrectAccumulated;
-                stats.setSpojniceTotal(newTotal);
-                stats.setSpojniceCorrect(newCorrect);
-                if (newTotal > 0) {
-                    stats.setSpojnice((double) newCorrect / newTotal * 100.0);
-                }
-                
-                stats.calculateOverallStats();
-                
-                if (player1TotalScore > 0) {
-                    stats.setWonGames(stats.getWonGames() + 1);
-                }
-                statsRepository.saveStatistics(stats);
+        if (statsUpdated) return;
+        statsUpdated = true;
+        String userId = getCurrentUserId();
+        statsRepository.getStatistics(userId).thenAccept(stats -> {
+            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(userId);
+            
+            // Accuracy Update: Each pair in Spojnice is a 'question'
+            // Total questions = ROUNDS_COUNT * TERMS_COUNT
+            long gameTotal = (long) SpojniceConfig.TERMS_COUNT * SpojniceConfig.ROUNDS_COUNT;
+            int gameCorrect = player1CorrectAccumulated;
+            double oldAccuracy = finalStats.getSpojnice();
+
+            long newTotal = finalStats.getSpojniceTotal() + gameTotal;
+            long newCorrect = finalStats.getSpojniceCorrect() + gameCorrect;
+            finalStats.setSpojniceTotal(newTotal);
+            finalStats.setSpojniceCorrect(newCorrect);
+            if (newTotal > 0) {
+                finalStats.setSpojnice((double) newCorrect / newTotal * 100.0);
             }
+            double newAccuracy = finalStats.getSpojnice();
+
+            // Track points and game count
+            finalStats.setSpojnicePoints(finalStats.getSpojnicePoints() + player1TotalScore);
+            finalStats.setSpojnicePlayed(finalStats.getSpojnicePlayed() + 1);
+
+            Log.d("UserStats", String.format("Stats changed: Spojnice - Game Correct: %d/%d | Total Accuracy: %.1f%% -> %.1f%%",
+                    gameCorrect, (int)gameTotal, oldAccuracy, newAccuracy));
+            finalStats.calculateOverallStats();
+            statsRepository.saveStatistics(finalStats).exceptionally(e -> {
+                Log.e("UserStats", "Failed to save statistics", e);
+                return null;
+            });
+        }).exceptionally(e -> {
+            Log.e("UserStats", "Failed to get statistics", e);
+            return null;
         });
     }
 
