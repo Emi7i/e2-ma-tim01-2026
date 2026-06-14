@@ -89,11 +89,9 @@ public class RegisterFragment extends Fragment {
         authService.registerUser(dto)
                 .thenAccept(unused -> requireActivity().runOnUiThread(() -> {
                     binding.registerButton.setEnabled(true);
-                    Toast.makeText(getContext(), "Registracija uspešna! Provjerite email za potvrdu.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(getContext(), "Registracija uspešna! Proverite email za potvrdu.", Toast.LENGTH_LONG).show();
 
-                    Intent intent = new Intent(requireActivity(), AppActivity.class);
-                    startActivity(intent);
-                    requireActivity().finish();
+                    FragmentTransition.to(new LoginFragment(), requireActivity(), true, R.id.main);
                 }))
                 .exceptionally(ex -> {
                     requireActivity().runOnUiThread(() -> {

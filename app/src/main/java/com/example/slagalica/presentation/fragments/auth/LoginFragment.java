@@ -16,6 +16,7 @@ import android.view.ViewGroup;
 import com.example.slagalica.R;
 import com.example.slagalica.databinding.FragmentAuthLoginBinding;
 import com.example.slagalica.domain.model.auth.LoginDTO;
+import com.example.slagalica.domain.model.auth.SessionManager;
 import com.example.slagalica.domain.service.auth.AuthService;
 import com.example.slagalica.presentation.activities.AppActivity;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
@@ -29,6 +30,9 @@ public class LoginFragment extends Fragment {
 
     @Inject
     AuthService authService;
+
+    @Inject
+    SessionManager sessionManager;
 
     FragmentAuthLoginBinding binding;
 
@@ -76,6 +80,7 @@ public class LoginFragment extends Fragment {
                         return;
                     }
 
+                    sessionManager.loadCurrentProfile();
                     Intent intent = new Intent(requireActivity(), AppActivity.class);
                     startActivity(intent);
                     requireActivity().finish(); // finishing AuthActivity so the user can't go back there with return

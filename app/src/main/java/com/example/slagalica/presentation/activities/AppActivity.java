@@ -20,8 +20,10 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.slagalica.R;
 import com.example.slagalica.databinding.ActivityAppBinding;
+import com.example.slagalica.domain.model.auth.SessionManager;
 import com.example.slagalica.domain.model.social.NotificationItem;
 import com.example.slagalica.domain.service.social.NotificationsService;
+import com.example.slagalica.presentation.fragments.auth.LoginFragment;
 import com.example.slagalica.presentation.fragments.auth.ResetPasswordFragment;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
 import com.example.slagalica.presentation.fragments.common.HomeFragment;
@@ -31,12 +33,17 @@ import com.example.slagalica.presentation.fragments.social.NotificationsFragment
 import com.example.slagalica.presentation.notifications.AppNotificationHelper;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 
+import javax.inject.Inject;
+
 import dagger.hilt.android.AndroidEntryPoint;
 
 @AndroidEntryPoint
 public class AppActivity extends AppCompatActivity {
     ActivityAppBinding binding;
     MatchViewModel matchViewModel;
+
+    @Inject
+    SessionManager sessionManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,6 +129,13 @@ public class AppActivity extends AppCompatActivity {
         // Reset password
         leftDrawer.findViewById(R.id.reset_password).setOnClickListener(v -> {
             FragmentTransition.to(new ResetPasswordFragment(), this, true, R.id.appContainer);
+            binding.main.closeDrawer(GravityCompat.START);
+        });
+
+        // Log out
+        leftDrawer.findViewById(R.id.logout).setOnClickListener(v -> {
+            sessionManager.clear();
+            FragmentTransition.to(new LoginFragment(), this, true, R.id.appContainer);
             binding.main.closeDrawer(GravityCompat.START);
         });
     }
