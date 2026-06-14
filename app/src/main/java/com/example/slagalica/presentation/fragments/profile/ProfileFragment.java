@@ -130,7 +130,7 @@ public class ProfileFragment extends Fragment {
             "https://media1.tenor.com/m/rBVT1zDLGJwAAAAd/bugcat-capoo-happy.gif"
         };
 
-        String[] avatarNames = {
+        String[] avatarNames = {git push --set-upstream origin feat/statistics
             "Bugcat 1",
             "Bugcat 2",
             "Bugcat 3",

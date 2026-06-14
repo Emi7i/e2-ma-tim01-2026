@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
@@ -40,12 +41,27 @@ public class StatisticsFragment extends Fragment {
         return binding.getRoot();
     }
 
+    private DrawerLayout.DrawerListener drawerListener;
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
         setupClickListeners();
         observeViewModels();
+
+        DrawerLayout drawer = requireActivity().findViewById(R.id.main);
+        if (drawer != null) {
+            drawerListener = new DrawerLayout.SimpleDrawerListener() {
+                @Override
+                public void onDrawerOpened(View drawerView) {
+                    if (drawerView.getId() == R.id.rightDrawer && statisticsViewModel != null) {
+                        statisticsViewModel.loadUserStatistics();
+                    }
+                }
+            };
+            drawer.addDrawerListener(drawerListener);
+        }
     }
 
     @Override
@@ -149,6 +165,10 @@ public class StatisticsFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        DrawerLayout drawer = requireActivity().findViewById(R.id.main);
+        if (drawer != null && drawerListener != null) {
+            drawer.removeDrawerListener(drawerListener);
+        }
         binding = null;
     }
 }

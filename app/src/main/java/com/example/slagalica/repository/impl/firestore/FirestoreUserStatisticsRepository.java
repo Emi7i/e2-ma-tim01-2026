@@ -19,7 +19,7 @@ public class FirestoreUserStatisticsRepository implements UserStatisticsReposito
     @Override
     public CompletableFuture<UserStatistics> getStatistics(String userId) {
         CompletableFuture<UserStatistics> future = new CompletableFuture<>();
-        db.collection(COLLECTION_STATS).document(userId).get()
+        db.collection(COLLECTION_STATS).document(userId).get(com.google.firebase.firestore.Source.SERVER)
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         UserStatistics stats = documentSnapshot.toObject(UserStatistics.class);
