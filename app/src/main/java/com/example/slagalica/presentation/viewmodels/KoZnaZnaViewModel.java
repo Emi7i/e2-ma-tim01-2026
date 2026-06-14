@@ -23,7 +23,6 @@ public class KoZnaZnaViewModel extends ViewModel {
 
     private final KoZnaZnaRepository repository;
     private final UserStatisticsRepository statsRepository;
-    private static final String MOCK_USER_ID = "test_user_123";
     
     private final MutableLiveData<List<KoZnaZna>> questions = new MutableLiveData<>();
     private final MutableLiveData<Integer> currentQuestionIndex = new MutableLiveData<>(-1);
@@ -150,13 +149,21 @@ public class KoZnaZnaViewModel extends ViewModel {
         }
     }
 
+    private String getCurrentUserId() {
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null) {
+            return com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        return "test_user_123";
+    }
+
     private boolean statsUpdated = false;
 
     private void updateUserStatistics() {
         if (statsUpdated) return;
         statsUpdated = true;
-        statsRepository.getStatistics(MOCK_USER_ID).thenAccept(stats -> {
-            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(MOCK_USER_ID);
+        String userId = getCurrentUserId();
+        statsRepository.getStatistics(userId).thenAccept(stats -> {
+            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(userId);
             
             int gameTotal = questions.getValue() != null ? questions.getValue().size() : 0;
             int gameCorrect = player1CorrectCount;

@@ -33,6 +33,13 @@ public class MojBrojViewModel extends ViewModel {
     private final UserStatisticsRepository statsRepository;
     private static final String MOCK_USER_ID = "test_user_123";
 
+    private String getCurrentUserId() {
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null) {
+            return com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        return MOCK_USER_ID;
+    }
+
     private int roundsPlayed = 0;
     private int correctRounds = 0;
 
@@ -215,6 +222,9 @@ public class MojBrojViewModel extends ViewModel {
         opponentAnswer = String.join(" ", game.getOtherPlayerTokens());
 
         roundOver.postValue(true);
+        if (game.hasEnded()) {
+            gameOver.postValue(true);
+        }
     }
 
     private boolean statsUpdated = false;
@@ -222,8 +232,9 @@ public class MojBrojViewModel extends ViewModel {
     public void updateUserStatistics(int player1Score, int player2Score) {
         if (statsUpdated) return;
         statsUpdated = true;
-        statsRepository.getStatistics(MOCK_USER_ID).thenAccept(stats -> {
-            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(MOCK_USER_ID);
+        String userId = getCurrentUserId();
+        statsRepository.getStatistics(userId).thenAccept(stats -> {
+            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(userId);
             
             // Overall match win/loss (Assume we are player 1)
             double oldWinRate = (finalStats.getGamesPlayed() > 0) ? (double) finalStats.getWonGames() / finalStats.getGamesPlayed() * 100.0 : 0.0;
@@ -264,6 +275,9 @@ public class MojBrojViewModel extends ViewModel {
                 Log.e("UserStats", "Failed to save statistics", e);
                 return null;
             });
+        }).exceptionally(e -> {
+            Log.e("UserStats", "Failed to get statistics", e);
+            return null;
         });
     }
 

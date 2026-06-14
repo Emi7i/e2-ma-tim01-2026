@@ -29,7 +29,13 @@ public class KorakPoKorakViewModel extends ViewModel {
     private static final long REVEAL_PAUSE_MS = 8000L;
 
     private final UserStatisticsRepository statsRepository;
-    private static final String MOCK_USER_ID = "test_user_123";
+
+    private String getCurrentUserId() {
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null) {
+            return com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        return null;
+    }
 
     private int roundsPlayed = 0;
     private int correctRounds = 0;
@@ -60,10 +66,11 @@ public class KorakPoKorakViewModel extends ViewModel {
     public void start(KorakPoKorak game) {
         if (this.game == game) return;
         this.game = game;
-        roundsPlayed = 1;
+        roundsPlayed = 0;
         game.startNewRound(() -> {
             String currentHint = game.getHints().get(0);
             latestHint.postValue(currentHint);
+            roundsPlayed++;
         });
         startTimer();
     }
@@ -180,8 +187,9 @@ public class KorakPoKorakViewModel extends ViewModel {
     public void updateUserStatistics() {
         if (statsUpdated) return;
         statsUpdated = true;
-        statsRepository.getStatistics(MOCK_USER_ID).thenAccept(stats -> {
-            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(MOCK_USER_ID);
+        String userId = getCurrentUserId();
+        statsRepository.getStatistics(userId).thenAccept(stats -> {
+            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(userId);
             
             int gameTotal = roundsPlayed;
             int gameCorrect = correctRounds;
@@ -234,6 +242,9 @@ public class KorakPoKorakViewModel extends ViewModel {
                 Log.e("UserStats", "Failed to save statistics", e);
                 return null;
             });
+        }).exceptionally(e -> {
+            Log.e("UserStats", "Failed to get statistics", e);
+            return null;
         });
     }
 

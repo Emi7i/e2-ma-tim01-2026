@@ -215,17 +215,30 @@ public class AsocijacijeFragment extends Fragment {
         });
     }
 
+    private String getCurrentUserId() {
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null) {
+            return com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        return "test_user_123";
+    }
+
     private boolean statsUpdated = false;
 
     private void updateUserStatistics() {
         if (statsUpdated) return;
         statsUpdated = true;
-        statsRepository.getStatistics(MOCK_USER_ID).thenAccept(stats -> {
-            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(MOCK_USER_ID);
+        String userId = getCurrentUserId();
+        
+        // Capture data on main thread
+        int p1Score = matchViewModel.getPlayer1Score().getValue() != null ? matchViewModel.getPlayer1Score().getValue() : 0;
+        int sessionPoints = p1Score - initialPlayer1Score;
+        long gameTotal = (long) (asocijacijeService.getCurrentRoundIndex() + 1) * 5;
+        int gameCorrect = asocijacijeCorrectActions;
+        boolean finalSolved = asocijacijeService.getCurrentRound().isFinalSolved();
+
+        statsRepository.getStatistics(userId).thenAccept(stats -> {
+            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(userId);
             
-            // Each round has 4 columns and 1 final solution = 5 "questions"
-            long gameTotal = (long) (asocijacijeService.getCurrentRoundIndex() + 1) * 5;
-            int gameCorrect = asocijacijeCorrectActions;
             double oldAccuracy = finalStats.getAsocijacije();
 
             long newTotal = finalStats.getAsocijacijeTotal() + gameTotal;
@@ -239,12 +252,11 @@ public class AsocijacijeFragment extends Fragment {
 
             // Track points and game count (Requirement i)
             // Points = score accumulated IN THIS GAME only
-            int sessionPoints = (matchViewModel.getPlayer1Score().getValue() != null ? matchViewModel.getPlayer1Score().getValue() : 0) - initialPlayer1Score;
             finalStats.setAsocijacijePoints(finalStats.getAsocijacijePoints() + sessionPoints);
             finalStats.setAsocijacijePlayed(finalStats.getAsocijacijePlayed() + 1);
 
             // Track solved rounds (Requirement v)
-            if (asocijacijeService.getCurrentRound().isFinalSolved()) {
+            if (finalSolved) {
                 finalStats.setAsocijacijeSolved(finalStats.getAsocijacijeSolved() + 1);
             }
             finalStats.setAsocijacijeTotalRounds(finalStats.getAsocijacijeTotalRounds() + 1);
@@ -257,6 +269,9 @@ public class AsocijacijeFragment extends Fragment {
                 android.util.Log.e("UserStats", "Failed to save statistics", e);
                 return null;
             });
+        }).exceptionally(e -> {
+            android.util.Log.e("UserStats", "Failed to get statistics", e);
+            return null;
         });
     }
 
@@ -499,6 +514,9 @@ public class AsocijacijeFragment extends Fragment {
                 AsocijacijeService.ActionResult result = asocijacijeService.onTimeExpired();
                 Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
                 renderWholeScreen();
+                if (asocijacijeService.isMatchFinished()) {
+                    updateUserStatistics();
+                }
             }
         }.start();
     }

@@ -199,30 +199,40 @@ public class SkockoFragment extends Fragment {
         });
     }
 
+    private String getCurrentUserId() {
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null) {
+            return com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        return "test_user_123";
+    }
+
     private boolean statsUpdated = false;
 
     private void updateUserStatistics() {
         if (statsUpdated) return;
         statsUpdated = true;
-        statsRepository.getStatistics(MOCK_USER_ID).thenAccept(stats -> {
-            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(MOCK_USER_ID);
+        String userId = getCurrentUserId();
+        
+        int p1Score = matchViewModel.getPlayer1Score().getValue() != null ? matchViewModel.getPlayer1Score().getValue() : 0;
+        int sessionPoints = p1Score - initialPlayer1Score;
+        long gameTotal = skockoService.getCurrentRound().getGameState().getRoundNumber();
+        int gameCorrect = skockoCorrectRounds;
+        boolean isSolved = skockoService.getCurrentRound().isSolved();
+        boolean isBonusActive = skockoService.getCurrentRound().isBonusAttemptActive();
+        int currentRow = skockoService.getCurrentRound().getCurrentRow();
+
+        statsRepository.getStatistics(userId).thenAccept(stats -> {
+            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(userId);
             
-            long gameTotal = skockoService.getCurrentRound().getGameState().getRoundNumber();
-            int gameCorrect = skockoCorrectRounds;
             double oldAccuracy = finalStats.getSkocko();
 
-            // Track points and game count
-            int sessionPoints = (matchViewModel.getPlayer1Score().getValue() != null ? matchViewModel.getPlayer1Score().getValue() : 0) - initialPlayer1Score;
             finalStats.setSkockoPoints(finalStats.getSkockoPoints() + sessionPoints);
             finalStats.setSkockoPlayed(finalStats.getSkockoPlayed() + 1);
 
-            // Attempt-based success tracking
             double weightedCorrect = 0;
-            if (skockoService.getCurrentRound().isSolved()) {
-                int attemptIndex = skockoService.getCurrentRound().getCurrentRow(); 
-                // index 0-5 for attempts, 6 for bonus? 
-                // Note: submitCurrentRow increments currentRow AFTER check
-                if (skockoService.getCurrentRound().isBonusAttemptActive()) {
+            if (isSolved) {
+                int attemptIndex = currentRow; 
+                if (isBonusActive) {
                     attemptIndex = 6;
                 }
                 
@@ -237,7 +247,6 @@ public class SkockoFragment extends Fragment {
                     finalStats.setSkockoAttemptSuccessCount(attempts);
                 }
 
-                // Weighted Accuracy: 1.0 (try 1), 0.8 (try 2), 0.6 (try 3), 0.4 (try 4), 0.2 (try 5), 0.1 (try 6), 0.05 (bonus)
                 double[] weights = {1.0, 0.8, 0.6, 0.4, 0.2, 0.1, 0.05};
                 weightedCorrect = weights[Math.min(6, attemptIndex)];
             }
@@ -257,6 +266,9 @@ public class SkockoFragment extends Fragment {
                 android.util.Log.e("UserStats", "Failed to save statistics", e);
                 return null;
             });
+        }).exceptionally(e -> {
+            android.util.Log.e("UserStats", "Failed to get statistics", e);
+            return null;
         });
     }
 
@@ -409,6 +421,8 @@ public class SkockoFragment extends Fragment {
 
                 if (result.isBonusActivated()) {
                     startRoundTimer();
+                } else if (skockoService.isMatchFinished()) {
+                    updateUserStatistics();
                 }
             }
         }.start();

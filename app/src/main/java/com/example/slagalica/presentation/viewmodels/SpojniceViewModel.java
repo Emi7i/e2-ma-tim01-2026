@@ -27,7 +27,13 @@ public class SpojniceViewModel extends ViewModel {
 
     private final SpojniceRepository repository;
     private final UserStatisticsRepository statsRepository;
-    private static final String MOCK_USER_ID = "test_user_123";
+    private String getCurrentUserId() {
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null) {
+            return com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        return null;
+    }
+
     
     private final MutableLiveData<List<Spojnice>> allSpojnice = new MutableLiveData<>();
     private final MutableLiveData<Integer> currentRound = new MutableLiveData<>(1);
@@ -289,6 +295,8 @@ public class SpojniceViewModel extends ViewModel {
                 startRound(currentRound.getValue() + 1, allSpojnice.getValue());
             }, 2000);
         } else {
+            p1ScoreDelta.postValue(0);
+            p2ScoreDelta.postValue(0);
             gameFinished.postValue(true);
             updateUserStatistics();
         }
@@ -299,8 +307,9 @@ public class SpojniceViewModel extends ViewModel {
     private void updateUserStatistics() {
         if (statsUpdated) return;
         statsUpdated = true;
-        statsRepository.getStatistics(MOCK_USER_ID).thenAccept(stats -> {
-            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(MOCK_USER_ID);
+        String userId = getCurrentUserId();
+        statsRepository.getStatistics(userId).thenAccept(stats -> {
+            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(userId);
             
             // Accuracy Update: Each pair in Spojnice is a 'question'
             // Total questions = ROUNDS_COUNT * TERMS_COUNT
@@ -328,6 +337,9 @@ public class SpojniceViewModel extends ViewModel {
                 Log.e("UserStats", "Failed to save statistics", e);
                 return null;
             });
+        }).exceptionally(e -> {
+            Log.e("UserStats", "Failed to get statistics", e);
+            return null;
         });
     }
 
