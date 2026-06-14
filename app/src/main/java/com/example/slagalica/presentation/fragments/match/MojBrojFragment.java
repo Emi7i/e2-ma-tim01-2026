@@ -1,5 +1,8 @@
 package com.example.slagalica.presentation.fragments.match;
 
+import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -19,6 +22,7 @@ import com.example.slagalica.databinding.FragmentGameMojBrojBinding;
 import com.example.slagalica.domain.model.match.games.mojbroj.MojBroj;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 import com.example.slagalica.presentation.viewmodels.MojBrojViewModel;
+import com.example.slagalica.util.ShakeDetector;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -37,6 +41,10 @@ public class MojBrojFragment extends Fragment {
     List<Button> operatorButtons;
     private final Handler handler = new Handler(Looper.getMainLooper());
     Deque<Button> usedOperandStack = new ArrayDeque<>();
+
+    private SensorManager sensorManager;
+    private Sensor accelerometer;
+    private ShakeDetector shakeDetector;
 
     public MojBrojFragment() {}
 
@@ -64,13 +72,32 @@ public class MojBrojFragment extends Fragment {
                 binding.leftParen, binding.rightParen
         );
 
+        sensorManager = (SensorManager) requireContext().getSystemService(Context.SENSOR_SERVICE);
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        shakeDetector = new ShakeDetector(() -> gameViewModel.onShakeDetected());
+
         setupListeners();
         observeViewModel();
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        if (accelerometer != null) {
+            sensorManager.registerListener(shakeDetector, accelerometer, SensorManager.SENSOR_DELAY_GAME);
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        sensorManager.unregisterListener(shakeDetector);
+    }
+
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
+        sensorManager.unregisterListener(shakeDetector);
         matchViewModel.setGameActive(false);
         handler.removeCallbacksAndMessages(null);
         binding = null;
