@@ -47,35 +47,43 @@ public class AuthService {
             return failed;
         }
 
-        return AsyncUtils.toFuture(firebaseAuth.createUserWithEmailAndPassword(dto.getEmail(), dto.getPassword()))
-                .thenCompose(authResult -> {
-                    FirebaseUser firebaseUser = authResult.getUser();
-                    if (firebaseUser == null) {
+        return userProfileRepository.findByUsername(dto.getUsername())
+                .thenCompose(existing -> {
+                    if (existing != null) {
                         CompletableFuture<Void> failed = new CompletableFuture<>();
-                        failed.completeExceptionally(new IllegalStateException("Registration failed: no user returned"));
+                        failed.completeExceptionally(new IllegalArgumentException("Username already taken"));
                         return failed;
                     }
 
-                    // Send verification email
-                    firebaseUser.sendEmailVerification();
+                    return AsyncUtils.toFuture(firebaseAuth.createUserWithEmailAndPassword(dto.getEmail(), dto.getPassword()))
+                            .thenCompose(authResult -> {
+                                FirebaseUser firebaseUser = authResult.getUser();
+                                if (firebaseUser == null) {
+                                    CompletableFuture<Void> failed = new CompletableFuture<>();
+                                    failed.completeExceptionally(new IllegalStateException("Registration failed: no user returned"));
+                                    return failed;
+                                }
 
-                    UserProfile profile = new UserProfile(
-                            firebaseUser.getUid(),
-                            dto.getUsername(),
-                            dto.getEmail(),
-                            null,
-                            DEFAULT_TOKENS,
-                            DEFAULT_STARS,
-                            DEFAULT_LEAGUE,
-                            dto.getRegion(),
-                            null,
-                            DEFAULT_RANK
-                    );
+                                // Send verification email
+                                firebaseUser.sendEmailVerification();
 
-                    return userProfileRepository.saveProfile(profile);
+                                UserProfile profile = new UserProfile(
+                                        firebaseUser.getUid(),
+                                        dto.getUsername(),
+                                        dto.getEmail(),
+                                        null,
+                                        DEFAULT_TOKENS,
+                                        DEFAULT_STARS,
+                                        DEFAULT_LEAGUE,
+                                        dto.getRegion(),
+                                        null,
+                                        DEFAULT_RANK
+                                );
+
+                                return userProfileRepository.saveProfile(profile);
+                            });
                 });
     }
-
     /**
      * Logs the user in. If the identifier is not an email, resolves the
      * matching email via UserProfile lookup by username first.

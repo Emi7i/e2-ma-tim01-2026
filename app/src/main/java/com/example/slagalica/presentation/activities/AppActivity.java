@@ -22,6 +22,7 @@ import com.example.slagalica.R;
 import com.example.slagalica.databinding.ActivityAppBinding;
 import com.example.slagalica.domain.model.social.NotificationItem;
 import com.example.slagalica.domain.service.social.NotificationsService;
+import com.example.slagalica.presentation.fragments.auth.ResetPasswordFragment;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
 import com.example.slagalica.presentation.fragments.common.HomeFragment;
 import com.example.slagalica.presentation.fragments.profile.ProfileFragment;
@@ -117,6 +118,12 @@ public class AppActivity extends AppCompatActivity {
         });
         handleNotificationIntent(getIntent());
         requestNotificationPermission();
+
+        // Reset password
+        leftDrawer.findViewById(R.id.reset_password).setOnClickListener(v -> {
+            FragmentTransition.to(new ResetPasswordFragment(), this, true, R.id.appContainer);
+            binding.main.closeDrawer(GravityCompat.START);
+        });
     }
 
     private void showLeaveGameConfirmationDialog(Runnable onConfirm) {

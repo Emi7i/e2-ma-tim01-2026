@@ -24,7 +24,7 @@
             tools:src="@tools:sample/avatars" />
 
         <EditText
-            android:id="@+id/usernameInput"
+            android:id="@+id/identifierInput"
             style="@style/AuthInput"
             android:inputType="text"
             android:layout_marginBottom="@dimen/spacing_lg"
