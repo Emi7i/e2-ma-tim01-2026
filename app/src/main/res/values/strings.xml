@@ -30,6 +30,11 @@
     <string name="left_drawer_notifications">Notifikacije</string>
     <string name="left_drawer_leave_match">Izadji iz partije</string>
     <string name="next">Dalje</string>
+    <string name="reset_password_title">Reset Password</string>
+    <string name="reset_password_hint_old">Old password</string>
+    <string name="reset_password_hint_new">New password</string>
+    <string name="reset_password_hint_repeat_new">Repeat new password</string>
+    <string name="reset_password_button">Reset Password</string>
     <!-- Profile -->
     <string name="back">Nazad</string>
     <string name="shop">Prodavnica</string>
