@@ -61,26 +61,26 @@
         android:gravity="center_vertical|end">
 
         <TextView
+            android:id="@+id/player2Stars"
+            android:layout_width="52dp"
+            android:layout_height="42dp"
+            android:background="@drawable/bg_player2_score"
+            android:layout_marginEnd="8dp"
+            android:gravity="center"
+            android:text="0"
+            android:textColor="@color/white"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
             android:id="@+id/player2Name"
             style="@style/GameField"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginEnd="8dp"
             android:gravity="center"
             android:text="Igrač 2"
             android:textColor="@color/black"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/player2Stars"
-            android:layout_width="52dp"
-            android:layout_height="42dp"
-            android:background="@drawable/bg_player2_score"
-            android:gravity="center"
-            android:text="0"
-            android:textColor="@color/white"
-            android:textSize="20sp"
             android:textStyle="bold" />
     </LinearLayout>
 
