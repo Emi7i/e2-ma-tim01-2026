@@ -29,16 +29,6 @@ public abstract class AbstractGame implements IGame {
     }
 
     @Override
-    public int getMaxPoints() {
-        return config.getMaxPoints();
-    }
-
-    @Override
-    public int getMinPoints() {
-        return config.getMinPoints();
-    }
-
-    @Override
     public long getMatchId() {
         return session.getMatchId();
     }

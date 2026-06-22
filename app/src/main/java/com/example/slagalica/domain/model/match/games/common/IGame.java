@@ -4,8 +4,6 @@ public interface IGame {
     long getId();
     int getRoundLength();
     int getRounds();
-    int getMaxPoints();
-    int getMinPoints();
     int getCurrentRound();
     long getCurrentPlayer();
     void setCurrentPlayer(long playerId);
