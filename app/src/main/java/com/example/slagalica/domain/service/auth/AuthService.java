@@ -83,7 +83,8 @@ public class AuthService {
                                         DEFAULT_LEAGUE,
                                         dto.getRegion(),
                                         null,
-                                        DEFAULT_RANK
+                                        DEFAULT_RANK,
+                                        0L
                                 );
 
                                 UserStatistics stats = UserStatistics.createNew(firebaseUser.getUid());

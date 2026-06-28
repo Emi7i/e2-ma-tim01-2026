@@ -20,4 +20,5 @@ public class UserProfile {
     private String region;
     private String qrCode;
     private long rank;
+    private long monthlyStars;
 }
