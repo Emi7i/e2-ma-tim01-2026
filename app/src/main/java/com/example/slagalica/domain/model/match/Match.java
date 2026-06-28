@@ -1,5 +1,7 @@
 package com.example.slagalica.domain.model.match;
 
+import android.util.Log;
+
 import com.example.slagalica.domain.model.match.games.common.GameSession;
 import com.example.slagalica.domain.model.match.games.common.IGame;
 import com.example.slagalica.domain.model.match.games.common.OnMatchUpdatedListener;
@@ -41,7 +43,8 @@ public class Match {
                  String player2Name,
                  MatchService matchService,
                  KorakPoKorakService korakPoKorakService,
-                 MojBrojService mojBrojService){
+                 MojBrojService mojBrojService,
+                 Runnable onReadyCallback){
         this.player1Id = player1Id;
         this.player2Id = player2Id;
         this.player1Score = player1Score;
@@ -63,9 +66,13 @@ public class Match {
                 this.currentGameId,
                 player1Id
         );
+        Log.d("Match", "WHAT");
+
         this.matchService.create(data)
                 .thenAccept(matchId -> {
                     this.id = matchId;
+                    Log.d("Match", "Match created");
+                    if (onReadyCallback != null) onReadyCallback.run();
                 })
                 .exceptionally(throwable -> {
                     // handle error

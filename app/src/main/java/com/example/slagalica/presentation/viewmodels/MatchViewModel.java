@@ -1,5 +1,7 @@
 package com.example.slagalica.presentation.viewmodels;
 
+import android.util.Log;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -18,6 +20,7 @@ import javax.inject.Inject;
 
 import dagger.hilt.android.lifecycle.HiltViewModel;
 import lombok.Getter;
+import lombok.extern.log4j.Log4j;
 
 @HiltViewModel
 public class MatchViewModel extends ViewModel {
@@ -46,17 +49,31 @@ public class MatchViewModel extends ViewModel {
     }
 
     public void startMatch(String player1Id, String player2Id) {
+        Log.d("Match", "Starting match...");
         CompletableFuture<UserProfile> player1Future = userProfileRepository.getProfile(player1Id);
         CompletableFuture<UserProfile> player2Future = userProfileRepository.getProfile(player2Id);
 
         CompletableFuture.allOf(player1Future, player2Future)
                 .thenAccept(ignored -> {
+                    Log.d("Match", "Fetching players...");
+
                     UserProfile player1 = player1Future.join();
                     UserProfile player2 = player2Future.join();
+
+
+                    Log.d("Match", "Player1: " + player1);
+                    Log.d("Match", "Player2: " + player2);
+
+                    if (player1 == null || player2 == null) {
+                        Log.e("Match", "One or both profiles are null!");
+                        return;
+                    }
 
                     MatchSessionData data = new MatchSessionData();
                     data.player1Id = player1Id;
                     data.player2Id = player2Id;
+
+                    Log.d("Match", "Players fetched");
 
                     match = new Match(
                             player1Id,
@@ -67,15 +84,16 @@ public class MatchViewModel extends ViewModel {
                             player2.getUsername(),
                             matchService,
                             korakPoKorakService,
-                            mojBrojService
-                            );
-
-                    match.setOnMatchUpdatedListener(this::onMatchUpdated);
-
-                    match.start();
+                            mojBrojService,
+                            () -> {
+                                isGameActive.postValue(true);
+                                match.setOnMatchUpdatedListener(this::onMatchUpdated);
+                                match.start();
+                            }
+                    );
                 })
                 .exceptionally(throwable -> {
-                    // handle error
+                    Log.e("Match", "Error starting match", throwable);
                     return null;
                 });
     }
@@ -94,7 +112,10 @@ public class MatchViewModel extends ViewModel {
     public LiveData<String> getPlayer2Name() { return player2Name; }
     public LiveData<String> getActivePlayer() { return activePlayer; }
 
-    public void setGameActive(boolean active) { isGameActive.setValue(active); }
+    public void setGameActive(boolean active) {
+        isGameActive.setValue(active);
+        Log.d("Match", "Game active: " + isGameActive.getValue());
+    }
 
     public LiveData<Integer> getCurrentGameId() { return currentGameId; }
 

@@ -46,6 +46,12 @@ public class HomeFragment extends Fragment {
 
         matchViewModel = new ViewModelProvider(requireActivity()).get(MatchViewModel.class);
 
+        binding.start.setOnClickListener(v -> {
+            String player1Id = "NgIpszkS4LU3RTDtOd4qqQlZm7Q2"; // perica
+            String player2Id = "rAvFq0wuLHQvUwbD0FK0olNLocG3"; // skocko
+            matchViewModel.startMatch(player1Id, player2Id);
+        });
+
         // Temporary access to all games from home
         binding.koZnaZna.setOnClickListener(v -> {
             FragmentTransition.to(new KoZnaZnaFragment(), requireActivity(), true, R.id.appContainer);

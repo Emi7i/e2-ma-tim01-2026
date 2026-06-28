@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 
 import androidx.activity.EdgeToEdge;
@@ -16,6 +17,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.GravityCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.slagalica.R;
@@ -27,6 +29,8 @@ import com.example.slagalica.presentation.fragments.auth.LoginFragment;
 import com.example.slagalica.presentation.fragments.auth.ResetPasswordFragment;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
 import com.example.slagalica.presentation.fragments.common.HomeFragment;
+import com.example.slagalica.presentation.fragments.match.KorakPoKorakFragment;
+import com.example.slagalica.presentation.fragments.match.MojBrojFragment;
 import com.example.slagalica.presentation.fragments.profile.ProfileFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationTargetPlaceholderFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationsFragment;
@@ -43,6 +47,7 @@ import dagger.hilt.android.AndroidEntryPoint;
 public class AppActivity extends AppCompatActivity {
     ActivityAppBinding binding;
     MatchViewModel matchViewModel;
+    private int lastNavigatedGameId = -1;
 
     @Inject
     SessionManager sessionManager;
@@ -156,6 +161,27 @@ public class AppActivity extends AppCompatActivity {
 
     // Helper method to make the view (activity) observe changes in VM
     private void observeViewModel(){
+        matchViewModel.getCurrentGameId().observe(this, gameId -> {
+            if (gameId == null) return;
+            if (matchViewModel.getMatch() == null) return;
+            if (gameId == lastNavigatedGameId) return;
+            Fragment fragment = null;
+            switch (gameId) {
+                case 5:
+                    Log.d("Match", "Switching to korak po korak fragment...");
+                    fragment = new KorakPoKorakFragment();
+                    break;
+                case 6:
+                    Log.d("Match", "Switching to moj broj fragment...");
+                    fragment = new MojBrojFragment();
+                    break;
+            }
+            if (fragment != null) {
+                lastNavigatedGameId = gameId;
+                FragmentTransition.to(fragment, this, false, R.id.appContainer);
+            }
+        });
+
         matchViewModel.getIsGameActive().observe(this, active -> {
             if (matchViewModel.getMatch() == null) return;
             if (active == null) return;

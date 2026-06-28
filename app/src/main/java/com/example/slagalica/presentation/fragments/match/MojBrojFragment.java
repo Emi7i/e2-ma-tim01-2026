@@ -98,7 +98,7 @@ public class MojBrojFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         sensorManager.unregisterListener(shakeDetector);
-        matchViewModel.setGameActive(false);
+//        matchViewModel.setGameActive(false);
         handler.removeCallbacksAndMessages(null);
         binding = null;
     }
