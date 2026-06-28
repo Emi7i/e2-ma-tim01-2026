@@ -3,6 +3,7 @@ package com.example.slagalica.presentation.fragments.match;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -10,14 +11,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -26,22 +25,43 @@ import com.example.slagalica.databinding.FragmentGameAsocijacijeBinding;
 import com.example.slagalica.domain.model.match.games.Asocijacija;
 import com.example.slagalica.domain.model.match.games.AsocijacijaKolona;
 import com.example.slagalica.domain.model.match.games.AsocijacijaPolje;
+import com.example.slagalica.domain.model.progression.UserStatistics;
+import com.example.slagalica.domain.service.match.AsocijacijeFactory;
+import com.example.slagalica.domain.service.match.AsocijacijeService;
+import com.example.slagalica.presentation.activities.AppActivity;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
-import com.example.slagalica.repository.impl.AsocijacijeRepository;
-import com.example.slagalica.repository.impl.stub.StubAsocijacijeRepository;
+import com.example.slagalica.repository.impl.AsocijacijeContentRepository;
+import com.example.slagalica.repository.impl.UserStatisticsRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.inject.Inject;
+
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class AsocijacijeFragment extends Fragment {
 
     private MatchViewModel matchViewModel;
     private FragmentGameAsocijacijeBinding binding;
 
-    private AsocijacijeRepository asocijacijeRepository;
-    private Asocijacija asocijacija;
+    @Inject
+    AsocijacijeContentRepository asocijacijeContentRepository;
+
+    @Inject
+    UserStatisticsRepository statsRepository;
+
+    private static final String MOCK_USER_ID = "test_user_123";
+    private int asocijacijeCorrectActions = 0;
+
+    private AsocijacijeService asocijacijeService;
 
     private final List<LinearLayout> columnContainers = new ArrayList<>();
+    private CountDownTimer roundTimer;
+
+    private int initialPlayer1Score = 0;
+    private int initialPlayer2Score = 0;
 
     public AsocijacijeFragment() {
     }
@@ -62,26 +82,61 @@ public class AsocijacijeFragment extends Fragment {
         matchViewModel = new ViewModelProvider(requireActivity()).get(MatchViewModel.class);
         matchViewModel.setGameActive(true);
 
-        android.widget.TextView toolbarTitle = requireActivity().findViewById(R.id.toolbarTitle);
-        if (toolbarTitle != null) {
-            toolbarTitle.setText("Asocijacije");
-        }
+        Integer p1 = matchViewModel.getPlayer1Score().getValue();
+        Integer p2 = matchViewModel.getPlayer2Score().getValue();
+        initialPlayer1Score = p1 != null ? p1 : 0;
+        initialPlayer2Score = p2 != null ? p2 : 0;
 
-        asocijacijeRepository = new StubAsocijacijeRepository();
-        asocijacija = asocijacijeRepository.getAsocijacija();
+        ((AppActivity) requireActivity()).setToolbarTitle("Asocijacije");
 
         bindViews();
-        renderColumns();
+        setupPassButton();
         setupFinalSolution();
+        loadAsocijacijeFromFirestore();
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+
         if (matchViewModel != null) {
             matchViewModel.setGameActive(false);
         }
+
+        if (roundTimer != null) {
+            roundTimer.cancel();
+        }
+
         binding = null;
+    }
+
+    private void loadAsocijacijeFromFirestore() {
+        asocijacijeContentRepository.getAllAsocijacije()
+                .thenAccept(documents -> {
+                    requireActivity().runOnUiThread(() -> {
+                        AsocijacijeFactory factory = new AsocijacijeFactory();
+                        List<Asocijacija> rounds = factory.createRounds(documents);
+
+                        if (rounds == null || rounds.isEmpty()) {
+                            Toast.makeText(requireContext(),
+                                    "Nema asocijacija u bazi",
+                                    Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        asocijacijeService = new AsocijacijeService(rounds);
+                        renderWholeScreen();
+                        startRoundTimer();
+                    });
+                })
+                .exceptionally(e -> {
+                    requireActivity().runOnUiThread(() ->
+                            Toast.makeText(requireContext(),
+                                    "Greška pri učitavanju asocijacija iz baze",
+                                    Toast.LENGTH_SHORT).show()
+                    );
+                    return null;
+                });
     }
 
     private void bindViews() {
@@ -92,8 +147,175 @@ public class AsocijacijeFragment extends Fragment {
         columnContainers.add(binding.asocijacijeColumnD);
     }
 
+    private void setupPassButton() {
+        binding.btnAsocijacijePass.setOnClickListener(v -> {
+            if (asocijacijeService == null) {
+                return;
+            }
+
+            AsocijacijeService.ActionResult result = asocijacijeService.passTurn();
+
+            if (!result.isSuccess()) {
+                Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
+
+            if (asocijacijeService.canAdvanceRound() || !asocijacijeService.isMatchFinished()) {
+                if (roundTimer != null) {
+                    roundTimer.cancel();
+                }
+
+                if (!asocijacijeService.getCurrentRound().getGameState().isRoundFinished()) {
+                    startRoundTimer();
+                } else if (asocijacijeService.canAdvanceRound()) {
+                    renderWholeScreen();
+                    startRoundTimer();
+                    return;
+                }
+            }
+
+            renderWholeScreen();
+
+            if (asocijacijeService.isMatchFinished()) {
+                updateUserStatistics();
+            } else if (!asocijacijeService.getCurrentRound().getGameState().isRoundFinished()) {
+                startRoundTimer();
+            }
+        });
+    }
+
+    private void setupFinalSolution() {
+        binding.btnAsocijacijeFinalSubmit.setOnClickListener(v -> {
+            if (asocijacijeService == null) {
+                return;
+            }
+
+            int currentPlayer = asocijacijeService.getCurrentRound().getGameState().getCurrentPlayer();
+            AsocijacijeService.ActionResult result =
+                    asocijacijeService.submitFinalSolution(binding.etAsocijacijeFinalSolution.getText().toString());
+
+            if (result.isSuccess() && currentPlayer == 1) {
+                asocijacijeCorrectActions++;
+            }
+
+            Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
+
+            if (result.isSuccess()
+                    && roundTimer != null
+                    && asocijacijeService.getCurrentRound().getGameState().isRoundFinished()) {
+                roundTimer.cancel();
+            }
+
+            renderWholeScreen();
+            if (asocijacijeService.isMatchFinished()) {
+                updateUserStatistics();
+            }
+        });
+    }
+
+    private String getCurrentUserId() {
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null) {
+            return com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        return "test_user_123";
+    }
+
+    private boolean statsUpdated = false;
+
+    private void updateUserStatistics() {
+        if (statsUpdated) return;
+        statsUpdated = true;
+        String userId = getCurrentUserId();
+        
+        // Capture data on main thread
+        int p1Score = matchViewModel.getPlayer1Score().getValue() != null ? matchViewModel.getPlayer1Score().getValue() : 0;
+        int sessionPoints = p1Score - initialPlayer1Score;
+        long gameTotal = (long) (asocijacijeService.getCurrentRoundIndex() + 1);
+        int gameCorrect = asocijacijeCorrectActions;
+        boolean finalSolved = asocijacijeService.getCurrentRound().isFinalSolved();
+
+        statsRepository.getStatistics(userId).thenAccept(stats -> {
+            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(userId);
+            
+            double oldAccuracy = finalStats.getAsocijacije();
+
+            long newTotal = finalStats.getAsocijacijeTotal() + gameTotal;
+            long newCorrect = finalStats.getAsocijacijeCorrect() + gameCorrect;
+            finalStats.setAsocijacijeTotal(newTotal);
+            finalStats.setAsocijacijeCorrect(newCorrect);
+            if (newTotal > 0) {
+                finalStats.setAsocijacije((double) newCorrect / newTotal * 100.0);
+            }
+            double newAccuracy = finalStats.getAsocijacije();
+
+            // Track points and game count (Requirement i)
+            // Points = score accumulated IN THIS GAME only
+            finalStats.setAsocijacijePoints(finalStats.getAsocijacijePoints() + sessionPoints);
+            finalStats.setAsocijacijePlayed(finalStats.getAsocijacijePlayed() + 1);
+
+            // Track solved rounds (Requirement v)
+            if (finalSolved) {
+                finalStats.setAsocijacijeSolved(finalStats.getAsocijacijeSolved() + 1);
+            }
+            finalStats.setAsocijacijeTotalRounds(finalStats.getAsocijacijeTotalRounds() + 1);
+
+            android.util.Log.d("UserStats", String.format("Stats changed: Asocijacije - Game Correct: %d/%d | Total Accuracy: %.1f%% -> %.1f%%",
+                    gameCorrect, (int)gameTotal, oldAccuracy, newAccuracy));
+
+            finalStats.calculateOverallStats();
+            statsRepository.saveStatistics(finalStats).exceptionally(e -> {
+                android.util.Log.e("UserStats", "Failed to save statistics", e);
+                return null;
+            });
+        }).exceptionally(e -> {
+            android.util.Log.e("UserStats", "Failed to get statistics", e);
+            return null;
+        });
+    }
+
+    private void renderWholeScreen() {
+        if (asocijacijeService == null) {
+            return;
+        }
+
+        updateGameHeader();
+        renderColumns();
+        renderFinalState();
+        renderPassButtonState();
+    }
+
+    private void updateGameHeader() {
+        AppActivity activity = (AppActivity) requireActivity();
+        Asocijacija round = asocijacijeService.getCurrentRound();
+
+        matchViewModel.setPlayerNames(
+                round.getGameState().getPlayerOneName(),
+                round.getGameState().getPlayerTwoName()
+        );
+
+        matchViewModel.setActivePlayer(
+                round.getGameState().getCurrentPlayer()
+        );
+
+        matchViewModel.setPlayer1Score(initialPlayer1Score + round.getGameState().getPlayerOneScore());
+        matchViewModel.setPlayer2Score(initialPlayer2Score + round.getGameState().getPlayerTwoScore());
+
+        activity.getBinding().gameHeader.setTimer(
+                formatTime(round.getGameState().getRemainingSeconds())
+        );
+    }
+
+    private String formatTime(int totalSeconds) {
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        return String.format("%02d:%02d", minutes, seconds);
+    }
+
     private void renderColumns() {
-        List<AsocijacijaKolona> columns = asocijacija.getColumns();
+        Asocijacija round = asocijacijeService.getCurrentRound();
+        List<AsocijacijaKolona> columns = round.getColumns();
 
         for (int i = 0; i < columns.size() && i < columnContainers.size(); i++) {
             LinearLayout container = columnContainers.get(i);
@@ -103,16 +325,16 @@ public class AsocijacijeFragment extends Fragment {
 
             for (int j = 0; j < column.getFields().size(); j++) {
                 AsocijacijaPolje field = column.getFields().get(j);
-                TextView fieldView = createFieldView(column, field, j);
+                TextView fieldView = createFieldView(i, j, column, field);
                 container.addView(fieldView);
             }
 
-            LinearLayout solutionRow = createSolutionInputRow(column);
+            LinearLayout solutionRow = createSolutionInputRow(i, round, column);
             container.addView(solutionRow);
         }
     }
 
-    private TextView createFieldView(AsocijacijaKolona column, AsocijacijaPolje field, int position) {
+    private TextView createFieldView(int columnIndex, int fieldIndex, AsocijacijaKolona column, AsocijacijaPolje field) {
         TextView textView = new TextView(requireContext());
 
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
@@ -125,16 +347,15 @@ public class AsocijacijeFragment extends Fragment {
 
         textView.setGravity(Gravity.CENTER);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-        textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.black));
+        textView.setTextColor(getResources().getColor(R.color.black, requireContext().getTheme()));
         textView.setPadding(dp(4), dp(4), dp(4), dp(4));
 
-        applyFieldState(textView, field, column.getLabel(), position);
+        applyFieldState(textView, field, column.getLabel(), fieldIndex);
 
         textView.setOnClickListener(v -> {
-            if (!field.isOpened()) {
-                field.setOpened(true);
-                applyFieldState(textView, field, column.getLabel(), position);
-            }
+            AsocijacijeService.ActionResult result = asocijacijeService.openField(columnIndex, fieldIndex);
+            Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
+            renderWholeScreen();
         });
 
         return textView;
@@ -150,7 +371,7 @@ public class AsocijacijeFragment extends Fragment {
         }
     }
 
-    private LinearLayout createSolutionInputRow(AsocijacijaKolona column) {
+    private LinearLayout createSolutionInputRow(int columnIndex, Asocijacija round, AsocijacijaKolona column) {
         LinearLayout wrapper = new LinearLayout(requireContext());
 
         LinearLayout.LayoutParams wrapperParams = new LinearLayout.LayoutParams(
@@ -162,7 +383,9 @@ public class AsocijacijeFragment extends Fragment {
         wrapper.setOrientation(LinearLayout.VERTICAL);
         wrapper.setPadding(dp(4), dp(4), dp(4), dp(4));
 
-        if (column.isSolved()) {
+        boolean revealSolution = column.isSolved() || round.getGameState().isRoundFinished();
+
+        if (revealSolution) {
             wrapper.setBackgroundResource(R.drawable.bg_asocijacije_solution_open);
         } else {
             wrapper.setBackgroundResource(R.drawable.bg_asocijacije_solution_closed);
@@ -176,7 +399,7 @@ public class AsocijacijeFragment extends Fragment {
         editText.setLayoutParams(etParams);
         editText.setBackgroundColor(Color.TRANSPARENT);
         editText.setHint("Rešenje " + column.getLabel());
-        editText.setTextColor(ContextCompat.getColor(requireContext(), R.color.black));
+        editText.setTextColor(getResources().getColor(R.color.black, requireContext().getTheme()));
         editText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         editText.setPadding(dp(8), 0, dp(8), 0);
         editText.setSingleLine(true);
@@ -192,34 +415,32 @@ public class AsocijacijeFragment extends Fragment {
         button.setText("OK");
         button.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
 
-        if (column.isSolved()) {
+        if (revealSolution) {
             editText.setText(column.getSolution());
             editText.setEnabled(false);
             button.setEnabled(false);
+        } else {
+            boolean enableGuess = asocijacijeService.canCurrentPlayerGuess();
+            editText.setEnabled(enableGuess);
+            button.setEnabled(enableGuess);
         }
 
         button.setOnClickListener(v -> {
-            String enteredText = editText.getText().toString().trim();
+            int currentPlayer = asocijacijeService.getCurrentRound().getGameState().getCurrentPlayer();
+            AsocijacijeService.ActionResult result =
+                    asocijacijeService.submitColumnSolution(columnIndex, editText.getText().toString());
 
-            if (enteredText.isEmpty()) {
-                Toast.makeText(requireContext(),
-                        "Unesi rešenje kolone " + column.getLabel(),
-                        Toast.LENGTH_SHORT).show();
-                return;
+            Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
+
+            if (result.isSuccess()
+                    && roundTimer != null
+                    && asocijacijeService.getCurrentRound().getGameState().isRoundFinished()) {
+                roundTimer.cancel();
             }
 
-            if (enteredText.equalsIgnoreCase(column.getSolution())) {
-                column.setSolved(true);
-                openAllFieldsInColumn(column);
-                renderColumns();
-
-                Toast.makeText(requireContext(),
-                        "Tačno rešenje kolone " + column.getLabel(),
-                        Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(requireContext(),
-                        "Netačno rešenje kolone " + column.getLabel(),
-                        Toast.LENGTH_SHORT).show();
+            renderWholeScreen();
+            if (asocijacijeService.isMatchFinished()) {
+                updateUserStatistics();
             }
         });
 
@@ -229,43 +450,71 @@ public class AsocijacijeFragment extends Fragment {
         return wrapper;
     }
 
-    private void setupFinalSolution() {
-        applyFinalState();
+    private void renderFinalState() {
+        Asocijacija round = asocijacijeService.getCurrentRound();
+        boolean reveal = round.isFinalSolved() || round.getGameState().isRoundFinished();
 
-        binding.btnAsocijacijeFinalSubmit.setOnClickListener(v -> {
-            String enteredText = binding.etAsocijacijeFinalSolution.getText().toString().trim();
-
-            if (enteredText.isEmpty()) {
-                Toast.makeText(requireContext(), "Unesi konačno rešenje", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            if (enteredText.equalsIgnoreCase(asocijacija.getFinalSolution())) {
-                openWholeBoard();
-                renderColumns();
-                applyFinalState();
-
-                binding.etAsocijacijeFinalSolution.setText(asocijacija.getFinalSolution());
-                binding.etAsocijacijeFinalSolution.setEnabled(false);
-                binding.btnAsocijacijeFinalSubmit.setEnabled(false);
-
-                Toast.makeText(requireContext(), "Tačno konačno rešenje!", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(requireContext(), "Netačno konačno rešenje", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void applyFinalState() {
-        if (asocijacija.isFinalSolved()) {
+        if (reveal) {
             binding.finalSolutionContainer.setBackgroundResource(R.drawable.bg_asocijacije_solution_open);
+            binding.etAsocijacijeFinalSolution.setText(round.getFinalSolution());
             binding.etAsocijacijeFinalSolution.setEnabled(false);
             binding.btnAsocijacijeFinalSubmit.setEnabled(false);
         } else {
             binding.finalSolutionContainer.setBackgroundResource(R.drawable.bg_asocijacije_solution_closed);
-            binding.etAsocijacijeFinalSolution.setEnabled(true);
-            binding.btnAsocijacijeFinalSubmit.setEnabled(true);
+            binding.etAsocijacijeFinalSolution.setText("");
+            boolean enableGuess = asocijacijeService.canCurrentPlayerGuess();
+            binding.etAsocijacijeFinalSolution.setEnabled(enableGuess);
+            binding.btnAsocijacijeFinalSubmit.setEnabled(enableGuess);
         }
+    }
+
+    private void renderPassButtonState() {
+        Asocijacija round = asocijacijeService.getCurrentRound();
+
+        if (round.getGameState().isRoundFinished()) {
+            if (asocijacijeService.canAdvanceRound()) {
+                binding.btnAsocijacijePass.setText("Sledeća runda");
+                binding.btnAsocijacijePass.setEnabled(true);
+            } else {
+                binding.btnAsocijacijePass.setText("Kraj");
+                binding.btnAsocijacijePass.setEnabled(false);
+            }
+        } else {
+            binding.btnAsocijacijePass.setText("Predaj potez");
+            binding.btnAsocijacijePass.setEnabled(asocijacijeService.canCurrentPlayerGuess());
+        }
+    }
+
+    private void startRoundTimer() {
+        if (asocijacijeService == null) {
+            return;
+        }
+
+        Asocijacija round = asocijacijeService.getCurrentRound();
+
+        if (roundTimer != null) {
+            roundTimer.cancel();
+        }
+
+        roundTimer = new CountDownTimer(round.getGameState().getRemainingSeconds() * 1000L, 1000L) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                round.getGameState().setRemainingSeconds((int) (millisUntilFinished / 1000));
+                updateGameHeader();
+            }
+
+            @Override
+            public void onFinish() {
+                round.getGameState().setRemainingSeconds(0);
+                updateGameHeader();
+                AsocijacijeService.ActionResult result = asocijacijeService.onTimeExpired();
+                Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
+                renderWholeScreen();
+                if (asocijacijeService.isMatchFinished()) {
+                    updateUserStatistics();
+                }
+            }
+        }.start();
     }
 
     private int dp(int value) {
@@ -275,21 +524,5 @@ public class AsocijacijeFragment extends Fragment {
                 value,
                 resources.getDisplayMetrics()
         );
-    }
-
-    private void openAllFieldsInColumn(AsocijacijaKolona column) {
-        for (AsocijacijaPolje field : column.getFields()) {
-            field.setOpened(true);
-        }
-    }
-
-    private void openWholeBoard() {
-        for (AsocijacijaKolona column : asocijacija.getColumns()) {
-            column.setSolved(true);
-            for (AsocijacijaPolje field : column.getFields()) {
-                field.setOpened(true);
-            }
-        }
-        asocijacija.setFinalSolved(true);
     }
 }

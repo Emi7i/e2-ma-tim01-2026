@@ -56,17 +56,23 @@
                 android:layout_marginBottom="24dp">
 
                 <FrameLayout
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/circular_profile_background">
+                    android:layout_width="80dp"
+                    android:layout_height="80dp">
 
                     <ImageView
                         android:id="@+id/avatar"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
+                        android:layout_width="35dp"
+                        android:layout_height="35dp"
+                        android:layout_gravity="center"
                         android:background="@drawable/profile_icon"
                         android:scaleType="centerCrop"
                         android:contentDescription="@string/profile_avatar" />
+
+                    <ImageView
+                        android:id="@+id/leagueBorder"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="fitCenter" />
 
                 </FrameLayout>
 
@@ -83,9 +89,10 @@
 
             <!-- Success Rate -->
             <TextView
+                android:id="@+id/successRateText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Uspesnost: 70%"
+                android:text="Uspesnost: 0%"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="@color/gray_dark"
@@ -104,21 +111,34 @@
                     android:orientation="vertical"
                     android:layout_marginBottom="16dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <RelativeLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Ko zna zna:"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/gray"
-                        android:layout_marginBottom="4dp" />
+                        android:layout_marginBottom="4dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Ko zna zna:"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/gray"
+                            android:layout_alignParentStart="true"/>
+                        <TextView
+                            android:id="@+id/textKoZnaZnaCorrect"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0/0"
+                            android:textSize="12sp"
+                            android:textColor="@color/gray"
+                            android:layout_alignParentEnd="true"/>
+                    </RelativeLayout>
 
                     <ProgressBar
                         android:id="@+id/progressKoZnaZna"
                         style="?android:attr/progressBarStyleHorizontal"
                         android:layout_width="match_parent"
                         android:layout_height="12dp"
-                        android:progress="75"
+                        android:progress="0"
                         android:max="100"
                         android:progressTint="@color/field_background"
                         android:progressBackgroundTint="@color/red" />
@@ -131,21 +151,34 @@
                     android:orientation="vertical"
                     android:layout_marginBottom="16dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <RelativeLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Moj broj:"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/gray"
-                        android:layout_marginBottom="4dp" />
+                        android:layout_marginBottom="4dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Moj broj:"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/gray"
+                            android:layout_alignParentStart="true"/>
+                        <TextView
+                            android:id="@+id/textMojBrojCorrect"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0/0"
+                            android:textSize="12sp"
+                            android:textColor="@color/gray"
+                            android:layout_alignParentEnd="true"/>
+                    </RelativeLayout>
 
                     <ProgressBar
                         android:id="@+id/progressMojBroj"
                         style="?android:attr/progressBarStyleHorizontal"
                         android:layout_width="match_parent"
                         android:layout_height="12dp"
-                        android:progress="60"
+                        android:progress="0"
                         android:max="100"
                         android:progressTint="@color/field_background"
                         android:progressBackgroundTint="@color/red" />
@@ -158,21 +191,34 @@
                     android:orientation="vertical"
                     android:layout_marginBottom="16dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <RelativeLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Korak po korak:"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/gray"
-                        android:layout_marginBottom="4dp" />
+                        android:layout_marginBottom="4dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Korak po korak:"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/gray"
+                            android:layout_alignParentStart="true"/>
+                        <TextView
+                            android:id="@+id/textKorakPoKorakCorrect"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0/0"
+                            android:textSize="12sp"
+                            android:textColor="@color/gray"
+                            android:layout_alignParentEnd="true"/>
+                    </RelativeLayout>
 
                     <ProgressBar
                         android:id="@+id/progressKorakPoKorak"
                         style="?android:attr/progressBarStyleHorizontal"
                         android:layout_width="match_parent"
                         android:layout_height="12dp"
-                        android:progress="85"
+                        android:progress="0"
                         android:max="100"
                         android:progressTint="@color/field_background"
                         android:progressBackgroundTint="@color/red" />
@@ -185,21 +231,34 @@
                     android:orientation="vertical"
                     android:layout_marginBottom="16dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <RelativeLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Asocijacije:"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/gray"
-                        android:layout_marginBottom="4dp" />
+                        android:layout_marginBottom="4dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Asocijacije:"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/gray"
+                            android:layout_alignParentStart="true"/>
+                        <TextView
+                            android:id="@+id/textAsocijacijeCorrect"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0/0"
+                            android:textSize="12sp"
+                            android:textColor="@color/gray"
+                            android:layout_alignParentEnd="true"/>
+                    </RelativeLayout>
 
                     <ProgressBar
                         android:id="@+id/progressAsocijacije"
                         style="?android:attr/progressBarStyleHorizontal"
                         android:layout_width="match_parent"
                         android:layout_height="12dp"
-                        android:progress="50"
+                        android:progress="0"
                         android:max="100"
                         android:progressTint="@color/field_background"
                         android:progressBackgroundTint="@color/red" />
@@ -212,21 +271,34 @@
                     android:orientation="vertical"
                     android:layout_marginBottom="16dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <RelativeLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Skočko:"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/gray"
-                        android:layout_marginBottom="4dp" />
+                        android:layout_marginBottom="4dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Skočko:"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/gray"
+                            android:layout_alignParentStart="true"/>
+                        <TextView
+                            android:id="@+id/textSkockoCorrect"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0/0"
+                            android:textSize="12sp"
+                            android:textColor="@color/gray"
+                            android:layout_alignParentEnd="true"/>
+                    </RelativeLayout>
 
                     <ProgressBar
                         android:id="@+id/progressSkocko"
                         style="?android:attr/progressBarStyleHorizontal"
                         android:layout_width="match_parent"
                         android:layout_height="12dp"
-                        android:progress="70"
+                        android:progress="0"
                         android:max="100"
                         android:progressTint="@color/field_background"
                         android:progressBackgroundTint="@color/red" />
@@ -238,21 +310,34 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <RelativeLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Spojnice:"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/gray"
-                        android:layout_marginBottom="4dp" />
+                        android:layout_marginBottom="4dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Spojnice:"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/gray"
+                            android:layout_alignParentStart="true"/>
+                        <TextView
+                            android:id="@+id/textSpojniceCorrect"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0/0"
+                            android:textSize="12sp"
+                            android:textColor="@color/gray"
+                            android:layout_alignParentEnd="true"/>
+                    </RelativeLayout>
 
                     <ProgressBar
                         android:id="@+id/progressSpojnice"
                         style="?android:attr/progressBarStyleHorizontal"
                         android:layout_width="match_parent"
                         android:layout_height="12dp"
-                        android:progress="65"
+                        android:progress="0"
                         android:max="100"
                         android:progressTint="@color/field_background"
                         android:progressBackgroundTint="@color/red" />
@@ -272,9 +357,10 @@
                 android:layout_marginBottom="32dp">
 
                 <TextView
+                    android:id="@+id/totalGamesText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Ukupno odigranih: 543 partija"
+                    android:text="Ukupno odigranih: 0 partija"
                     android:textSize="14sp"
                     android:textColor="@color/gray"
                     android:layout_marginBottom="16dp" />
@@ -301,7 +387,7 @@
                             android:id="@+id/winrateText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="55%"
+                            android:text="0%"
                             android:textSize="24sp"
                             android:textStyle="bold"
                             android:textColor="@color/gray_dark" />

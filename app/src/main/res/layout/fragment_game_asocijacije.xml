@@ -9,11 +9,11 @@
         android:id="@+id/asocijacijeBoardRow"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="10dp"
         android:orientation="horizontal"
         android:weightSum="4"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/finalSolutionContainer"
+        app:layout_constraintBottom_toTopOf="@id/asocijacijeActionRow"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -51,11 +51,29 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/asocijacijeActionRow"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="end"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@id/finalSolutionContainer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <Button
+            android:id="@+id/btnAsocijacijePass"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Predaj potez" />
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/finalSolutionContainer"
         android:layout_width="0dp"
         android:layout_height="78dp"
         android:layout_marginTop="12dp"
-        android:layout_marginHorizontal="52dp"
+        android:layout_marginHorizontal="30dp"
         android:layout_marginBottom="12dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"

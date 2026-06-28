@@ -1,15 +1,13 @@
 package com.example.slagalica.presentation.fragments.match;
 
 import android.content.res.Resources;
-import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -22,23 +20,42 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.slagalica.R;
 import com.example.slagalica.databinding.FragmentGameSkockoBinding;
-import com.example.slagalica.domain.model.match.games.SkockoPolje;
 import com.example.slagalica.domain.model.match.games.SkockoPokusaj;
 import com.example.slagalica.domain.model.match.games.SkockoTabla;
+import com.example.slagalica.domain.model.progression.UserStatistics;
+import com.example.slagalica.domain.service.match.SkockoFactory;
+import com.example.slagalica.domain.service.match.SkockoService;
+import com.example.slagalica.presentation.activities.AppActivity;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
-import com.example.slagalica.repository.impl.SkockoRepository;
-import com.example.slagalica.repository.impl.stub.StubSkockoRepository;
+import com.example.slagalica.repository.impl.SkockoContentRepository;
+import com.example.slagalica.repository.impl.UserStatisticsRepository;
 
-import java.util.ArrayList;
 import java.util.List;
 
+import javax.inject.Inject;
+
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class SkockoFragment extends Fragment {
 
     private MatchViewModel matchViewModel;
     private FragmentGameSkockoBinding binding;
 
-    private SkockoRepository skockoRepository;
-    private SkockoTabla skockoTabla;
+    @Inject
+    SkockoContentRepository skockoContentRepository;
+
+    @Inject
+    UserStatisticsRepository statsRepository;
+
+    private static final String MOCK_USER_ID = "test_user_123";
+    private int skockoCorrectRounds = 0;
+
+    private SkockoService skockoService;
+    private CountDownTimer roundTimer;
+
+    private int initialPlayer1Score = 0;
+    private int initialPlayer2Score = 0;
 
     public SkockoFragment() {
     }
@@ -59,17 +76,15 @@ public class SkockoFragment extends Fragment {
         matchViewModel = new ViewModelProvider(requireActivity()).get(MatchViewModel.class);
         matchViewModel.setGameActive(true);
 
-        android.widget.TextView toolbarTitle = requireActivity().findViewById(R.id.toolbarTitle);
-        if (toolbarTitle != null) {
-            toolbarTitle.setText("Skočko");
-        }
+        Integer p1 = matchViewModel.getPlayer1Score().getValue();
+        Integer p2 = matchViewModel.getPlayer2Score().getValue();
+        initialPlayer1Score = p1 != null ? p1 : 0;
+        initialPlayer2Score = p2 != null ? p2 : 0;
 
-        skockoRepository = new StubSkockoRepository();
-        skockoTabla = skockoRepository.getSkockoTabla();
+        ((AppActivity) requireActivity()).setToolbarTitle("Skočko");
 
         setupSymbolButtons();
-        renderAll();
-        updateGameState();
+        loadSkockoFromFirestore();
     }
 
     @Override
@@ -78,200 +93,278 @@ public class SkockoFragment extends Fragment {
         if (matchViewModel != null) {
             matchViewModel.setGameActive(false);
         }
+        if (roundTimer != null) {
+            roundTimer.cancel();
+        }
         binding = null;
     }
 
+    private void loadSkockoFromFirestore() {
+        skockoContentRepository.getAllCombinations()
+                .thenAccept(documents -> {
+                    requireActivity().runOnUiThread(() -> {
+                        SkockoFactory factory = new SkockoFactory();
+                        List<SkockoTabla> rounds = factory.createRounds(documents);
+
+                        if (rounds == null || rounds.isEmpty()) {
+                            Toast.makeText(requireContext(),
+                                    "Nema skočko kombinacija u bazi",
+                                    Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        skockoService = new SkockoService(rounds);
+                        renderWholeScreen();
+                        startRoundTimer();
+                    });
+                })
+                .exceptionally(e -> {
+                    requireActivity().runOnUiThread(() ->
+                            Toast.makeText(requireContext(),
+                                    "Greška pri učitavanju skočka iz baze",
+                                    Toast.LENGTH_SHORT).show()
+                    );
+                    return null;
+                });
+    }
+
     private void setupSymbolButtons() {
-        binding.symStar.setOnClickListener(v -> appendSymbol("★"));
-        binding.symSpade.setOnClickListener(v -> appendSymbol("♠"));
-        binding.symClub.setOnClickListener(v -> appendSymbol("♣"));
-        binding.symHeart.setOnClickListener(v -> appendSymbol("♥"));
-        binding.symDiamond.setOnClickListener(v -> appendSymbol("♦"));
-        binding.symExplosion.setOnClickListener(v -> appendSymbol("💥"));
+        binding.symStar.setOnClickListener(v -> handleAppendSymbol("★"));
+        binding.symSpade.setOnClickListener(v -> handleAppendSymbol("♠"));
+        binding.symClub.setOnClickListener(v -> handleAppendSymbol("♣"));
+        binding.symHeart.setOnClickListener(v -> handleAppendSymbol("♥"));
+        binding.symDiamond.setOnClickListener(v -> handleAppendSymbol("♦"));
+        binding.symExplosion.setOnClickListener(v -> handleAppendSymbol("💥"));
 
-        binding.btnSkockoDelete.setOnClickListener(v -> removeLastSymbol());
-        binding.btnSkockoSubmit.setOnClickListener(v -> submitCurrentRow());
-    }
-
-    private void appendSymbol(String symbol) {
-        if (skockoTabla.isFinished()) return;
-
-        SkockoPokusaj currentAttempt = skockoTabla.getAttempts().get(skockoTabla.getCurrentRow());
-        if (currentAttempt.isSubmitted()) return;
-
-        for (SkockoPolje polje : currentAttempt.getGuess()) {
-            if (polje.isEmpty()) {
-                polje.setSymbol(symbol);
-                renderAll();
+        binding.btnSkockoDelete.setOnClickListener(v -> {
+            if (skockoService == null) {
                 return;
             }
-        }
 
-        Toast.makeText(requireContext(), "Red je već popunjen", Toast.LENGTH_SHORT).show();
-    }
-
-    private void removeLastSymbol() {
-        if (skockoTabla.isFinished()) return;
-
-        SkockoPokusaj currentAttempt = skockoTabla.getAttempts().get(skockoTabla.getCurrentRow());
-        if (currentAttempt.isSubmitted()) return;
-
-        for (int i = currentAttempt.getGuess().size() - 1; i >= 0; i--) {
-            SkockoPolje polje = currentAttempt.getGuess().get(i);
-            if (!polje.isEmpty()) {
-                polje.setSymbol("");
-                renderAll();
+            if (skockoService.getCurrentRound().getGameState().isRoundFinished()) {
                 return;
             }
-        }
-    }
 
-    private void submitCurrentRow() {
-        if (skockoTabla.isFinished()) return;
+            skockoService.removeLastSymbol();
+            renderWholeScreen();
+        });
 
-        SkockoPokusaj currentAttempt = skockoTabla.getAttempts().get(skockoTabla.getCurrentRow());
-
-        for (SkockoPolje polje : currentAttempt.getGuess()) {
-            if (polje.isEmpty()) {
-                Toast.makeText(requireContext(), "Popuni sva 4 polja", Toast.LENGTH_SHORT).show();
+        binding.btnSkockoSubmit.setOnClickListener(v -> {
+            if (skockoService == null) {
                 return;
             }
-        }
 
-        evaluateAttempt(currentAttempt);
-        currentAttempt.setSubmitted(true);
+            SkockoTabla round = skockoService.getCurrentRound();
 
-        boolean solved = isExactAttempt(currentAttempt);
+            if (round.getGameState().isRoundFinished()) {
+                if (skockoService.canAdvanceRound()) {
+                    if (roundTimer != null) {
+                        roundTimer.cancel();
+                    }
 
-        if (solved) {
-            skockoTabla.setSolved(true);
-            skockoTabla.setFinished(true);
-            if (skockoTabla.getCurrentPlayer() == 1) {
-                skockoTabla.setWinnerName(skockoTabla.getPlayerOneName());
-            } else {
-                skockoTabla.setWinnerName(skockoTabla.getPlayerTwoName());
-            }
-        } else {
-            if (skockoTabla.getCurrentPlayer() == 1) {
-                if (skockoTabla.getCurrentRow() == 5) {
-                    skockoTabla.setCurrentPlayer(2);
-                    skockoTabla.setCurrentRow(6);
-                    Toast.makeText(requireContext(), "Sada igra Igrač 2", Toast.LENGTH_SHORT).show();
+                    SkockoService.ActionResult result = skockoService.advanceToNextRound();
+                    Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
+                    renderWholeScreen();
+                    startRoundTimer();
                 } else {
-                    skockoTabla.setCurrentRow(skockoTabla.getCurrentRow() + 1);
+                    Toast.makeText(requireContext(), "Igra je završena", Toast.LENGTH_SHORT).show();
                 }
-            } else {
-                skockoTabla.setFinished(true);
+                return;
             }
-        }
 
-        renderAll();
-        updateGameState();
-    }
-
-    private boolean isExactAttempt(SkockoPokusaj attempt) {
-        for (int i = 0; i < 4; i++) {
-            if (!attempt.getGuess().get(i).getSymbol().equals(skockoTabla.getSecretCombination().get(i))) {
-                return false;
+            int currentPlayer = round.getGameState().getCurrentPlayer();
+            SkockoService.ActionResult result = skockoService.submitCurrentRow();
+            
+            if (result.isSuccess() && result.isRoundFinished() && round.isSolved() && currentPlayer == 1) {
+                skockoCorrectRounds++;
             }
-        }
-        return true;
-    }
 
-    private void evaluateAttempt(SkockoPokusaj attempt) {
-        List<String> secret = new ArrayList<>(skockoTabla.getSecretCombination());
-        List<String> guess = new ArrayList<>();
+            Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
 
-        for (SkockoPolje polje : attempt.getGuess()) {
-            guess.add(polje.getSymbol());
-        }
+            renderWholeScreen();
 
-        List<String> result = new ArrayList<>();
-
-        for (int i = 0; i < 4; i++) {
-            if (guess.get(i).equals(secret.get(i))) {
-                result.add("EXACT");
-                guess.set(i, null);
-                secret.set(i, null);
-            }
-        }
-
-        for (int i = 0; i < 4; i++) {
-            if (guess.get(i) != null) {
-                int index = secret.indexOf(guess.get(i));
-                if (index != -1) {
-                    result.add("PARTIAL");
-                    secret.set(index, null);
+            if (result.isBonusActivated()) {
+                if (roundTimer != null) {
+                    roundTimer.cancel();
+                }
+                startRoundTimer();
+            } else if (result.isRoundFinished()) {
+                if (roundTimer != null) {
+                    roundTimer.cancel();
+                }
+                if (skockoService.isMatchFinished()) {
+                    updateUserStatistics();
                 }
             }
-        }
-
-        while (result.size() < 4) {
-            result.add("EMPTY");
-        }
-
-        for (int i = 0; i < 4; i++) {
-            attempt.getFeedback().set(i, result.get(i));
-        }
+        });
     }
 
-    private void renderAll() {
-        renderUpperSection();
-        renderLowerPlayerTwoAttempt();
-        renderLowerFinalSolution();
+    private String getCurrentUserId() {
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null) {
+            return com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+        return "test_user_123";
     }
 
-    private void renderUpperSection() {
+    private boolean statsUpdated = false;
+
+    private void updateUserStatistics() {
+        if (statsUpdated) return;
+        statsUpdated = true;
+        String userId = getCurrentUserId();
+        
+        int p1Score = matchViewModel.getPlayer1Score().getValue() != null ? matchViewModel.getPlayer1Score().getValue() : 0;
+        int sessionPoints = p1Score - initialPlayer1Score;
+        long gameTotal = skockoService.getCurrentRound().getGameState().getRoundNumber();
+        int gameCorrect = skockoCorrectRounds;
+        boolean isSolved = skockoService.getCurrentRound().isSolved();
+        boolean isBonusActive = skockoService.getCurrentRound().isBonusAttemptActive();
+        int currentRow = skockoService.getCurrentRound().getCurrentRow();
+
+        statsRepository.getStatistics(userId).thenAccept(stats -> {
+            UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(userId);
+            
+            double oldAccuracy = finalStats.getSkocko();
+
+            finalStats.setSkockoPoints(finalStats.getSkockoPoints() + sessionPoints);
+            finalStats.setSkockoPlayed(finalStats.getSkockoPlayed() + 1);
+
+            double weightedCorrect = 0;
+            if (isSolved) {
+                int attemptIndex = currentRow; 
+                if (isBonusActive) {
+                    attemptIndex = 6;
+                }
+                
+                if (attemptIndex >= 0 && attemptIndex < 7) {
+                    List<Long> attempts = finalStats.getSkockoAttemptSuccessCount();
+                    if (attempts == null || attempts.size() < 7) {
+                        attempts = new java.util.ArrayList<>(java.util.Arrays.asList(0L, 0L, 0L, 0L, 0L, 0L, 0L));
+                    } else {
+                        attempts = new java.util.ArrayList<>(attempts);
+                    }
+                    attempts.set(attemptIndex, attempts.get(attemptIndex) + 1);
+                    finalStats.setSkockoAttemptSuccessCount(attempts);
+                }
+
+                double[] weights = {1.0, 0.8, 0.6, 0.4, 0.2, 0.1, 0.0};
+                weightedCorrect = weights[Math.min(6, attemptIndex)];
+            }
+
+            long newTotal = finalStats.getSkockoTotal() + gameTotal;
+            double totalWeightedSuccess = (oldAccuracy / 100.0 * finalStats.getSkockoTotal()) + weightedCorrect;
+            finalStats.setSkockoTotal(newTotal);
+            if (newTotal > 0) {
+                finalStats.setSkocko(totalWeightedSuccess / newTotal * 100.0);
+            }
+            double newAccuracy = finalStats.getSkocko();
+
+            android.util.Log.d("UserStats", String.format("Stats changed: Skocko - Game Correct: %d/%d | Total Accuracy: %.1f%% -> %.1f%%",
+                    gameCorrect, (int)gameTotal, oldAccuracy, newAccuracy));
+            finalStats.calculateOverallStats();
+            statsRepository.saveStatistics(finalStats).exceptionally(e -> {
+                android.util.Log.e("UserStats", "Failed to save statistics", e);
+                return null;
+            });
+        }).exceptionally(e -> {
+            android.util.Log.e("UserStats", "Failed to get statistics", e);
+            return null;
+        });
+    }
+
+    private void handleAppendSymbol(String symbol) {
+        if (skockoService == null) {
+            return;
+        }
+
+        if (!skockoService.canEditCurrentAttempt()) {
+            return;
+        }
+
+        skockoService.appendSymbol(symbol);
+        renderWholeScreen();
+    }
+
+    private void renderWholeScreen() {
+        if (skockoService == null) {
+            return;
+        }
+
+        updateGameHeader();
+        renderRegularAttempts();
+        renderBonusAttempt();
+        renderFinalSolution();
+        renderActionButtons();
+    }
+
+    private void updateGameHeader() {
+        AppActivity activity = (AppActivity) requireActivity();
+        SkockoTabla round = skockoService.getCurrentRound();
+
+        matchViewModel.setPlayerNames(
+                round.getGameState().getPlayerOneName(),
+                round.getGameState().getPlayerTwoName()
+        );
+
+        matchViewModel.setActivePlayer(
+                round.getGameState().getCurrentPlayer()
+        );
+
+        matchViewModel.setPlayer1Score(initialPlayer1Score + round.getGameState().getPlayerOneScore());
+        matchViewModel.setPlayer2Score(initialPlayer2Score + round.getGameState().getPlayerTwoScore());
+
+        activity.getBinding().gameHeader.setTimer(
+                formatTime(round.getGameState().getRemainingSeconds())
+        );
+    }
+
+    private String formatTime(int totalSeconds) {
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        return String.format("%02d:%02d", minutes, seconds);
+    }
+
+    private void renderRegularAttempts() {
         binding.skockoInputContainer.removeAllViews();
         binding.rightFeedbackRows.removeAllViews();
 
+        SkockoTabla round = skockoService.getCurrentRound();
+
         for (int i = 0; i < 6; i++) {
-            SkockoPokusaj attempt = skockoTabla.getAttempts().get(i);
-            binding.skockoInputContainer.addView(createGuessRow(attempt, i));
+            SkockoPokusaj attempt = round.getAttempts().get(i);
+            binding.skockoInputContainer.addView(createGuessRow(attempt, i, round));
             binding.rightFeedbackRows.addView(createFeedbackRow(attempt));
         }
     }
 
-    private void renderLowerPlayerTwoAttempt() {
+    private void renderBonusAttempt() {
         binding.rowPlayerTwoAttempt.removeAllViews();
-        binding.rowPlayerTwoAttempt.addView(createLowerGuessRow(skockoTabla.getAttempts().get(6), 6));
+
+        SkockoTabla round = skockoService.getCurrentRound();
+        binding.rowPlayerTwoAttempt.addView(
+                createLowerGuessRow(round.getBonusAttempt(), round.isBonusAttemptActive(), round)
+        );
     }
 
-    private void renderLowerFinalSolution() {
+    private void renderFinalSolution() {
         binding.rowFinalSolution.removeAllViews();
 
+        SkockoTabla round = skockoService.getCurrentRound();
         LinearLayout row = new LinearLayout(requireContext());
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
 
-        LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        );
-        row.setLayoutParams(rowParams);
-
         for (int i = 0; i < 4; i++) {
-            TextView cell = new TextView(requireContext());
+            TextView cell = createSymbolCell(dp(44), dp(52));
 
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(44), dp(52));
-            params.setMargins(dp(4), dp(4), dp(4), dp(4));
-            cell.setLayoutParams(params);
-            cell.setGravity(Gravity.CENTER);
-            cell.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
-            cell.setTypeface(null, Typeface.BOLD);
-            if (skockoTabla.isFinished()) {
+            if (round.getGameState().isRoundFinished()) {
+                String symbol = round.getSecretCombination().get(i);
                 cell.setBackgroundResource(R.drawable.bg_skocko_guess_active);
-            } else {
-                cell.setBackgroundResource(R.drawable.bg_skocko_guess_empty);
-            }
-
-            if (skockoTabla.isFinished()) {
-                String symbol = skockoTabla.getSecretCombination().get(i);
                 cell.setText(symbol);
                 applySymbolColor(cell, symbol);
             } else {
+                cell.setBackgroundResource(R.drawable.bg_skocko_guess_empty);
                 cell.setText("");
-                cell.setTextColor(ContextCompat.getColor(requireContext(), R.color.black));
             }
 
             row.addView(cell);
@@ -280,7 +373,62 @@ public class SkockoFragment extends Fragment {
         binding.rowFinalSolution.addView(row);
     }
 
-    private LinearLayout createGuessRow(SkockoPokusaj attempt, int rowIndex) {
+    private void renderActionButtons() {
+        SkockoTabla round = skockoService.getCurrentRound();
+
+        if (round.getGameState().isRoundFinished()) {
+            binding.btnSkockoDelete.setEnabled(false);
+
+            if (skockoService.canAdvanceRound()) {
+                binding.btnSkockoSubmit.setEnabled(true);
+                binding.btnSkockoSubmit.setText("Sledeća runda");
+            } else {
+                binding.btnSkockoSubmit.setEnabled(false);
+                binding.btnSkockoSubmit.setText("Kraj");
+            }
+        } else {
+            binding.btnSkockoDelete.setEnabled(true);
+            binding.btnSkockoSubmit.setEnabled(true);
+            binding.btnSkockoSubmit.setText("OK");
+        }
+    }
+
+    private void startRoundTimer() {
+        if (skockoService == null) {
+            return;
+        }
+
+        SkockoTabla round = skockoService.getCurrentRound();
+
+        if (roundTimer != null) {
+            roundTimer.cancel();
+        }
+
+        roundTimer = new CountDownTimer(round.getGameState().getRemainingSeconds() * 1000L, 1000L) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                round.getGameState().setRemainingSeconds((int) (millisUntilFinished / 1000));
+                updateGameHeader();
+            }
+
+            @Override
+            public void onFinish() {
+                round.getGameState().setRemainingSeconds(0);
+                updateGameHeader();
+                SkockoService.ActionResult result = skockoService.onTimeExpired();
+                Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
+                renderWholeScreen();
+
+                if (result.isBonusActivated()) {
+                    startRoundTimer();
+                } else if (skockoService.isMatchFinished()) {
+                    updateUserStatistics();
+                }
+            }
+        }.start();
+    }
+
+    private LinearLayout createGuessRow(SkockoPokusaj attempt, int rowIndex, SkockoTabla round) {
         LinearLayout row = new LinearLayout(requireContext());
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
@@ -292,30 +440,28 @@ public class SkockoFragment extends Fragment {
         );
         row.setLayoutParams(rowParams);
 
-        boolean isActiveRow = rowIndex == skockoTabla.getCurrentRow()
-                && !attempt.isSubmitted()
-                && !skockoTabla.isFinished();
+        boolean isActiveRow = !round.isBonusAttemptActive()
+                && !round.getGameState().isRoundFinished()
+                && rowIndex == round.getCurrentRow()
+                && !attempt.isSubmitted();
 
         for (int i = 0; i < 4; i++) {
-            TextView guessView = new TextView(requireContext());
-
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+            TextView guessView = createSymbolCell(0, ViewGroup.LayoutParams.MATCH_PARENT);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    0,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    1f
+            );
             params.setMargins(dp(3), dp(3), dp(3), dp(3));
             guessView.setLayoutParams(params);
-            guessView.setGravity(Gravity.CENTER);
-            guessView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
-            guessView.setTypeface(null, Typeface.BOLD);
 
             String symbol = attempt.getGuess().get(i).getSymbol();
 
             if (symbol == null || symbol.isEmpty()) {
                 guessView.setText("");
-                if (isActiveRow) {
-                    guessView.setBackgroundResource(R.drawable.bg_skocko_guess_active);
-                } else {
-                    guessView.setBackgroundResource(R.drawable.bg_skocko_guess_empty);
-                }
-                guessView.setTextColor(ContextCompat.getColor(requireContext(), R.color.black));
+                guessView.setBackgroundResource(
+                        isActiveRow ? R.drawable.bg_skocko_guess_active : R.drawable.bg_skocko_guess_empty
+                );
             } else {
                 guessView.setText(symbol);
                 guessView.setBackgroundResource(R.drawable.game_field_background);
@@ -328,41 +474,23 @@ public class SkockoFragment extends Fragment {
         return row;
     }
 
-    private LinearLayout createLowerGuessRow(SkockoPokusaj attempt, int rowIndex) {
+    private LinearLayout createLowerGuessRow(SkockoPokusaj attempt, boolean isActiveBonus, SkockoTabla round) {
         LinearLayout row = new LinearLayout(requireContext());
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
 
-        LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        );
-        row.setLayoutParams(rowParams);
-
-        boolean isActiveRow = rowIndex == skockoTabla.getCurrentRow()
-                && !attempt.isSubmitted()
-                && !skockoTabla.isFinished();
-
         for (int i = 0; i < 4; i++) {
-            TextView guessView = new TextView(requireContext());
-
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(44), dp(52));
-            params.setMargins(dp(4), dp(4), dp(4), dp(4));
-            guessView.setLayoutParams(params);
-            guessView.setGravity(Gravity.CENTER);
-            guessView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
-            guessView.setTypeface(null, Typeface.BOLD);
+            TextView guessView = createSymbolCell(dp(44), dp(52));
 
             String symbol = attempt.getGuess().get(i).getSymbol();
 
             if (symbol == null || symbol.isEmpty()) {
                 guessView.setText("");
-                if (isActiveRow) {
-                    guessView.setBackgroundResource(R.drawable.bg_skocko_guess_active);
-                } else {
-                    guessView.setBackgroundResource(R.drawable.bg_skocko_guess_empty);
-                }
-                guessView.setTextColor(ContextCompat.getColor(requireContext(), R.color.black));
+                guessView.setBackgroundResource(
+                        isActiveBonus && !round.getGameState().isRoundFinished()
+                                ? R.drawable.bg_skocko_guess_active
+                                : R.drawable.bg_skocko_guess_empty
+                );
             } else {
                 guessView.setText(symbol);
                 guessView.setBackgroundResource(R.drawable.game_field_background);
@@ -410,24 +538,25 @@ public class SkockoFragment extends Fragment {
         return row;
     }
 
+    private TextView createSymbolCell(int width, int height) {
+        TextView cell = new TextView(requireContext());
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(width, height);
+        params.setMargins(dp(4), dp(4), dp(4), dp(4));
+        cell.setLayoutParams(params);
+        cell.setGravity(Gravity.CENTER);
+        cell.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+        cell.setTypeface(null, android.graphics.Typeface.BOLD);
+        cell.setTextColor(ContextCompat.getColor(requireContext(), R.color.black));
+
+        return cell;
+    }
+
     private void applySymbolColor(TextView textView, String symbol) {
         if ("♥".equals(symbol) || "♦".equals(symbol)) {
             textView.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
         } else {
             textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.black));
-        }
-    }
-
-    private void updateGameState() {
-        if (skockoTabla.isSolved()) {
-            binding.tvSkockoGameState.setText("Pobednik: " + skockoTabla.getWinnerName());
-        } else if (skockoTabla.isFinished()) {
-            binding.tvSkockoGameState.setText("Niko nije pogodio | Kombinacija prikazana");
-        } else if (skockoTabla.getCurrentPlayer() == 1) {
-            binding.tvSkockoGameState.setText("Na potezu: " + skockoTabla.getPlayerOneName()
-                    + " | pokušaj " + (skockoTabla.getCurrentRow() + 1) + " / 6");
-        } else {
-            binding.tvSkockoGameState.setText("Na potezu: " + skockoTabla.getPlayerTwoName() + " | pokušaj 1 / 1");
         }
     }
 

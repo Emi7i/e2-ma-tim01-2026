@@ -18,8 +18,8 @@
     <string name="left_drawer_my_profile">My profile</string>
     <string name="plus">+</string>
     <string name="minus">-</string>
-    <string name="product">×</string>
-    <string name="divide">÷</string>
+    <string name="product">*</string>
+    <string name="divide">/</string>
     <string name="left_paren">(</string>
     <string name="right_paren">)</string>
     <string name="confirm">Confirm</string>
@@ -30,9 +30,20 @@
     <string name="left_drawer_notifications">Notifikacije</string>
     <string name="left_drawer_leave_match">Izadji iz partije</string>
     <string name="next">Dalje</string>
+    <string name="reset_password_title">Reset Password</string>
+    <string name="reset_password_hint_old">Old password</string>
+    <string name="reset_password_hint_new">New password</string>
+    <string name="reset_password_hint_repeat_new">Repeat new password</string>
+    <string name="reset_password_button">Reset Password</string>
     <!-- Profile -->
     <string name="back">Nazad</string>
     <string name="shop">Prodavnica</string>
     <string name="profile_avatar">Profilna slika</string>
     <string name="statistics">Statistika</string>
+    <string name="moj_broj_stop">Zaustavi</string>
+    <string name="opponent">Protivnik</string>
+    <string name="backspace_text">Backspace</string>
+    <string name="register_region_hint">Region</string>
+    <string name="resetuj_ifru">Resetuj šifru</string>
+    <string name="log_out">Log out</string>
 </resources>
