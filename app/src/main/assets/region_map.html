@@ -30,6 +30,11 @@
 <script>
     var map = L.map('map', { zoomControl: true }).setView([44.2, 20.9], 7);
 
+    // Custom pane above the overlay pane (400) and marker pane (600)
+    map.createPane('emojiPane');
+    map.getPane('emojiPane').style.zIndex = 650;
+    map.getPane('emojiPane').style.pointerEvents = 'none';
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>',
         maxZoom: 18
@@ -37,10 +42,10 @@
 
     // Confirmed OSM relation IDs for Serbia's 5 NUTS2 statistical regions
     var ID_TO_REGION = {
-        '1279074': { key: 'Vojvodina',                 display: 'Vojvodina',                    icon: '🌾', color: '#E74C3C' },
+        '1279074': { key: 'Vojvodina',                 display: 'Vojvodina',                    icon: '🌷', color: '#E74C3C' },
         '1677007': { key: 'Beograd',                   display: 'Beograd',                      icon: '🏙', color: '#2980B9' },
         '2959530': { key: 'Sumadija i Zapadna Srbija', display: 'Šumadija i Zapadna Srbija',    icon: '🌲', color: '#27AE60' },
-        '2959529': { key: 'Juzna i Istocna Srbija',    display: 'Južna i Istočna Srbija',       icon: '⛰', color: '#8E44AD' },
+        '2959529': { key: 'Juzna i Istocna Srbija',    display: 'Južna i Istočna Srbija',       icon: '🍵', color: '#8E44AD' },
         '2088990': { key: 'Kosovo i Metohija',          display: 'Kosovo i Metohija',             icon: '🏔', color: '#E67E22' }
     };
 
@@ -59,8 +64,13 @@
         var geojson = osmtogeojson(osm);
 
         L.geoJSON(geojson, {
+            // Only render polygons — osmtogeojson also produces Point/LineString
+            // features from OSM nodes/ways which would show as unwanted blue pins
+            filter: function(feature) {
+                var t = feature.geometry && feature.geometry.type;
+                return t === 'Polygon' || t === 'MultiPolygon';
+            },
             style: function(feature) {
-                // osmtogeojson sets feature.id as "relation/1279074"
                 var osmId  = (feature.id || '').replace('relation/', '');
                 var region = ID_TO_REGION[osmId];
                 var color  = region ? region.color : '#999';
@@ -76,21 +86,19 @@
                 var osmId  = (feature.id || '').replace('relation/', '');
                 var region = ID_TO_REGION[osmId];
                 if (!region) return;
-
-                // Icon marker at visual centre
                 var bounds = layer.getBounds();
-                if (bounds.isValid()) {
-                    L.marker(bounds.getCenter(), {
-                        icon: L.divIcon({
-                            className: '',
-                            html: '<div style="font-size:22px;text-align:center;pointer-events:none;">'
-                                + region.icon + '</div>',
-                            iconSize:   [30, 30],
-                            iconAnchor: [15, 15]
-                        }),
-                        interactive: false
-                    }).addTo(map);
-                }
+                if (!bounds.isValid()) return;
+                L.marker(bounds.getCenter(), {
+                    icon: L.divIcon({
+                        className: '',
+                        html: '<div style="font-size:22px;text-align:center;">'
+                            + region.icon + '</div>',
+                        iconSize:   [30, 30],
+                        iconAnchor: [15, 15]
+                    }),
+                    pane:        'emojiPane',
+                    interactive: false
+                }).addTo(map);
             }
         }).addTo(map);
 

@@ -21,10 +21,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel;
 public class RegionViewModel extends ViewModel {
 
     private static final String[][] REGION_ICONS = {
-        {"Vojvodina",                  "🌾"},
+        {"Vojvodina",                  "🌷"},
         {"Beograd",                    "🏙"},
         {"Sumadija i Zapadna Srbija",  "🌲"},
-        {"Juzna i Istocna Srbija",     "⛰"},
+        {"Juzna i Istocna Srbija",     "🍵"},
         {"Kosovo i Metohija",          "🏔"}
     };
 
