@@ -28,6 +28,7 @@ public class ProfileFragment extends Fragment {
     private ProfileViewModel viewModel;
 
     public ProfileFragment() {
+
     }
 
     @Override
