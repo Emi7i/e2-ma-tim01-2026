@@ -14,7 +14,7 @@ public abstract class AbstractGame implements IGame {
     }
 
     @Override
-    public long getId() {
+    public int getId() {
         return config.getId();
     }
 
@@ -29,17 +29,17 @@ public abstract class AbstractGame implements IGame {
     }
 
     @Override
-    public long getMatchId() {
+    public String getMatchId() {
         return session.getMatchId();
     }
 
     @Override
-    public long getPlayer1Id() {
+    public String getPlayer1Id() {
         return session.getPlayer1Id();
     }
 
     @Override
-    public long getPlayer2Id() {
+    public String getPlayer2Id() {
         return session.getPlayer2Id();
     }
 
@@ -49,19 +49,19 @@ public abstract class AbstractGame implements IGame {
     }
 
     @Override
-    public long getCurrentPlayer() {
+    public String getCurrentPlayer() {
         return session.getCurrentPlayer();
     }
 
     @Override
-    public void setCurrentPlayer(long playerId) {
+    public void setCurrentPlayer(String playerId) {
         session.setCurrentPlayer(playerId);
     }
 
 
 
     @Override
-    public long getOtherPlayer() {
+    public String getOtherPlayer() {
         if(getPlayer1Id() == session.getCurrentPlayer())
             return getPlayer2Id();
         return getPlayer1Id();
@@ -99,7 +99,7 @@ public abstract class AbstractGame implements IGame {
         session.setCurrentRound(currentRound);
     }
 
-    protected void notifyPointsChanged(long playerId, int amount) {
+    protected void notifyPointsChanged(String playerId, int amount) {
         if (pointsListener != null) {
             pointsListener.onPointsChanged(playerId, amount);
         }
@@ -111,7 +111,7 @@ public abstract class AbstractGame implements IGame {
         }
     }
 
-    protected void notifyActivePlayerChanged(long playerId) {
+    protected void notifyActivePlayerChanged(String playerId) {
         if (activePlayerChangedListener != null) {
             activePlayerChangedListener.onActivePlayerChanged(playerId);
         }

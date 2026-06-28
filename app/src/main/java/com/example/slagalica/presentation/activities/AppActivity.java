@@ -33,6 +33,8 @@ import com.example.slagalica.presentation.fragments.social.NotificationsFragment
 import com.example.slagalica.presentation.notifications.AppNotificationHelper;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 
+import java.util.Objects;
+
 import javax.inject.Inject;
 
 import dagger.hilt.android.AndroidEntryPoint;
@@ -180,8 +182,13 @@ public class AppActivity extends AppCompatActivity {
             binding.gameHeader.setStars(matchViewModel.getPlayer1Score().getValue() != null ? matchViewModel.getPlayer1Score().getValue() : 0, score);
         });
 
-        matchViewModel.getActivePlayer().observe(this, player -> {
-            binding.gameHeader.setActivePlayer(player);
+        matchViewModel.getActivePlayer().observe(this, playerId -> {
+            if(Objects.equals(matchViewModel.getMatch().getPlayer1Id(), playerId)){
+                binding.gameHeader.setActivePlayer(1);
+            }
+            else{
+                binding.gameHeader.setActivePlayer(2);
+            }
         });
     }
 

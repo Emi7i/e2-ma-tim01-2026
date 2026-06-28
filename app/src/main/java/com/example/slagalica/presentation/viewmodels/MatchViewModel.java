@@ -4,35 +4,80 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import com.example.slagalica.domain.model.match.games.common.GameSession;
-import com.example.slagalica.domain.model.match.games.common.IGame;
-import com.example.slagalica.domain.model.match.games.korakpokorak.KorakPoKorak;
-import com.example.slagalica.domain.model.match.games.mojbroj.MojBroj;
+import com.example.slagalica.domain.model.match.Match;
+import com.example.slagalica.domain.model.match.MatchSessionData;
+import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.domain.service.match.KorakPoKorakService;
+import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
+import com.example.slagalica.repository.impl.UserProfileRepository;
+
+import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
 
 import dagger.hilt.android.lifecycle.HiltViewModel;
+import lombok.Getter;
 
 @HiltViewModel
 public class MatchViewModel extends ViewModel {
-    private final MutableLiveData<IGame> currentGame = new MutableLiveData<>();
+    @Getter
+    private Match match;
+
+    private final MatchService matchService;
     private final KorakPoKorakService korakPoKorakService;
     private final MojBrojService mojBrojService;
+    private final UserProfileRepository userProfileRepository;
 
-    // MOCKED FOR NOW
-    long matchId = 1;
-    long player1Id = 1;
-    long player2Id = 2;
+//    private final MutableLiveData<IGame> currentGame = new MutableLiveData<>();
+    private final MutableLiveData<Integer> currentGameId = new MutableLiveData<>();
 
     @Inject
     public MatchViewModel(
             KorakPoKorakService korakPoKorakService,
-            MojBrojService mojBrojService
+            MojBrojService mojBrojService,
+            UserProfileRepository userProfileRepository,
+            MatchService matchService
     ) {
+        this.matchService = matchService;
         this.korakPoKorakService = korakPoKorakService;
         this.mojBrojService = mojBrojService;
+        this.userProfileRepository = userProfileRepository;
+    }
+
+    public void startMatch(String player1Id, String player2Id) {
+        CompletableFuture<UserProfile> player1Future = userProfileRepository.getProfile(player1Id);
+        CompletableFuture<UserProfile> player2Future = userProfileRepository.getProfile(player2Id);
+
+        CompletableFuture.allOf(player1Future, player2Future)
+                .thenAccept(ignored -> {
+                    UserProfile player1 = player1Future.join();
+                    UserProfile player2 = player2Future.join();
+
+                    MatchSessionData data = new MatchSessionData();
+                    data.player1Id = player1Id;
+                    data.player2Id = player2Id;
+
+                    match = new Match(
+                            player1Id,
+                            player2Id,
+                            0,
+                            0,
+                            player1.getUsername(),
+                            player2.getUsername(),
+                            matchService,
+                            korakPoKorakService,
+                            mojBrojService
+                            );
+
+                    match.setOnMatchUpdatedListener(this::onMatchUpdated);
+
+                    match.start();
+                })
+                .exceptionally(throwable -> {
+                    // handle error
+                    return null;
+                });
     }
 
     private final MutableLiveData<Boolean> isGameActive = new MutableLiveData<>(false);
@@ -40,73 +85,57 @@ public class MatchViewModel extends ViewModel {
     private final MutableLiveData<Integer> player2Score = new MutableLiveData<>(0);
     private final MutableLiveData<String> player1Name = new MutableLiveData<>("Igrač 1");
     private final MutableLiveData<String> player2Name = new MutableLiveData<>("Igrač 2");
-    private final MutableLiveData<Integer> activePlayer = new MutableLiveData<>(0);
+    private final MutableLiveData<String> activePlayer = new MutableLiveData<>("");
 
     public LiveData<Boolean> getIsGameActive() { return isGameActive; }
     public LiveData<Integer> getPlayer1Score() { return player1Score; }
     public LiveData<Integer> getPlayer2Score() { return player2Score; }
     public LiveData<String> getPlayer1Name() { return player1Name; }
     public LiveData<String> getPlayer2Name() { return player2Name; }
-    public LiveData<Integer> getActivePlayer() { return activePlayer; }
+    public LiveData<String> getActivePlayer() { return activePlayer; }
 
     public void setGameActive(boolean active) { isGameActive.setValue(active); }
 
-    public LiveData<IGame> getCurrentGame() { return currentGame; }
-
-    public void startKorakPoKorak() {
-        GameSession session = new GameSession(matchId, player1Id, player2Id);
-        KorakPoKorak game = new KorakPoKorak(session, korakPoKorakService);
-        game.setOnActivePlayerChangedListener(this::onActivePlayerChanged);
-        game.setOnPointsChangedListener(this::onPointsChanged);
-        currentGame.setValue(game);
-    }
-
-    public void startMojBroj() {
-        GameSession session = new GameSession(matchId, player1Id, player2Id);
-        MojBroj game = new MojBroj(session, mojBrojService);
-        game.setOnActivePlayerChangedListener(this::onActivePlayerChanged);
-        game.setOnPointsChangedListener(this::onPointsChanged);
-        currentGame.setValue(game);
-    }
+    public LiveData<Integer> getCurrentGameId() { return currentGameId; }
 
     public void setPlayerNames(String name1, String name2) {
         player1Name.setValue(name1);
         player2Name.setValue(name2);
     }
 
-    public void setActivePlayer(int player) {
-        activePlayer.setValue(player);
+    public void setActivePlayer(String playerId) {
+        activePlayer.setValue(playerId);
     }
 
-    public void updatePlayer1Score(int delta) {
-        Integer current = player1Score.getValue();
-        player1Score.setValue((current != null ? current : 0) + delta);
-    }
-
-    public void updatePlayer2Score(int delta) {
-        Integer current = player2Score.getValue();
-        player2Score.setValue((current != null ? current : 0) + delta);
+    public void setActivePlayer(int playerNum){
+        String active;
+        if(playerNum == 1){
+            active = match.getPlayer1Id();
+        }
+        else{
+            active = match.getPlayer2Id();
+        }
+        match.setActivePlayer(active);
+        match.updateRemoteMatch();
+        onMatchUpdated(match);
     }
 
     public void setPlayer1Score(int score) {
-        player1Score.setValue(score);
+        match.setPlayer1Score(score);
+        match.updateRemoteMatch();
+        onMatchUpdated(match);
     }
 
     public void setPlayer2Score(int score) {
-        player2Score.setValue(score);
+        match.setPlayer2Score(score);
+        match.updateRemoteMatch();
+        onMatchUpdated(match);
     }
 
-    private void onPointsChanged(long playerId, int amount){
-        if(playerId == player1Id){
-            updatePlayer1Score(amount);
-        }
-        else if(playerId == player2Id){
-            updatePlayer2Score(amount);
-        }
-    }
-
-    // TODO: BAD
-    private void onActivePlayerChanged(long playerId){
-        setActivePlayer((int)playerId);
+    private void onMatchUpdated(Match match){
+        player1Score.postValue(match.getPlayer1Score());
+        player2Score.postValue(match.getPlayer2Score());
+        activePlayer.postValue(match.getActivePlayer());
+        currentGameId.postValue(match.getCurrentGameId());
     }
 }

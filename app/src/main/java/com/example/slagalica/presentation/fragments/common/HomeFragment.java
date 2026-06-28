@@ -54,12 +54,12 @@ public class HomeFragment extends Fragment {
             FragmentTransition.to(new SpojniceFragment(), requireActivity(), true, R.id.appContainer);
         });
         binding.korakPoKorak.setOnClickListener(v -> {
-            matchViewModel.startKorakPoKorak();
+            matchViewModel.getMatch().startKorakPoKorak();
             FragmentTransition.to(new KorakPoKorakFragment(), requireActivity(), true, R.id.appContainer);
         });
 
         binding.mojBroj.setOnClickListener(v -> {
-            matchViewModel.startMojBroj();
+            matchViewModel.getMatch().startMojBroj();
             FragmentTransition.to(new MojBrojFragment(), requireActivity(), true, R.id.appContainer);
         });
 

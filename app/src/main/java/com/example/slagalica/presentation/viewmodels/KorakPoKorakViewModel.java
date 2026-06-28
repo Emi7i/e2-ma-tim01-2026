@@ -48,10 +48,6 @@ public class KorakPoKorakViewModel extends ViewModel {
     @Getter
     private final int[] points = {20, 18, 16, 14, 12, 10, 8};
 
-
-    // hardcoded for now - stands in for "is it my turn" check
-    private static final long LOGGED_IN_USER_ID = 1L;
-
     private final MutableLiveData<String> latestHint = new MutableLiveData<>();
     private final MutableLiveData<Boolean> revealAllHints = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> stealWindowOpen = new MutableLiveData<>(false);

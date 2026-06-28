@@ -21,6 +21,9 @@ public class MojBroj extends AbstractGame {
     private static final int CORRECT_SOLUTION_POINTS = 10;
     private static final int CLOSEST_SOLUTION_POINTS = 5;
 
+    @Getter
+    private int id = 6;
+
     private final MojBrojService gameService;
 
     @Getter
@@ -151,7 +154,7 @@ public class MojBroj extends AbstractGame {
         }
     }
 
-    private void awardPoints(long playerId, int amount) {
+    private void awardPoints(String playerId, int amount) {
         notifyPointsChanged(playerId, amount);
     }
 

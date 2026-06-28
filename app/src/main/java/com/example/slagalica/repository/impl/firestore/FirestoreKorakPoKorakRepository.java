@@ -20,9 +20,9 @@ public class FirestoreKorakPoKorakRepository implements KorakPoKorakRepository {
     }
 
     @Override
-    public CompletableFuture<Void> updateSessionData(long matchId, KorakPoKorakSessionData data) {
+    public CompletableFuture<Void> updateSessionData(String matchId, KorakPoKorakSessionData data) {
         CompletableFuture<Void> future = new CompletableFuture<>();
-        db.collection(COLLECTION_SESSIONS).document(String.valueOf(matchId))
+        db.collection(COLLECTION_SESSIONS).document(matchId)
                 .set(data)
                 .addOnSuccessListener(unused -> future.complete(null))
                 .addOnFailureListener(future::completeExceptionally);
@@ -30,9 +30,9 @@ public class FirestoreKorakPoKorakRepository implements KorakPoKorakRepository {
     }
 
     @Override
-    public CompletableFuture<KorakPoKorakSessionData> getSessionData(long matchId) {
+    public CompletableFuture<KorakPoKorakSessionData> getSessionData(String matchId) {
         CompletableFuture<KorakPoKorakSessionData> future = new CompletableFuture<>();
-        db.collection(COLLECTION_SESSIONS).document(String.valueOf(matchId))
+        db.collection(COLLECTION_SESSIONS).document(matchId)
                 .get()
                 .addOnSuccessListener(snapshot -> future.complete(snapshot.toObject(KorakPoKorakSessionData.class)))
                 .addOnFailureListener(future::completeExceptionally);
@@ -40,8 +40,8 @@ public class FirestoreKorakPoKorakRepository implements KorakPoKorakRepository {
     }
 
     @Override
-    public void observeSessionData(long matchId, OnSessionUpdateListener<KorakPoKorakSessionData> listener) {
-        db.collection(COLLECTION_SESSIONS).document(String.valueOf(matchId))
+    public void observeSessionData(String matchId, OnSessionUpdateListener<KorakPoKorakSessionData> listener) {
+        db.collection(COLLECTION_SESSIONS).document(matchId)
                 .addSnapshotListener((snapshot, error) -> {
                     if (error != null || snapshot == null || !snapshot.exists()) return;
                     KorakPoKorakSessionData data = snapshot.toObject(KorakPoKorakSessionData.class);
