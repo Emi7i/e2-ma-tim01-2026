@@ -157,6 +157,8 @@ public class AppActivity extends AppCompatActivity {
     // Helper method to make the view (activity) observe changes in VM
     private void observeViewModel(){
         matchViewModel.getIsGameActive().observe(this, active -> {
+            if (matchViewModel.getMatch() == null) return;
+            if (active == null) return;
             // When isGameActive changes in the VM, this line is triggered
             binding.gameHeader.setVisibility(active ? View.VISIBLE : View.GONE);
 
@@ -167,22 +169,32 @@ public class AppActivity extends AppCompatActivity {
         });
 
         matchViewModel.getPlayer1Name().observe(this, name -> {
+            if (matchViewModel.getMatch() == null) return;
+            if (name == null) return;
             binding.gameHeader.setPlayerNames(name, matchViewModel.getPlayer2Name().getValue());
         });
 
         matchViewModel.getPlayer2Name().observe(this, name -> {
+            if (matchViewModel.getMatch() == null) return;
+            if (name == null) return;
             binding.gameHeader.setPlayerNames(matchViewModel.getPlayer1Name().getValue(), name);
         });
 
         matchViewModel.getPlayer1Score().observe(this, score -> {
+            if (matchViewModel.getMatch() == null) return;
+            if (score == null) return;
             binding.gameHeader.setStars(score, matchViewModel.getPlayer2Score().getValue() != null ? matchViewModel.getPlayer2Score().getValue() : 0);
         });
 
         matchViewModel.getPlayer2Score().observe(this, score -> {
+            if (matchViewModel.getMatch() == null) return;
+            if (score == null) return;
             binding.gameHeader.setStars(matchViewModel.getPlayer1Score().getValue() != null ? matchViewModel.getPlayer1Score().getValue() : 0, score);
         });
 
         matchViewModel.getActivePlayer().observe(this, playerId -> {
+            if (matchViewModel.getMatch() == null) return;
+            if (playerId == null) return;
             if(Objects.equals(matchViewModel.getMatch().getPlayer1Id(), playerId)){
                 binding.gameHeader.setActivePlayer(1);
             }
