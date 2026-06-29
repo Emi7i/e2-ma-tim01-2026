@@ -80,6 +80,12 @@ public class SpojniceFragment extends Fragment {
     }
 
     private void observeViewModel() {
+       viewModel.isGameFinished().observe(getViewLifecycleOwner(), finished -> {
+            if (finished) {
+                matchViewModel.getMatch().startNextGame();
+            }
+        });
+
         viewModel.getCurrentData().observe(getViewLifecycleOwner(), data -> {
             if (data != null) {
                 binding.gameTitle.setText(data.getTitle());
@@ -242,7 +248,6 @@ public class SpojniceFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        matchViewModel.setGameActive(false);
         binding = null;
     }
 }

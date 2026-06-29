@@ -29,8 +29,12 @@ import com.example.slagalica.presentation.fragments.auth.LoginFragment;
 import com.example.slagalica.presentation.fragments.auth.ResetPasswordFragment;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
 import com.example.slagalica.presentation.fragments.common.HomeFragment;
+import com.example.slagalica.presentation.fragments.match.AsocijacijeFragment;
+import com.example.slagalica.presentation.fragments.match.KoZnaZnaFragment;
 import com.example.slagalica.presentation.fragments.match.KorakPoKorakFragment;
 import com.example.slagalica.presentation.fragments.match.MojBrojFragment;
+import com.example.slagalica.presentation.fragments.match.SkockoFragment;
+import com.example.slagalica.presentation.fragments.match.SpojniceFragment;
 import com.example.slagalica.presentation.fragments.profile.ProfileFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationTargetPlaceholderFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationsFragment;
@@ -167,6 +171,28 @@ public class AppActivity extends AppCompatActivity {
             if (gameId == lastNavigatedGameId) return;
             Fragment fragment = null;
             switch (gameId) {
+                case 0:
+                    Log.d("Match", "Match ended");
+                    matchViewModel.setGameActive(false);
+                    lastNavigatedGameId = 0;
+                    FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
+                    break;
+                case 1:
+                    Log.d("Match", "Switching to ko zna zna fragment...");
+                    fragment = new KoZnaZnaFragment();
+                    break;
+                case 2:
+                    Log.d("Match", "Switching to spojnice fragment...");
+                    fragment = new SpojniceFragment();
+                    break;
+                case 3:
+                    Log.d("Match", "Switching to asocijacije fragment...");
+                    fragment = new AsocijacijeFragment();
+                    break;
+                case 4:
+                    Log.d("Match", "Switching to skocko fragment...");
+                    fragment = new SkockoFragment();
+                    break;
                 case 5:
                     Log.d("Match", "Switching to korak po korak fragment...");
                     fragment = new KorakPoKorakFragment();

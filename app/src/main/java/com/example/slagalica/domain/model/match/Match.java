@@ -66,7 +66,6 @@ public class Match {
                 this.currentGameId,
                 player1Id
         );
-        Log.d("Match", "WHAT");
 
         this.matchService.create(data)
                 .thenAccept(matchId -> {
@@ -98,31 +97,39 @@ public class Match {
                 startMojBroj();
                 break;
             case 6:
-                // game over stuff
+                endMatch();
                 break;
         }
     }
 
     public void start(){
-        startKorakPoKorak();
+        startKoZnaZna();
+    }
+
+    public void endMatch(){
+        // TODO: economy
+        currentGameId = 0; // signal game over
+        updateRemoteMatch();
     }
 
     public void startKoZnaZna(){
         currentGameId = 1;
-
+        updateRemoteMatch();
     }
 
     public void startSpojnice(){
         currentGameId = 2;
+        updateRemoteMatch();
     }
 
     public void startAsocijacije(){
         currentGameId = 3;
+        updateRemoteMatch();
     }
 
     public void startSkocko(){
         currentGameId = 4;
-
+        updateRemoteMatch();
     }
 
     public void startKorakPoKorak() {

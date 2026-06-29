@@ -90,9 +90,6 @@ public class SkockoFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (matchViewModel != null) {
-            matchViewModel.setGameActive(false);
-        }
         if (roundTimer != null) {
             roundTimer.cancel();
         }
@@ -193,7 +190,7 @@ public class SkockoFragment extends Fragment {
                     roundTimer.cancel();
                 }
                 if (skockoService.isMatchFinished()) {
-                    updateUserStatistics();
+                    onGameFinished();
                 }
             }
         });
@@ -422,7 +419,7 @@ public class SkockoFragment extends Fragment {
                 if (result.isBonusActivated()) {
                     startRoundTimer();
                 } else if (skockoService.isMatchFinished()) {
-                    updateUserStatistics();
+                    onGameFinished();
                 }
             }
         }.start();
@@ -567,5 +564,10 @@ public class SkockoFragment extends Fragment {
                 value,
                 resources.getDisplayMetrics()
         );
+    }
+
+    private void onGameFinished() {
+        updateUserStatistics();
+        matchViewModel.getMatch().startNextGame();
     }
 }

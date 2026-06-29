@@ -69,6 +69,12 @@ public class KoZnaZnaFragment extends Fragment {
     }
 
     private void observeViewModel() {
+        viewModel.isGameFinished().observe(getViewLifecycleOwner(), finished -> {
+            if (finished) {
+                matchViewModel.getMatch().startNextGame();
+            }
+        });
+
         viewModel.getCurrentQuestion().observe(getViewLifecycleOwner(), question -> {
             if (question != null) {
                 binding.question.setText(question.getQuestion());
@@ -230,7 +236,6 @@ public class KoZnaZnaFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        matchViewModel.setGameActive(false);
         binding = null;
     }
 }
