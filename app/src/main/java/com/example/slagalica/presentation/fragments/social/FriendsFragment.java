@@ -2,12 +2,15 @@ package com.example.slagalica.presentation.fragments.social;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -102,6 +105,7 @@ public class FriendsFragment extends Fragment {
                     ? binding.searchInput.getText().toString()
                     : "";
             viewModel.searchAndAddFriend(username);
+            binding.searchInput.setText("");
         });
 
         binding.addByQrButton.setOnClickListener(v -> {
@@ -219,12 +223,7 @@ public class FriendsFragment extends Fragment {
         binding.friendsContainer.removeAllViews();
 
         if (friends == null || friends.isEmpty()) {
-            TextView empty = new TextView(requireContext());
-            empty.setText("Još nema prijatelja. Dodajte ih pretragom!");
-            empty.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-            empty.setTextColor(ContextCompat.getColor(requireContext(), R.color.gray));
-            empty.setPadding(0, dp(16), 0, 0);
-            binding.friendsContainer.addView(empty);
+            binding.friendsContainer.addView(buildEmptyState());
             return;
         }
 
@@ -233,26 +232,74 @@ public class FriendsFragment extends Fragment {
         }
     }
 
+    private LinearLayout buildEmptyState() {
+        LinearLayout wrap = new LinearLayout(requireContext());
+        wrap.setOrientation(LinearLayout.VERTICAL);
+        wrap.setGravity(android.view.Gravity.CENTER);
+        wrap.setPadding(dp(24), dp(48), dp(24), dp(24));
+        wrap.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        ImageView icon = new ImageView(requireContext());
+        icon.setImageResource(R.drawable.person_24dp_000000_fill0_wght400_grad0_opsz24);
+        icon.setColorFilter(ContextCompat.getColor(requireContext(), R.color.gray));
+        icon.setAlpha(0.35f);
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(72), dp(72));
+        iconParams.bottomMargin = dp(16);
+        icon.setLayoutParams(iconParams);
+
+        TextView title = new TextView(requireContext());
+        title.setText("Nema prijatelja");
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        title.setTypeface(null, Typeface.BOLD);
+        title.setTextColor(ContextCompat.getColor(requireContext(), R.color.gray));
+        title.setGravity(android.view.Gravity.CENTER);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        titleParams.bottomMargin = dp(6);
+        title.setLayoutParams(titleParams);
+
+        TextView sub = new TextView(requireContext());
+        sub.setText("Pretražite korisnika ili skenirajte\nnjihov QR kod");
+        sub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        sub.setTextColor(ContextCompat.getColor(requireContext(), R.color.gray));
+        sub.setGravity(android.view.Gravity.CENTER);
+        sub.setLineSpacing(0, 1.3f);
+
+        wrap.addView(icon);
+        wrap.addView(title);
+        wrap.addView(sub);
+        return wrap;
+    }
+
     private LinearLayout createFriendCard(UserProfile friend) {
+        // Root card
         LinearLayout card = new LinearLayout(requireContext());
         card.setOrientation(LinearLayout.HORIZONTAL);
-        card.setBackgroundResource(R.drawable.bg_notification_card);
-        card.setPadding(dp(12), dp(12), dp(12), dp(12));
+        card.setBackgroundResource(R.drawable.bg_friend_card);
+        card.setPadding(dp(14), dp(14), dp(14), dp(14));
         card.setGravity(android.view.Gravity.CENTER_VERTICAL);
         card.setClickable(true);
         card.setFocusable(true);
+        card.setElevation(dp(1));
 
         LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT);
-        cardParams.bottomMargin = dp(8);
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        cardParams.bottomMargin = dp(10);
         card.setLayoutParams(cardParams);
 
+        // Avatar with circular background
+        FrameLayout avatarWrap = new FrameLayout(requireContext());
+        LinearLayout.LayoutParams wrapParams = new LinearLayout.LayoutParams(dp(56), dp(56));
+        wrapParams.rightMargin = dp(14);
+        avatarWrap.setLayoutParams(wrapParams);
+
         ImageView avatar = new ImageView(requireContext());
-        LinearLayout.LayoutParams avatarParams = new LinearLayout.LayoutParams(dp(48), dp(48));
-        avatarParams.rightMargin = dp(12);
+        FrameLayout.LayoutParams avatarParams = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
         avatar.setLayoutParams(avatarParams);
         avatar.setScaleType(ImageView.ScaleType.CENTER_CROP);
+
         if (friend.getAvatar() != null && !friend.getAvatar().isEmpty()) {
             Glide.with(this)
                     .load(friend.getAvatar())
@@ -260,25 +307,61 @@ public class FriendsFragment extends Fragment {
                     .circleCrop()
                     .into(avatar);
         } else {
-            avatar.setImageResource(R.drawable.profile_icon);
+            Glide.with(this)
+                    .load(R.drawable.profile_icon)
+                    .circleCrop()
+                    .into(avatar);
         }
-        card.addView(avatar);
+        avatarWrap.addView(avatar);
+        card.addView(avatarWrap);
 
+        // Info column
         LinearLayout info = new LinearLayout(requireContext());
         info.setOrientation(LinearLayout.VERTICAL);
-        info.setLayoutParams(new LinearLayout.LayoutParams(
-                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        info.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
         TextView usernameView = new TextView(requireContext());
         usernameView.setText(friend.getUsername());
-        usernameView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        usernameView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         usernameView.setTypeface(null, Typeface.BOLD);
-        usernameView.setTextColor(ContextCompat.getColor(requireContext(), R.color.gray_dark));
+        usernameView.setTextColor(Color.parseColor("#1A1A2E"));
+        LinearLayout.LayoutParams unParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        unParams.bottomMargin = dp(3);
+        usernameView.setLayoutParams(unParams);
 
-        TextView detailView = new TextView(requireContext());
-        detailView.setText("Liga: " + friend.getLeague() + "  •  " + friend.getNumStars() + " ⭐");
-        detailView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-        detailView.setTextColor(ContextCompat.getColor(requireContext(), R.color.gray));
+        // Stars + league pill row
+        LinearLayout statsRow = new LinearLayout(requireContext());
+        statsRow.setOrientation(LinearLayout.HORIZONTAL);
+        statsRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        rowParams.bottomMargin = dp(2);
+        statsRow.setLayoutParams(rowParams);
+
+        TextView starsView = new TextView(requireContext());
+        starsView.setText(friend.getNumStars() + " ⭐");
+        starsView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        starsView.setTextColor(ContextCompat.getColor(requireContext(), R.color.gray));
+
+        TextView dot = new TextView(requireContext());
+        dot.setText("  ·  ");
+        dot.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        dot.setTextColor(ContextCompat.getColor(requireContext(), R.color.gray));
+
+        TextView leagueView = new TextView(requireContext());
+        leagueView.setText(friend.getLeague());
+        leagueView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        leagueView.setTypeface(null, Typeface.BOLD);
+        leagueView.setTextColor(ContextCompat.getColor(requireContext(), R.color.field_border));
+        leagueView.setBackgroundTintList(ColorStateList.valueOf(
+                Color.parseColor("#1A673AB7")));
+        leagueView.setBackground(buildLeaguePillBg());
+        leagueView.setPadding(dp(7), dp(2), dp(7), dp(2));
+
+        statsRow.addView(starsView);
+        statsRow.addView(dot);
+        statsRow.addView(leagueView);
 
         TextView rankView = new TextView(requireContext());
         rankView.setText("Rang: #" + friend.getRank());
@@ -286,10 +369,11 @@ public class FriendsFragment extends Fragment {
         rankView.setTextColor(ContextCompat.getColor(requireContext(), R.color.gray));
 
         info.addView(usernameView);
-        info.addView(detailView);
+        info.addView(statsRow);
         info.addView(rankView);
         card.addView(info);
 
+        // Match request button
         MatchRequest outgoing = matchRequestViewModel.getOutgoingRequest().getValue();
         boolean pendingToThis = outgoing != null
                 && outgoing.getReceiverId().equals(friend.getUserId())
@@ -301,17 +385,13 @@ public class FriendsFragment extends Fragment {
                 ? getString(R.string.match_request_cancel)
                 : getString(R.string.match_request_send_short));
         matchBtn.setAllCaps(false);
-        matchBtn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
-        matchBtn.setMinHeight(0);
-        matchBtn.setMinimumHeight(0);
-        matchBtn.setInsetTop(0);
-        matchBtn.setInsetBottom(0);
-        matchBtn.setPadding(dp(10), dp(6), dp(10), dp(6));
-        matchBtn.setCornerRadius(dp(6));
-        matchBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+        matchBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        matchBtn.setPadding(dp(14), dp(0), dp(14), dp(0));
+        matchBtn.setCornerRadius(dp(8));
+        matchBtn.setBackgroundTintList(ColorStateList.valueOf(
                 ContextCompat.getColor(requireContext(),
-                        pendingToThis ? R.color.red : R.color.field_background)));
-        matchBtn.setTextColor(ContextCompat.getColor(requireContext(), R.color.white));
+                        pendingToThis ? R.color.red : R.color.field_border)));
+        matchBtn.setTextColor(Color.WHITE);
 
         LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -334,6 +414,14 @@ public class FriendsFragment extends Fragment {
         card.setOnClickListener(v -> openFriendProfile(friend.getUserId()));
 
         return card;
+    }
+
+    private android.graphics.drawable.GradientDrawable buildLeaguePillBg() {
+        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+        bg.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+        bg.setCornerRadius(dp(20));
+        bg.setColor(Color.parseColor("#1A673AB7"));
+        return bg;
     }
 
     private void openFriendProfile(String userId) {

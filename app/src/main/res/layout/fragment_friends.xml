@@ -4,66 +4,116 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/background">
+    android:background="#F4F6FA">
 
+    <!-- Search card -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        android:gravity="center_vertical">
+        android:orientation="vertical"
+        android:background="@color/white"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="12dp"
+        android:elevation="2dp">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/searchInputLayout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="@string/friends_search_hint">
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/searchInput"
-                android:layout_width="match_parent"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/searchInputLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:imeOptions="actionSearch"
-                android:inputType="text"
-                android:maxLines="1" />
+                android:layout_weight="1"
+                android:hint="@string/friends_search_hint"
+                app:boxCornerRadiusTopStart="10dp"
+                app:boxCornerRadiusTopEnd="10dp"
+                app:boxCornerRadiusBottomStart="10dp"
+                app:boxCornerRadiusBottomEnd="10dp"
+                app:boxStrokeColor="@color/field_border"
+                app:hintTextColor="@color/gray"
+                app:startIconDrawable="@drawable/person_24dp_000000_fill0_wght400_grad0_opsz24"
+                app:startIconTint="@color/gray">
 
-        </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/searchInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="actionSearch"
+                    android:inputType="text"
+                    android:maxLines="1" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/addButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="@string/friends_add"
+                android:textAllCaps="false"
+                android:letterSpacing="0"
+                app:cornerRadius="10dp"
+                app:backgroundTint="@color/field_border" />
+
+        </LinearLayout>
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/addButton"
-            android:layout_width="wrap_content"
+            android:id="@+id/addByQrButton"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="@string/friends_add"
-            app:cornerRadius="8dp" />
+            android:layout_marginTop="10dp"
+            android:text="@string/friends_add_by_qr"
+            android:textAllCaps="false"
+            android:letterSpacing="0"
+            app:cornerRadius="10dp"
+            app:strokeColor="@color/field_border"
+            app:strokeWidth="1.5dp"
+            app:icon="@drawable/ic_qr_code"
+            app:iconGravity="textStart"
+            app:iconTint="@color/field_border" />
 
     </LinearLayout>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/addByQrButton"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="16dp"
-        android:text="@string/friends_add_by_qr"
-        app:cornerRadius="8dp"
-        app:strokeColor="@color/field_background" />
-
+    <!-- QR camera preview box -->
     <FrameLayout
         android:id="@+id/qrScannerContainer"
-        android:layout_width="240dp"
-        android:layout_height="240dp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="12dp"
+        android:layout_width="match_parent"
+        android:layout_height="220dp"
+        android:layout_marginHorizontal="24dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/bg_qr_scanner"
+        android:clipToOutline="true"
         android:visibility="gone">
 
         <androidx.camera.view.PreviewView
             android:id="@+id/previewView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
+
+        <!-- Semi-transparent scrim at the bottom with hint text -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:layout_gravity="bottom"
+            android:background="#99000000"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Usmerite kameru prema QR kodu"
+                android:textColor="#DDFFFFFF"
+                android:textSize="11sp" />
+
+        </LinearLayout>
 
     </FrameLayout>
 
@@ -72,19 +122,36 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
+        android:layout_marginTop="8dp"
         android:visibility="gone" />
+
+    <!-- Section header -->
+    <TextView
+        android:id="@+id/friendsHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="8dp"
+        android:text="Moji prijatelji"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="@color/gray"
+        android:letterSpacing="0.08" />
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:overScrollMode="never">
 
         <LinearLayout
             android:id="@+id/friendsContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp" />
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="16dp" />
 
     </ScrollView>
 

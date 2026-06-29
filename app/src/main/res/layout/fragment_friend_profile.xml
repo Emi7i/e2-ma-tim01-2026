@@ -162,7 +162,7 @@
             android:textStyle="bold"
             android:padding="16dp"
             app:cornerRadius="8dp"
-            app:backgroundTint="@color/field_background" />
+            app:backgroundTint="@color/field_border" />
 
     </LinearLayout>
 

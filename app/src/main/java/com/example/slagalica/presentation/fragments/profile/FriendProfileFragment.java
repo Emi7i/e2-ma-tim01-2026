@@ -87,7 +87,7 @@ public class FriendProfileFragment extends Fragment {
             } else {
                 binding.matchRequestButton.setText(getString(R.string.match_request_send));
                 binding.matchRequestButton.setBackgroundTintList(
-                        ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.field_background)));
+                        ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.field_border)));
             }
         });
     }
