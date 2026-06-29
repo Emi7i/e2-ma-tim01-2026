@@ -46,6 +46,12 @@
     <string name="register_region_hint">Region</string>
     <string name="resetuj_ifru">Resetuj šifru</string>
     <string name="log_out">Log out</string>
+    <!-- Match requests -->
+    <string name="match_request_send">Pozovi na partiju</string>
+    <string name="match_request_send_short">Pozovi</string>
+    <string name="match_request_cancel">Otkaži zahtev</string>
+    <string name="match_request_title">Poziv na partiju</string>
+    <string name="match_request_accept">Prihvati</string>
     <!-- Friends -->
     <string name="friends_search_hint">Korisničko ime</string>
     <string name="friends_add">Dodaj</string>

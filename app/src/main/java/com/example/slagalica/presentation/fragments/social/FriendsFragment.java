@@ -33,7 +33,9 @@ import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.presentation.activities.AppActivity;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
 import com.example.slagalica.presentation.fragments.profile.FriendProfileFragment;
+import com.example.slagalica.domain.model.social.MatchRequest;
 import com.example.slagalica.presentation.viewmodels.FriendsViewModel;
+import com.example.slagalica.presentation.viewmodels.MatchRequestViewModel;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mlkit.vision.barcode.BarcodeScanner;
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
@@ -41,6 +43,7 @@ import com.google.mlkit.vision.barcode.BarcodeScanning;
 import com.google.mlkit.vision.barcode.common.Barcode;
 import com.google.mlkit.vision.common.InputImage;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -52,6 +55,8 @@ public class FriendsFragment extends Fragment {
 
     private FragmentFriendsBinding binding;
     private FriendsViewModel viewModel;
+    private MatchRequestViewModel matchRequestViewModel;
+    private List<UserProfile> currentFriends = new ArrayList<>();
     private ProcessCameraProvider cameraProvider;
     private ExecutorService cameraExecutor;
     private boolean isCameraActive = false;
@@ -75,6 +80,8 @@ public class FriendsFragment extends Fragment {
                              Bundle savedInstanceState) {
         binding = FragmentFriendsBinding.inflate(inflater, container, false);
         viewModel = new androidx.lifecycle.ViewModelProvider(this).get(FriendsViewModel.class);
+        matchRequestViewModel = new androidx.lifecycle.ViewModelProvider(requireActivity())
+                .get(MatchRequestViewModel.class);
         cameraExecutor = Executors.newSingleThreadExecutor();
         return binding.getRoot();
     }
@@ -182,7 +189,13 @@ public class FriendsFragment extends Fragment {
     }
 
     private void observeViewModel() {
-        viewModel.getFriends().observe(getViewLifecycleOwner(), this::renderFriends);
+        viewModel.getFriends().observe(getViewLifecycleOwner(), friends -> {
+            currentFriends = friends != null ? friends : new ArrayList<>();
+            renderFriends(currentFriends);
+        });
+
+        matchRequestViewModel.getOutgoingRequest().observe(getViewLifecycleOwner(),
+                request -> renderFriends(currentFriends));
 
         viewModel.getIsLoading().observe(getViewLifecycleOwner(), isLoading ->
                 binding.loadingIndicator.setVisibility(isLoading ? View.VISIBLE : View.GONE));
@@ -277,6 +290,47 @@ public class FriendsFragment extends Fragment {
         info.addView(rankView);
         card.addView(info);
 
+        MatchRequest outgoing = matchRequestViewModel.getOutgoingRequest().getValue();
+        boolean pendingToThis = outgoing != null
+                && outgoing.getReceiverId().equals(friend.getUserId())
+                && MatchRequest.STATUS_PENDING.equals(outgoing.getStatus());
+
+        com.google.android.material.button.MaterialButton matchBtn =
+                new com.google.android.material.button.MaterialButton(requireContext());
+        matchBtn.setText(pendingToThis
+                ? getString(R.string.match_request_cancel)
+                : getString(R.string.match_request_send_short));
+        matchBtn.setAllCaps(false);
+        matchBtn.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
+        matchBtn.setMinHeight(0);
+        matchBtn.setMinimumHeight(0);
+        matchBtn.setInsetTop(0);
+        matchBtn.setInsetBottom(0);
+        matchBtn.setPadding(dp(10), dp(6), dp(10), dp(6));
+        matchBtn.setCornerRadius(dp(6));
+        matchBtn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                ContextCompat.getColor(requireContext(),
+                        pendingToThis ? R.color.red : R.color.field_background)));
+        matchBtn.setTextColor(ContextCompat.getColor(requireContext(), R.color.white));
+
+        LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        btnParams.leftMargin = dp(8);
+        matchBtn.setLayoutParams(btnParams);
+
+        matchBtn.setOnClickListener(v -> {
+            MatchRequest cur = matchRequestViewModel.getOutgoingRequest().getValue();
+            boolean isPending = cur != null
+                    && cur.getReceiverId().equals(friend.getUserId())
+                    && MatchRequest.STATUS_PENDING.equals(cur.getStatus());
+            if (isPending) {
+                matchRequestViewModel.cancelRequest();
+            } else if (cur == null) {
+                matchRequestViewModel.sendRequest(friend.getUserId(), friend.getUsername());
+            }
+        });
+
+        card.addView(matchBtn);
         card.setOnClickListener(v -> openFriendProfile(friend.getUserId()));
 
         return card;

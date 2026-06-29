@@ -152,6 +152,18 @@
 
         </LinearLayout>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/matchRequestButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:enabled="false"
+            android:text="@string/match_request_send"
+            android:textStyle="bold"
+            android:padding="16dp"
+            app:cornerRadius="8dp"
+            app:backgroundTint="@color/field_background" />
+
     </LinearLayout>
 
 </ScrollView>
