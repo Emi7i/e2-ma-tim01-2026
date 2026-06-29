@@ -22,6 +22,11 @@
             color: #444;
             pointer-events: none;
         }
+        .region-popup { font-family: sans-serif; min-width: 200px; }
+        .region-popup h3 { margin: 0 0 8px; font-size: 15px; }
+        .region-popup table { border-collapse: collapse; width: 100%; font-size: 13px; }
+        .region-popup td { padding: 2px 4px; }
+        .region-popup td:last-child { text-align: right; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -30,42 +35,164 @@
 <script>
     var map = L.map('map', { zoomControl: true }).setView([44.2, 20.9], 7);
 
-    // Custom pane above the overlay pane (400) and marker pane (600)
-    map.createPane('emojiPane');
-    map.getPane('emojiPane').style.zIndex = 650;
-    map.getPane('emojiPane').style.pointerEvents = 'none';
-
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>',
         maxZoom: 18
     }).addTo(map);
 
+    // Pane for emoji icons — above overlay (400) and markers (600)
+    map.createPane('emojiPane');
+    map.getPane('emojiPane').style.zIndex = 650;
+    map.getPane('emojiPane').style.pointerEvents = 'none';
+
+    // Pane for player dots — between overlay and emoji
+    map.createPane('playerPane');
+    map.getPane('playerPane').style.zIndex = 500;
+    map.getPane('playerPane').style.pointerEvents = 'none';
+
     // Confirmed OSM relation IDs for Serbia's 5 NUTS2 statistical regions
     var ID_TO_REGION = {
-        '1279074': { key: 'Vojvodina',                 display: 'Vojvodina',                    icon: '🌷', color: '#E74C3C' },
-        '1677007': { key: 'Beograd',                   display: 'Beograd',                      icon: '🏙', color: '#2980B9' },
-        '2959530': { key: 'Sumadija i Zapadna Srbija', display: 'Šumadija i Zapadna Srbija',    icon: '🌲', color: '#27AE60' },
-        '2959529': { key: 'Juzna i Istocna Srbija',    display: 'Južna i Istočna Srbija',       icon: '🍵', color: '#8E44AD' },
-        '2088990': { key: 'Kosovo i Metohija',          display: 'Kosovo i Metohija',             icon: '🏔', color: '#E67E22' }
+        '1279074': { key: 'Vojvodina',                 display: 'Vojvodina',                 icon: '🌷', color: '#E74C3C' },
+        '1677007': { key: 'Beograd',                   display: 'Beograd',                   icon: '🏙', color: '#2980B9' },
+        '2959530': { key: 'Sumadija i Zapadna Srbija', display: 'Šumadija i Zapadna Srbija', icon: '🌲', color: '#27AE60' },
+        '2959529': { key: 'Juzna i Istocna Srbija',    display: 'Južna i Istočna Srbija',    icon: '🍵', color: '#8E44AD' },
+        '2088990': { key: 'Kosovo i Metohija',         display: 'Kosovo i Metohija',          icon: '🏔', color: '#E67E22' }
     };
 
-    var regionData        = {};
-    var currentUserRegion = null;
+    var regionData        = {};   // injected from Android
+    var currentUserRegion = null; // injected from Android
+    var regionLayers      = {};   // key → L.geoJSON layer (for re-style)
 
+    // ------------------------------------------------------------------
+    // Point-in-polygon (ray casting) for L.LatLng inside L.Polygon ring
+    // ------------------------------------------------------------------
+    function pointInRing(pt, ring) {
+        var inside = false;
+        for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            var xi = ring[i].lat, yi = ring[i].lng;
+            var xj = ring[j].lat, yj = ring[j].lng;
+            if (((yi > pt.lng) !== (yj > pt.lng)) &&
+                (pt.lat < (xj - xi) * (pt.lng - yi) / (yj - yi) + xi)) {
+                inside = !inside;
+            }
+        }
+        return inside;
+    }
+
+    function pointInLayer(pt, layer) {
+        var latlngs = layer.getLatLngs();
+        // Polygon:      latlngs = [[LatLng, ...], ...]       → latlngs[0][0] is LatLng
+        // MultiPolygon: latlngs = [[[LatLng, ...], ...], ...]→ latlngs[0][0] is Array
+        var isMulti = Array.isArray(latlngs[0][0]);
+        if (isMulti) {
+            for (var i = 0; i < latlngs.length; i++) {
+                if (pointInRing(pt, latlngs[i][0])) return true;
+            }
+        } else {
+            if (pointInRing(pt, latlngs[0])) return true;
+        }
+        return false;
+    }
+
+    // ------------------------------------------------------------------
+    // Player dots: random points inside the region polygon
+    // ------------------------------------------------------------------
+    function addPlayerDots(layer, color, count) {
+        if (!count || count <= 0) return;
+        var bounds  = layer.getBounds();
+        var minLat  = bounds.getSouth(), maxLat = bounds.getNorth();
+        var minLng  = bounds.getWest(),  maxLng = bounds.getEast();
+        var latSpan = maxLat - minLat,   lngSpan = maxLng - minLng;
+        var placed  = 0;
+        var tries   = 0;
+        var cap     = Math.min(count, 150); // visual cap
+
+        while (placed < cap && tries < cap * 20) {
+            tries++;
+            var lat = minLat + Math.random() * latSpan;
+            var lng = minLng + Math.random() * lngSpan;
+            var pt  = L.latLng(lat, lng);
+            if (!pointInLayer(pt, layer)) continue;
+            L.circleMarker(pt, {
+                pane:        'playerPane',
+                radius:      4,
+                color:       '#fff',
+                weight:      1,
+                fillColor:   color,
+                fillOpacity: 0.85,
+                interactive: false
+            }).addTo(map);
+            placed++;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Popup content
+    // ------------------------------------------------------------------
+    function buildPopup(region, data) {
+        var star = (region.key === currentUserRegion) ? ' &#x2605;' : '';
+        return '<div class="region-popup">'
+            + '<h3>' + region.icon + ' ' + region.display + star + '</h3>'
+            + '<table>'
+            + '<tr><td>&#x1F947; Prva mesta</td><td>'  + (data.firstPlaces  || 0) + '</td></tr>'
+            + '<tr><td>&#x1F948; Druga mesta</td><td>' + (data.secondPlaces || 0) + '</td></tr>'
+            + '<tr><td>&#x1F949; Tre&#x107;a mesta</td><td>' + (data.thirdPlaces || 0) + '</td></tr>'
+            + '<tr><td>&#x1F7E2; Aktivni igra&#x10D;i</td><td>' + (data.activePlayers || 0) + '</td></tr>'
+            + '<tr><td>&#x1F465; Registrovani igra&#x10D;i</td><td>' + (data.players || 0) + '</td></tr>'
+            + '</table></div>';
+    }
+
+    // ------------------------------------------------------------------
+    // Style helper
+    // ------------------------------------------------------------------
+    function styleFor(region) {
+        var isUser = region.key === currentUserRegion;
+        return {
+            color:       '#fff',
+            weight:      isUser ? 3 : 1.5,
+            fillColor:   region.color,
+            fillOpacity: isUser ? 0.65 : 0.45
+        };
+    }
+
+    // ------------------------------------------------------------------
+    // Load regions from Overpass
+    // ------------------------------------------------------------------
     var query = '[out:json][timeout:30];relation(id:2959530,2959529,1279074,1677007,2088990);out geom;';
+    var OVERPASS_ENDPOINTS = [
+        'https://overpass-api.de/api/interpreter',
+        'https://overpass.kumi.systems/api/interpreter',
+        'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
+    ];
 
-    fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'data=' + encodeURIComponent(query)
-    })
-    .then(function(r) { return r.json(); })
+    function fetchOverpass(endpoints) {
+        var url = endpoints[0];
+        var rest = endpoints.slice(1);
+        return fetch(url, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body:    'data=' + encodeURIComponent(query)
+        })
+        .then(function(r) { return r.text(); })
+        .then(function(text) {
+            if (text.trim().charAt(0) === '<') {
+                // XML error page — try next mirror
+                if (rest.length > 0) return fetchOverpass(rest);
+                throw new Error('Overpass API nije dostupan');
+            }
+            return JSON.parse(text);
+        })
+        .catch(function(err) {
+            if (rest.length > 0) return fetchOverpass(rest);
+            throw err;
+        });
+    }
+
+    fetchOverpass(OVERPASS_ENDPOINTS)
     .then(function(osm) {
         var geojson = osmtogeojson(osm);
 
-        L.geoJSON(geojson, {
-            // Only render polygons — osmtogeojson also produces Point/LineString
-            // features from OSM nodes/ways which would show as unwanted blue pins
+        var geoLayer = L.geoJSON(geojson, {
             filter: function(feature) {
                 var t = feature.geometry && feature.geometry.type;
                 return t === 'Polygon' || t === 'MultiPolygon';
@@ -73,48 +200,80 @@
             style: function(feature) {
                 var osmId  = (feature.id || '').replace('relation/', '');
                 var region = ID_TO_REGION[osmId];
-                var color  = region ? region.color : '#999';
-                var isUser = region && region.key === currentUserRegion;
-                return {
-                    color:       '#fff',
-                    weight:      isUser ? 3 : 1.5,
-                    fillColor:   color,
-                    fillOpacity: isUser ? 0.65 : 0.45
-                };
+                return region ? styleFor(region) : { opacity: 0, fillOpacity: 0 };
             },
             onEachFeature: function(feature, layer) {
                 var osmId  = (feature.id || '').replace('relation/', '');
                 var region = ID_TO_REGION[osmId];
                 if (!region) return;
+
+                regionLayers[region.key] = layer;
+
+                // Click → popup with stats
+                layer.on('click', function(e) {
+                    var data = regionData[region.key] || {};
+                    L.popup({ maxWidth: 260 })
+                        .setLatLng(e.latlng)
+                        .setContent(buildPopup(region, data))
+                        .openOn(map);
+                });
+
+                // Emoji icon above overlay
                 var bounds = layer.getBounds();
-                if (!bounds.isValid()) return;
-                L.marker(bounds.getCenter(), {
-                    icon: L.divIcon({
-                        className: '',
-                        html: '<div style="font-size:22px;text-align:center;">'
-                            + region.icon + '</div>',
-                        iconSize:   [30, 30],
-                        iconAnchor: [15, 15]
-                    }),
-                    pane:        'emojiPane',
-                    interactive: false
-                }).addTo(map);
+                if (bounds.isValid()) {
+                    L.marker(bounds.getCenter(), {
+                        pane: 'emojiPane',
+                        icon: L.divIcon({
+                            className:  '',
+                            html:       '<div style="font-size:22px;text-align:center;">' + region.icon + '</div>',
+                            iconSize:   [30, 30],
+                            iconAnchor: [15, 15]
+                        }),
+                        interactive: false
+                    }).addTo(map);
+                }
+
+                // Player dots (if data already arrived)
+                if (regionData[region.key]) {
+                    addPlayerDots(layer, region.color, regionData[region.key].players || 0);
+                }
             }
         }).addTo(map);
 
         document.getElementById('status').style.display = 'none';
     })
     .catch(function(err) {
-        document.getElementById('status').textContent = 'Greška: ' + err.message;
+        document.getElementById('status').textContent = 'Greška pri učitavanju: ' + (err.message || err);
     });
 
-    // Called from Android
+    // ------------------------------------------------------------------
+    // Android → JS interface
+    // ------------------------------------------------------------------
     function setRegionData(jsonStr) {
-        try { regionData = JSON.parse(jsonStr); } catch(e) {}
+        try { regionData = JSON.parse(jsonStr); } catch(e) { return; }
+
+        // If regions already loaded, draw dots now
+        Object.keys(regionLayers).forEach(function(key) {
+            var data = regionData[key];
+            if (data && data.players > 0) {
+                var entry = null;
+                Object.keys(ID_TO_REGION).forEach(function(id) {
+                    if (ID_TO_REGION[id].key === key) entry = ID_TO_REGION[id];
+                });
+                if (entry) addPlayerDots(regionLayers[key], entry.color, data.players);
+            }
+        });
     }
 
     function setCurrentUserRegion(key) {
         currentUserRegion = key;
+        Object.keys(regionLayers).forEach(function(k) {
+            var entry = null;
+            Object.keys(ID_TO_REGION).forEach(function(id) {
+                if (ID_TO_REGION[id].key === k) entry = ID_TO_REGION[id];
+            });
+            if (entry) regionLayers[k].setStyle(styleFor(entry));
+        });
     }
 </script>
 </body>

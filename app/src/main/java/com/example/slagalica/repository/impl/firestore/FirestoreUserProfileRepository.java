@@ -42,6 +42,16 @@ public class FirestoreUserProfileRepository implements UserProfileRepository {
     }
 
     @Override
+    public CompletableFuture<Void> deleteProfile(String userId) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        db.collection(COLLECTION_USERS).document(userId)
+                .delete()
+                .addOnSuccessListener(aVoid -> future.complete(null))
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
+    }
+
+    @Override
     public CompletableFuture<UserProfile> findByUsername(String username) {
         CompletableFuture<UserProfile> future = new CompletableFuture<>();
         db.collection(COLLECTION_USERS)

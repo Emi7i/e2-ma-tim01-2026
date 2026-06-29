@@ -7,6 +7,7 @@ import java.util.concurrent.CompletableFuture;
 public interface UserProfileRepository {
     CompletableFuture<UserProfile> getProfile(String userId);
     CompletableFuture<Void> saveProfile(UserProfile profile);
+    CompletableFuture<Void> deleteProfile(String userId);
     CompletableFuture<UserProfile> findByUsername(String username);
     CompletableFuture<List<UserProfile>> getAllProfiles();
 }

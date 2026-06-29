@@ -192,6 +192,20 @@ public class AppActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        sessionManager.setUserOnline(true);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (!isChangingConfigurations()) {
+            sessionManager.setUserOnline(false);
+        }
+    }
+
     public void setToolbarTitle(String title) {
         binding.toolbarTitle.setText(title);
     }

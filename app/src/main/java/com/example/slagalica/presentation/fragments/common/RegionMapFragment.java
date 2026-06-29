@@ -122,9 +122,13 @@ public class RegionMapFragment extends Fragment {
         try {
             for (RegionStats s : stats) {
                 JSONObject entry = new JSONObject();
-                entry.put("stars", s.getTotalMonthlyStars());
-                entry.put("players", s.getTotalPlayers());
-                entry.put("rank", s.getRank());
+                entry.put("stars",         s.getTotalMonthlyStars());
+                entry.put("players",       s.getTotalPlayers());
+                entry.put("activePlayers", s.getActivePlayers());
+                entry.put("firstPlaces",   s.getFirstPlaces());
+                entry.put("secondPlaces",  s.getSecondPlaces());
+                entry.put("thirdPlaces",   s.getThirdPlaces());
+                entry.put("rank",          s.getRank());
                 json.put(s.getRegionKey(), entry);
             }
         } catch (JSONException ignored) {}
