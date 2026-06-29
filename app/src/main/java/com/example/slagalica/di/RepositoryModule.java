@@ -1,5 +1,7 @@
 package com.example.slagalica.di;
 
+import com.example.slagalica.repository.impl.FriendsRepository;
+import com.example.slagalica.repository.impl.firestore.FirestoreFriendsRepository;
 import com.example.slagalica.repository.impl.AsocijacijeContentRepository;
 import com.example.slagalica.repository.impl.KoZnaZnaRepository;
 import com.example.slagalica.repository.impl.KorakPoKorakRepository;
@@ -76,5 +78,11 @@ public abstract class RepositoryModule {
     @Singleton
     public abstract MojBrojRepository bindMojBrojRepository(
             FirestoreMojBrojRepository impl
+    );
+
+    @Binds
+    @Singleton
+    public abstract FriendsRepository bindFriendsRepository(
+            FirestoreFriendsRepository impl
     );
 }

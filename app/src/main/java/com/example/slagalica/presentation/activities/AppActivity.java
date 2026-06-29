@@ -28,6 +28,7 @@ import com.example.slagalica.presentation.fragments.auth.ResetPasswordFragment;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
 import com.example.slagalica.presentation.fragments.common.HomeFragment;
 import com.example.slagalica.presentation.fragments.profile.ProfileFragment;
+import com.example.slagalica.presentation.fragments.social.FriendsFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationTargetPlaceholderFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationsFragment;
 import com.example.slagalica.presentation.notifications.AppNotificationHelper;
@@ -116,6 +117,12 @@ public class AppActivity extends AppCompatActivity {
                 FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
                 binding.main.closeDrawer(GravityCompat.START);
             }
+        });
+
+        // Friends button
+        leftDrawer.findViewById(R.id.friends).setOnClickListener(v -> {
+            FragmentTransition.to(new FriendsFragment(), this, true, R.id.appContainer);
+            binding.main.closeDrawer(GravityCompat.START);
         });
 
         // Notifications button
