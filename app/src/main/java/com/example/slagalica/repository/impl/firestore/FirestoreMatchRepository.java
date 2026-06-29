@@ -55,6 +55,17 @@ public class FirestoreMatchRepository implements MatchRepository {
     }
 
     @Override
+    public CompletableFuture<Void> delete(String matchId) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        db.collection(COLLECTION)
+                .document(matchId)
+                .delete()
+                .addOnSuccessListener(unused -> future.complete(null))
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
+    }
+
+    @Override
     public void observe(String matchId, OnSessionUpdateListener<MatchSessionData> listener) {
         db.collection(COLLECTION)
                 .document(matchId)

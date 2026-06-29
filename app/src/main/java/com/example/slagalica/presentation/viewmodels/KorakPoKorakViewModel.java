@@ -154,6 +154,7 @@ public class KorakPoKorakViewModel extends ViewModel {
                 if (game.hasEnded()) {
                     gameOver.postValue(true);
                     updateUserStatistics();
+                    game.deleteSession(); // session over, no need to keep in in the db anymore
                 } else {
                     revealAllHints.postValue(false);
                     stealWindowOpen.postValue(false);

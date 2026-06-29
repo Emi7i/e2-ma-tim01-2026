@@ -10,5 +10,6 @@ public interface MatchRepository {
     CompletableFuture<String> create(MatchSessionData data);
     CompletableFuture<Void> update(String matchId, MatchSessionData data);
     CompletableFuture<MatchSessionData> get(String matchId);
+    CompletableFuture<Void> delete(String matchId);
     void observe(String matchId, OnSessionUpdateListener<MatchSessionData> listener);
 }

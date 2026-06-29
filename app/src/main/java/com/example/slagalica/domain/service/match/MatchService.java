@@ -31,6 +31,10 @@ public class MatchService {
         return matchRepository.get(matchId);
     }
 
+    public CompletableFuture<Void> delete(String matchId) {
+        return matchRepository.delete(matchId);
+    }
+
     public void observe(String matchId, OnSessionUpdateListener<MatchSessionData> listener) {
         matchRepository.observe(matchId, listener);
     }

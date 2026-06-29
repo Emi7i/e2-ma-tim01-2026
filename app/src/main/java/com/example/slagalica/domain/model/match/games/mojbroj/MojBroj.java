@@ -189,4 +189,8 @@ public class MojBroj extends AbstractGame {
             notifyGameEnded();
         }
     }
+
+    public void deleteSession(){
+        gameService.delete(getMatchId());
+    }
 }

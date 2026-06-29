@@ -8,5 +8,6 @@ import java.util.concurrent.CompletableFuture;
 public interface KorakPoKorakRepository {
     CompletableFuture<Void> updateSessionData(String matchId, KorakPoKorakSessionData data);
     CompletableFuture<KorakPoKorakSessionData> getSessionData(String matchId);
+    CompletableFuture<Void> delete(String matchId);
     void observeSessionData(String matchId, OnSessionUpdateListener<KorakPoKorakSessionData> listener);
 }

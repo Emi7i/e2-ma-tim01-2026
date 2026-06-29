@@ -8,5 +8,7 @@ import java.util.concurrent.CompletableFuture;
 public interface MojBrojRepository {
     CompletableFuture<Void> updateSessionData(String matchId, MojBrojSessionData data);
     CompletableFuture<MojBrojSessionData> getSessionData(String matchId);
+    CompletableFuture<Void> delete(String matchId);
+
     void observeSessionData(String matchId, OnSessionUpdateListener<MojBrojSessionData> listener);
 }

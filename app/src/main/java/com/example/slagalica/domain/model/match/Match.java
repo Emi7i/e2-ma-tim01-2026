@@ -103,13 +103,18 @@ public class Match {
     }
 
     public void start(){
-        startKoZnaZna();
+        startMojBroj();
     }
 
     public void endMatch(){
         // TODO: economy
         currentGameId = 0; // signal game over
         updateRemoteMatch();
+        matchService.delete(id)
+                .exceptionally(e -> {
+                    Log.e("Match", "Failed to delete match session", e);
+                    return null;
+                });
     }
 
     public void startKoZnaZna(){

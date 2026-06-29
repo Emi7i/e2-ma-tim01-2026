@@ -34,6 +34,11 @@ public class KorakPoKorakService {
     public CompletableFuture<KorakPoKorakSessionData> getSessionData(String matchId) {
         return sessionRepository.getSessionData(matchId);
     }
+
+    public CompletableFuture<Void> delete(String matchId) {
+        return sessionRepository.delete(matchId);
+    }
+
     public void observeSessionData(String matchId, OnSessionUpdateListener<KorakPoKorakSessionData> listener) {
         sessionRepository.observeSessionData(matchId, listener);
     }

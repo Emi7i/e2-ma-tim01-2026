@@ -40,6 +40,17 @@ public class FirestoreKorakPoKorakRepository implements KorakPoKorakRepository {
     }
 
     @Override
+    public CompletableFuture<Void> delete(String matchId) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        db.collection(COLLECTION_SESSIONS)
+                .document(matchId)
+                .delete()
+                .addOnSuccessListener(unused -> future.complete(null))
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
+    }
+
+    @Override
     public void observeSessionData(String matchId, OnSessionUpdateListener<KorakPoKorakSessionData> listener) {
         db.collection(COLLECTION_SESSIONS).document(matchId)
                 .addSnapshotListener((snapshot, error) -> {

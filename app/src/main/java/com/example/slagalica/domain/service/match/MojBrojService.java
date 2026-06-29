@@ -58,6 +58,10 @@ public class MojBrojService {
         return sessionRepository.getSessionData(matchId);
     }
 
+    public CompletableFuture<Void> delete(String matchId) {
+        return sessionRepository.delete(matchId);
+    }
+
     public void observeSessionData(String matchId, OnSessionUpdateListener<MojBrojSessionData> listener) {
         sessionRepository.observeSessionData(matchId, listener);
     }
