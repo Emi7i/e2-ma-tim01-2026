@@ -2,14 +2,20 @@ package com.example.slagalica.domain.model.match;
 
 import android.util.Log;
 
+import com.example.slagalica.domain.model.auth.SessionManager;
 import com.example.slagalica.domain.model.match.games.common.GameSession;
 import com.example.slagalica.domain.model.match.games.common.IGame;
 import com.example.slagalica.domain.model.match.games.common.OnMatchUpdatedListener;
 import com.example.slagalica.domain.model.match.games.korakpokorak.KorakPoKorak;
 import com.example.slagalica.domain.model.match.games.mojbroj.MojBroj;
+import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.domain.service.match.KorakPoKorakService;
 import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
+import com.example.slagalica.repository.impl.UserProfileRepository;
+
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -31,6 +37,8 @@ public class Match {
     private final MatchService matchService;
     private final KorakPoKorakService korakPoKorakService;
     private final MojBrojService mojBrojService;
+    private final UserProfileRepository userProfileRepository;
+    private final SessionManager sessionManager;
 
     private OnMatchUpdatedListener onMatchUpdatedListener;
 
@@ -44,6 +52,8 @@ public class Match {
                  MatchService matchService,
                  KorakPoKorakService korakPoKorakService,
                  MojBrojService mojBrojService,
+                 UserProfileRepository userProfileRepository,
+                 SessionManager sessionManager,
                  Runnable onReadyCallback){
         this.player1Id = player1Id;
         this.player2Id = player2Id;
@@ -55,6 +65,8 @@ public class Match {
         this.matchService = matchService;
         this.korakPoKorakService = korakPoKorakService;
         this.mojBrojService = mojBrojService;
+        this.userProfileRepository = userProfileRepository;
+        this.sessionManager = sessionManager;
         this.currentGameId = 1;
 
         MatchSessionData data = new MatchSessionData(
@@ -103,38 +115,87 @@ public class Match {
     }
 
     public void start(){
-        startSpojnice();
+        startMojBroj();
     }
 
     public void endMatch(){
-        // TODO: economy
+        // TODO: probably resolve rewards only on matches not
+        // from challenges. add a bool to check if its for a challenge
+        // to resolve rewards differently
+        resolveRewards();
         currentGameId = 0; // signal game over
-        updateRemoteMatch();
+        updateMatchSession();
         matchService.delete(id)
                 .exceptionally(e -> {
                     Log.e("Match", "Failed to delete match session", e);
+                    return null;
+                });
+        Log.d("Match", "Match ended!");
+    }
+
+    private void resolveRewards(){
+        // player 1 is winner even if they have the same points >:D
+        String winnerId = player1Score >= player2Score ? player1Id : player2Id;
+        CompletableFuture<UserProfile> player1Future = userProfileRepository.getProfile(player1Id);
+        CompletableFuture<UserProfile> player2Future = userProfileRepository.getProfile(player2Id);
+
+        CompletableFuture.allOf(player1Future, player2Future)
+                .thenAccept(ignored -> {
+                    UserProfile player1 = player1Future.join();
+                    UserProfile player2 = player2Future.join();
+
+                    // stars per 40 points
+                    int additionalStars = player1Score / 40;
+                    player1.setNumStars(player1.getNumStars() + additionalStars);
+                    additionalStars = player2Score / 40;
+                    player2.setNumStars(player2.getNumStars() + additionalStars);
+
+                    // winner/loser stars
+                    if(Objects.equals(player1.getUserId(), winnerId)){
+                        player1.setNumStars(player1.getNumStars() + 10);
+                        long loserStars = player2.getNumStars() - 10;
+                        player2.setNumStars(Math.max(0, loserStars));
+                    }
+                    else{
+                        player2.setNumStars(player2.getNumStars() + 10);
+                        long loserStars = player1.getNumStars() - 10;
+                        player1.setNumStars(Math.max(0, loserStars));
+                    }
+
+                    userProfileRepository.saveProfile(player1);
+                    userProfileRepository.saveProfile(player2);
+
+                    String myId = sessionManager.getCurrentUserId();
+                    if (Objects.equals(player1.getUserId(), myId)) {
+                        sessionManager.setCurrentProfile(player1);
+                    } else if (Objects.equals(player2.getUserId(), myId)) {
+                        sessionManager.setCurrentProfile(player2);
+                    }
+                })
+                .exceptionally(throwable -> {
+                    Log.e("Tag", "Error fetching profiles", throwable);
                     return null;
                 });
     }
 
     public void startKoZnaZna(){
         currentGameId = 1;
-        updateRemoteMatch();
+        updateMatchSession();
     }
 
     public void startSpojnice(){
         currentGameId = 2;
-        updateRemoteMatch();
+        updateMatchSession();
     }
 
     public void startAsocijacije(){
         currentGameId = 3;
-        updateRemoteMatch();
+        updateMatchSession();
     }
 
     public void startSkocko(){
         currentGameId = 4;
-        updateRemoteMatch();
+        updateMatchSession();
     }
 
     public void startKorakPoKorak() {
@@ -145,7 +206,7 @@ public class Match {
         game.setOnGameEndedListener(this::onGameEnded);
         currentGameId = game.getId();
         currentGame = game;
-        updateRemoteMatch();
+        updateMatchSession();
     }
 
     public void startMojBroj() {
@@ -156,19 +217,19 @@ public class Match {
         game.setOnGameEndedListener(this::onGameEnded);
         currentGameId = game.getId();
         currentGame = game;
-        updateRemoteMatch();
+        updateMatchSession();
     }
 
     public void updatePlayer1Score(int delta) {
         Integer current = player1Score;
         player1Score = (current != null ? current : 0) + delta;
-        updateRemoteMatch();
+        updateMatchSession();
     }
 
     public void updatePlayer2Score(int delta) {
         Integer current = player2Score;
         player2Score = (current != null ? current : 0) + delta;
-        updateRemoteMatch();
+        updateMatchSession();
     }
 
     private void onPointsChanged(String playerId, int amount){
@@ -178,7 +239,7 @@ public class Match {
         else if(playerId == player2Id){
             updatePlayer2Score(amount);
         }
-        updateRemoteMatch();
+        updateMatchSession();
     }
 
     private void onGameEnded(){
@@ -188,14 +249,14 @@ public class Match {
     // TODO: BAD
     private void onActivePlayerChanged(String playerId){
          activePlayer = playerId;
-         updateRemoteMatch();
+         updateMatchSession();
     }
 
     public void setOnMatchUpdatedListener(OnMatchUpdatedListener listener) {
         this.onMatchUpdatedListener = listener;
     }
 
-    public void updateRemoteMatch(){
+    public void updateMatchSession(){
         MatchSessionData data = new MatchSessionData(
                 null,
                 player1Id,

@@ -6,6 +6,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.slagalica.domain.model.auth.SessionManager;
 import com.example.slagalica.domain.model.match.Match;
 import com.example.slagalica.domain.model.match.MatchSessionData;
 import com.example.slagalica.domain.model.profile.UserProfile;
@@ -20,7 +21,6 @@ import javax.inject.Inject;
 
 import dagger.hilt.android.lifecycle.HiltViewModel;
 import lombok.Getter;
-import lombok.extern.log4j.Log4j;
 
 @HiltViewModel
 public class MatchViewModel extends ViewModel {
@@ -31,6 +31,7 @@ public class MatchViewModel extends ViewModel {
     private final KorakPoKorakService korakPoKorakService;
     private final MojBrojService mojBrojService;
     private final UserProfileRepository userProfileRepository;
+    private final SessionManager sessionManager;
 
 //    private final MutableLiveData<IGame> currentGame = new MutableLiveData<>();
     private final MutableLiveData<Integer> currentGameId = new MutableLiveData<>();
@@ -40,12 +41,14 @@ public class MatchViewModel extends ViewModel {
             KorakPoKorakService korakPoKorakService,
             MojBrojService mojBrojService,
             UserProfileRepository userProfileRepository,
-            MatchService matchService
+            MatchService matchService,
+            SessionManager sessionManager
     ) {
         this.matchService = matchService;
         this.korakPoKorakService = korakPoKorakService;
         this.mojBrojService = mojBrojService;
         this.userProfileRepository = userProfileRepository;
+        this.sessionManager = sessionManager;
     }
 
     public void startMatch(String player1Id, String player2Id) {
@@ -85,6 +88,8 @@ public class MatchViewModel extends ViewModel {
                             matchService,
                             korakPoKorakService,
                             mojBrojService,
+                            userProfileRepository,
+                            sessionManager,
                             () -> {
                                 isGameActive.postValue(true);
                                 match.setOnMatchUpdatedListener(this::onMatchUpdated);
@@ -137,19 +142,19 @@ public class MatchViewModel extends ViewModel {
             active = match.getPlayer2Id();
         }
         match.setActivePlayer(active);
-        match.updateRemoteMatch();
+        match.updateMatchSession();
         onMatchUpdated(match);
     }
 
     public void setPlayer1Score(int score) {
         match.setPlayer1Score(score);
-        match.updateRemoteMatch();
+        match.updateMatchSession();
         onMatchUpdated(match);
     }
 
     public void setPlayer2Score(int score) {
         match.setPlayer2Score(score);
-        match.updateRemoteMatch();
+        match.updateMatchSession();
         onMatchUpdated(match);
     }
 
