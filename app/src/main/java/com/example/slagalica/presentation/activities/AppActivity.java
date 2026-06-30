@@ -111,6 +111,7 @@ public class AppActivity extends AppCompatActivity {
         // Leave match button
         leftDrawer.findViewById(R.id.leave_match).setOnClickListener(v -> {
             showLeaveGameConfirmationDialog(() -> {
+                matchViewModel.setGameActive(false);
                 FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
                 binding.main.closeDrawer(GravityCompat.START);
             });
