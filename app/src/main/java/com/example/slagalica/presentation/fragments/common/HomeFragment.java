@@ -10,9 +10,11 @@ import androidx.lifecycle.ViewModelProvider;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.example.slagalica.R;
 import com.example.slagalica.databinding.FragmentHomeBinding;
+import com.example.slagalica.domain.model.match.games.MatchType;
 import com.example.slagalica.presentation.fragments.match.KoZnaZnaFragment;
 import com.example.slagalica.presentation.fragments.match.AsocijacijeFragment;
 import com.example.slagalica.presentation.fragments.match.KorakPoKorakFragment;
@@ -46,10 +48,16 @@ public class HomeFragment extends Fragment {
 
         matchViewModel = new ViewModelProvider(requireActivity()).get(MatchViewModel.class);
 
+        matchViewModel.getInsufficientTokens().observe(getViewLifecycleOwner(), poor -> {
+            if (Boolean.TRUE.equals(poor)) {
+                Toast.makeText(requireContext(), "Nemate dovoljno tokena!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
         binding.start.setOnClickListener(v -> {
             String player1Id = "NgIpszkS4LU3RTDtOd4qqQlZm7Q2"; // perica
             String player2Id = "rAvFq0wuLHQvUwbD0FK0olNLocG3"; // skocko
-            matchViewModel.startMatch(player1Id, player2Id);
+            matchViewModel.startMatch(player1Id, player2Id, MatchType.CLASSIC);
         });
 
         // Temporary access to all games from home

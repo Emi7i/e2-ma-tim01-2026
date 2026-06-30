@@ -9,11 +9,13 @@ import androidx.lifecycle.ViewModel;
 import com.example.slagalica.domain.model.auth.SessionManager;
 import com.example.slagalica.domain.model.match.Match;
 import com.example.slagalica.domain.model.match.MatchSessionData;
+import com.example.slagalica.domain.model.match.games.MatchType;
 import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.domain.service.match.KorakPoKorakService;
 import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
 import com.example.slagalica.repository.impl.UserProfileRepository;
+import com.google.firebase.firestore.auth.User;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -51,7 +53,7 @@ public class MatchViewModel extends ViewModel {
         this.sessionManager = sessionManager;
     }
 
-    public void startMatch(String player1Id, String player2Id) {
+    public void startMatch(String player1Id, String player2Id, MatchType matchType) {
         Log.d("Match", "Starting match...");
         CompletableFuture<UserProfile> player1Future = userProfileRepository.getProfile(player1Id);
         CompletableFuture<UserProfile> player2Future = userProfileRepository.getProfile(player2Id);
@@ -63,7 +65,6 @@ public class MatchViewModel extends ViewModel {
                     UserProfile player1 = player1Future.join();
                     UserProfile player2 = player2Future.join();
 
-
                     Log.d("Match", "Player1: " + player1);
                     Log.d("Match", "Player2: " + player2);
 
@@ -72,30 +73,22 @@ public class MatchViewModel extends ViewModel {
                         return;
                     }
 
-                    MatchSessionData data = new MatchSessionData();
-                    data.player1Id = player1Id;
-                    data.player2Id = player2Id;
+                    if(matchType == MatchType.CLASSIC){
+                        deductToken(sessionManager.getCurrentUserId());
+                        if(Boolean.TRUE.equals(insufficientTokens.getValue())){
+                            return;
+                        }
+                    }
 
-                    Log.d("Match", "Players fetched");
-
-                    match = new Match(
-                            player1Id,
-                            player2Id,
-                            0,
-                            0,
-                            player1.getUsername(),
-                            player2.getUsername(),
-                            matchService,
-                            korakPoKorakService,
-                            mojBrojService,
-                            userProfileRepository,
-                            sessionManager,
-                            () -> {
-                                isGameActive.postValue(true);
-                                match.setOnMatchUpdatedListener(this::onMatchUpdated);
-                                match.start();
-                            }
-                    );
+                    if (matchType == MatchType.CLASSIC) {
+                        deductToken(sessionManager.getCurrentUserId())
+                                .thenAccept(success -> {
+                                    if (success) createMatch(player1, player2, matchType);
+                                });
+                    } else {
+                        // other logic for other types if needed
+                        createMatch(player1, player2, matchType);
+                    }
                 })
                 .exceptionally(throwable -> {
                     Log.e("Match", "Error starting match", throwable);
@@ -109,6 +102,9 @@ public class MatchViewModel extends ViewModel {
     private final MutableLiveData<String> player1Name = new MutableLiveData<>("Igrač 1");
     private final MutableLiveData<String> player2Name = new MutableLiveData<>("Igrač 2");
     private final MutableLiveData<String> activePlayer = new MutableLiveData<>("");
+
+    private final MutableLiveData<Boolean> insufficientTokens = new MutableLiveData<>();
+    public LiveData<Boolean> getInsufficientTokens() { return insufficientTokens; }
 
     public LiveData<Boolean> getIsGameActive() { return isGameActive; }
     public LiveData<Integer> getPlayer1Score() { return player1Score; }
@@ -163,5 +159,50 @@ public class MatchViewModel extends ViewModel {
         player2Score.postValue(match.getPlayer2Score());
         activePlayer.postValue(match.getActivePlayer());
         currentGameId.postValue(match.getCurrentGameId());
+    }
+
+    private CompletableFuture<Boolean> deductToken(String playerId) {
+        return userProfileRepository.getProfile(playerId)
+                .thenApply(player -> {
+                    if (player == null) return false;
+                    if (player.getNumTokens() >= 1) {
+                        player.setNumTokens(player.getNumTokens() - 1);
+                        userProfileRepository.saveProfile(player);
+                        sessionManager.setCurrentProfile(player);
+                        return true;
+                    } else {
+                        Log.d("Match", "PLAYER IS POOR");
+                        insufficientTokens.postValue(true);
+                        return false;
+                    }
+                });
+    }
+
+    private void createMatch(UserProfile player1, UserProfile player2, MatchType matchType){
+        MatchSessionData data = new MatchSessionData();
+        data.player1Id = player1.getUserId();
+        data.player2Id = player2.getUserId();
+
+        Log.d("Match", "Players fetched");
+
+        match = new Match(
+                player1.getUserId(),
+                player1.getUserId(),
+                0,
+                0,
+                player1.getUsername(),
+                player2.getUsername(),
+                matchType,
+                matchService,
+                korakPoKorakService,
+                mojBrojService,
+                userProfileRepository,
+                sessionManager,
+                () -> {
+                    isGameActive.postValue(true);
+                    match.setOnMatchUpdatedListener(this::onMatchUpdated);
+                    match.start();
+                }
+        );
     }
 }

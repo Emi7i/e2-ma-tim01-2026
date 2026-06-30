@@ -3,6 +3,7 @@ package com.example.slagalica.domain.model.match;
 import android.util.Log;
 
 import com.example.slagalica.domain.model.auth.SessionManager;
+import com.example.slagalica.domain.model.match.games.MatchType;
 import com.example.slagalica.domain.model.match.games.common.GameSession;
 import com.example.slagalica.domain.model.match.games.common.IGame;
 import com.example.slagalica.domain.model.match.games.common.OnMatchUpdatedListener;
@@ -34,6 +35,8 @@ public class Match {
     private int currentGameId;
     private IGame currentGame;
 
+    private MatchType matchType;
+
     private final MatchService matchService;
     private final KorakPoKorakService korakPoKorakService;
     private final MojBrojService mojBrojService;
@@ -49,6 +52,7 @@ public class Match {
                  int player2Score,
                  String player1Name,
                  String player2Name,
+                 MatchType matchType,
                  MatchService matchService,
                  KorakPoKorakService korakPoKorakService,
                  MojBrojService mojBrojService,
@@ -62,6 +66,7 @@ public class Match {
         this.player1Name = player1Name;
         this.player2Name = player2Name;
         this.activePlayer = player1Id;
+        this.matchType = matchType;
         this.matchService = matchService;
         this.korakPoKorakService = korakPoKorakService;
         this.mojBrojService = mojBrojService;
@@ -115,14 +120,16 @@ public class Match {
     }
 
     public void start(){
-        startMojBroj();
+        startKoZnaZna();
     }
 
     public void endMatch(){
         // TODO: probably resolve rewards only on matches not
         // from challenges. add a bool to check if its for a challenge
         // to resolve rewards differently
-        resolveRewards();
+        if(matchType == MatchType.CLASSIC){
+            resolveClassicRewards();
+        }
         currentGameId = 0; // signal game over
         updateMatchSession();
         matchService.delete(id)
@@ -133,7 +140,10 @@ public class Match {
         Log.d("Match", "Match ended!");
     }
 
-    private void resolveRewards(){
+    // Resolves rewards for classic match.
+    // Add other methods for other scenarios,
+    // for example tournament? or do that elsewhere
+    private void resolveClassicRewards(){
         // player 1 is winner even if they have the same points >:D
         String winnerId = player1Score >= player2Score ? player1Id : player2Id;
         CompletableFuture<UserProfile> player1Future = userProfileRepository.getProfile(player1Id);
