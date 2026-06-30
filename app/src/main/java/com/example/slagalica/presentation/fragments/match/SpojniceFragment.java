@@ -46,7 +46,7 @@ public class SpojniceFragment extends Fragment {
         viewModel = new ViewModelProvider(this).get(SpojniceViewModel.class);
         matchViewModel = new ViewModelProvider(requireActivity()).get(MatchViewModel.class);
         matchViewModel.setGameActive(true);
-
+        viewModel.setMatchId(matchViewModel.getMatch().getId());
         initializeButtons();
         setupHeader();
         observeViewModel();

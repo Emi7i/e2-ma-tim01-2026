@@ -19,4 +19,5 @@ public class KorakPoKorakSessionData {
     private boolean stealOpportunity;
     private String term;
     private List<String> hints;
+
 }

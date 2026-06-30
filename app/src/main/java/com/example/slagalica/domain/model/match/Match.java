@@ -103,7 +103,7 @@ public class Match {
     }
 
     public void start(){
-        startMojBroj();
+        startSpojnice();
     }
 
     public void endMatch(){
