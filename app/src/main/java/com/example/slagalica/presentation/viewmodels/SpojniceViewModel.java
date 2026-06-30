@@ -133,7 +133,7 @@ public class SpojniceViewModel extends ViewModel {
         } else {
             Log.d("Spojnice", "Rounds exhausted");
             gameFinished.postValue(true);
-            updateSessionData();
+            spojniceSessionRepository.delete(matchId);
         }
     }
 
@@ -324,7 +324,7 @@ public class SpojniceViewModel extends ViewModel {
             p1ScoreDelta.postValue(0);
             p2ScoreDelta.postValue(0);
             gameFinished.postValue(true);
-            updateSessionData();
+            spojniceSessionRepository.delete(matchId);
             updateUserStatistics();
         }
     }
