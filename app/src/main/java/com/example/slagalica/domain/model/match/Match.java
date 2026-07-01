@@ -120,6 +120,7 @@ public class Match {
     }
 
     public void start(){
+        // startMojBroj(); // for fast testing!
         startKoZnaZna();
     }
 
