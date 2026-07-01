@@ -8,4 +8,6 @@ public interface MatchmakingEntryRepository {
     CompletableFuture<Boolean> exists(String userId);
     CompletableFuture<Void> add(String userId);
     CompletableFuture<Void> delete(String userId);
+
+    CompletableFuture<MatchmakingEntry> getOldest(String excludeUserId);
 }

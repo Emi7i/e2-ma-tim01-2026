@@ -2,7 +2,9 @@ package com.example.slagalica.repository.impl.firestore;
 
 import com.example.slagalica.domain.model.match.MatchmakingEntry;
 import com.example.slagalica.repository.impl.MatchmakingEntryRepository;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -44,6 +46,28 @@ public class FirestoreMatchmakingEntryRepository implements MatchmakingEntryRepo
         db.collection(COLLECTION_QUEUE).document(userId)
                 .delete()
                 .addOnSuccessListener(unused -> future.complete(null))
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<MatchmakingEntry> getOldest(String excludeUserId) {
+        CompletableFuture<MatchmakingEntry> future = new CompletableFuture<>();
+        db.collection(COLLECTION_QUEUE)
+                .orderBy("queuedAt", Query.Direction.ASCENDING)
+                .limit(10) // small buffer in case the oldest entry is the excluded user
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    MatchmakingEntry result = null;
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        MatchmakingEntry entry = doc.toObject(MatchmakingEntry.class);
+                        if (entry != null && !entry.getUserId().equals(excludeUserId)) {
+                            result = entry;
+                            break;
+                        }
+                    }
+                    future.complete(result);
+                })
                 .addOnFailureListener(future::completeExceptionally);
         return future;
     }
