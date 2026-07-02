@@ -69,6 +69,12 @@ public class KoZnaZnaFragment extends Fragment {
     }
 
     private void observeViewModel() {
+        viewModel.isGameFinished().observe(getViewLifecycleOwner(), finished -> {
+            if (finished) {
+                matchViewModel.getMatch().startNextGame();
+            }
+        });
+
         viewModel.getCurrentQuestion().observe(getViewLifecycleOwner(), question -> {
             if (question != null) {
                 binding.question.setText(question.getQuestion());
@@ -94,11 +100,11 @@ public class KoZnaZnaFragment extends Fragment {
         });
 
         viewModel.getPlayer1Delta().observe(getViewLifecycleOwner(), delta -> {
-            if (delta != 0) matchViewModel.updatePlayer1Score(delta);
+            if (delta != 0) matchViewModel.getMatch().updatePlayer1Score(delta);
         });
 
         viewModel.getPlayer2Delta().observe(getViewLifecycleOwner(), delta -> {
-            if (delta != 0) matchViewModel.updatePlayer2Score(delta);
+            if (delta != 0) matchViewModel.getMatch().updatePlayer2Score(delta);
         });
 
         matchViewModel.getPlayer1Score().observe(getViewLifecycleOwner(), p1Score -> {
@@ -230,7 +236,6 @@ public class KoZnaZnaFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        matchViewModel.setGameActive(false);
         binding = null;
     }
 }

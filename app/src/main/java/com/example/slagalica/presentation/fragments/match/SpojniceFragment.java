@@ -46,7 +46,7 @@ public class SpojniceFragment extends Fragment {
         viewModel = new ViewModelProvider(this).get(SpojniceViewModel.class);
         matchViewModel = new ViewModelProvider(requireActivity()).get(MatchViewModel.class);
         matchViewModel.setGameActive(true);
-
+        viewModel.setMatchId(matchViewModel.getMatch().getId());
         initializeButtons();
         setupHeader();
         observeViewModel();
@@ -80,6 +80,12 @@ public class SpojniceFragment extends Fragment {
     }
 
     private void observeViewModel() {
+       viewModel.isGameFinished().observe(getViewLifecycleOwner(), finished -> {
+            if (finished) {
+                matchViewModel.getMatch().startNextGame();
+            }
+        });
+
         viewModel.getCurrentData().observe(getViewLifecycleOwner(), data -> {
             if (data != null) {
                 binding.gameTitle.setText(data.getTitle());
@@ -115,12 +121,12 @@ public class SpojniceFragment extends Fragment {
 
         // Add score to P1
         viewModel.getP1ScoreDelta().observe(getViewLifecycleOwner(), delta -> {
-            matchViewModel.updatePlayer1Score(delta);
+            matchViewModel.getMatch().updatePlayer1Score(delta);
         });
 
         // Add score to P2
         viewModel.getP2ScoreDelta().observe(getViewLifecycleOwner(), delta -> {
-            matchViewModel.updatePlayer2Score(delta);
+            matchViewModel.getMatch().updatePlayer2Score(delta);
         });
 
         matchViewModel.getPlayer1Score().observe(getViewLifecycleOwner(), p1 -> {
@@ -242,7 +248,6 @@ public class SpojniceFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        matchViewModel.setGameActive(false);
         binding = null;
     }
 }

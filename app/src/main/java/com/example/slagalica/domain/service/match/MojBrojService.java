@@ -50,15 +50,19 @@ public class MojBrojService {
         return options[random.nextInt(options.length)];
     }
 
-    public CompletableFuture<Void> updateSessionData(long matchId, MojBrojSessionData data) {
+    public CompletableFuture<Void> updateSessionData(String matchId, MojBrojSessionData data) {
         return sessionRepository.updateSessionData(matchId, data);
     }
 
-    public CompletableFuture<MojBrojSessionData> getSessionData(long matchId) {
+    public CompletableFuture<MojBrojSessionData> getSessionData(String matchId) {
         return sessionRepository.getSessionData(matchId);
     }
 
-    public void observeSessionData(long matchId, OnSessionUpdateListener<MojBrojSessionData> listener) {
+    public CompletableFuture<Void> delete(String matchId) {
+        return sessionRepository.delete(matchId);
+    }
+
+    public void observeSessionData(String matchId, OnSessionUpdateListener<MojBrojSessionData> listener) {
         sessionRepository.observeSessionData(matchId, listener);
     }
 

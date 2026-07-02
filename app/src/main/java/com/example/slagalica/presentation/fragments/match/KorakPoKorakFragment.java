@@ -65,15 +65,15 @@ public class KorakPoKorakFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        matchViewModel.setGameActive(false); // hide timer
+//        matchViewModel.setGameActive(false); // hide timer
         binding = null;
     }
 
     private void observeViewModel(){
         // If the match triggered this game to be started, start the timer and other stuff
-        matchViewModel.getCurrentGame().observe(getViewLifecycleOwner(), igame -> {
-            if (igame instanceof KorakPoKorak) {
-                gameViewModel.start((KorakPoKorak) igame);
+        matchViewModel.getCurrentGameId().observe(getViewLifecycleOwner(), gameId -> {
+            if (gameId == 5) {
+                gameViewModel.start((KorakPoKorak) matchViewModel.getMatch().getCurrentGame());
             }
         });
 

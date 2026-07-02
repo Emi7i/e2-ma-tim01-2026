@@ -1,38 +1,99 @@
 package com.example.slagalica.presentation.viewmodels;
 
+import android.util.Log;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import com.example.slagalica.domain.model.match.games.common.GameSession;
-import com.example.slagalica.domain.model.match.games.common.IGame;
-import com.example.slagalica.domain.model.match.games.korakpokorak.KorakPoKorak;
-import com.example.slagalica.domain.model.match.games.mojbroj.MojBroj;
+import com.example.slagalica.domain.model.auth.SessionManager;
+import com.example.slagalica.domain.model.match.Match;
+import com.example.slagalica.domain.model.match.MatchSessionData;
+import com.example.slagalica.domain.model.match.games.MatchType;
+import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.domain.service.match.KorakPoKorakService;
+import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
+import com.example.slagalica.repository.impl.UserProfileRepository;
+import com.google.firebase.firestore.auth.User;
+
+import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
 
 import dagger.hilt.android.lifecycle.HiltViewModel;
+import lombok.Getter;
 
 @HiltViewModel
 public class MatchViewModel extends ViewModel {
-    private final MutableLiveData<IGame> currentGame = new MutableLiveData<>();
+    @Getter
+    private Match match;
+
+    private final MatchService matchService;
     private final KorakPoKorakService korakPoKorakService;
     private final MojBrojService mojBrojService;
+    private final UserProfileRepository userProfileRepository;
+    private final SessionManager sessionManager;
 
-    // MOCKED FOR NOW
-    long matchId = 1;
-    long player1Id = 1;
-    long player2Id = 2;
+//    private final MutableLiveData<IGame> currentGame = new MutableLiveData<>();
+    private final MutableLiveData<Integer> currentGameId = new MutableLiveData<>();
 
     @Inject
     public MatchViewModel(
             KorakPoKorakService korakPoKorakService,
-            MojBrojService mojBrojService
+            MojBrojService mojBrojService,
+            UserProfileRepository userProfileRepository,
+            MatchService matchService,
+            SessionManager sessionManager
     ) {
+        this.matchService = matchService;
         this.korakPoKorakService = korakPoKorakService;
         this.mojBrojService = mojBrojService;
+        this.userProfileRepository = userProfileRepository;
+        this.sessionManager = sessionManager;
+    }
+
+    public void startMatch(String player1Id, String player2Id, MatchType matchType) {
+        Log.d("Match", "Starting match...");
+        CompletableFuture<UserProfile> player1Future = userProfileRepository.getProfile(player1Id);
+        CompletableFuture<UserProfile> player2Future = userProfileRepository.getProfile(player2Id);
+
+        CompletableFuture.allOf(player1Future, player2Future)
+                .thenAccept(ignored -> {
+                    Log.d("Match", "Fetching players...");
+
+                    UserProfile player1 = player1Future.join();
+                    UserProfile player2 = player2Future.join();
+
+                    Log.d("Match", "Player1: " + player1);
+                    Log.d("Match", "Player2: " + player2);
+
+                    if (player1 == null || player2 == null) {
+                        Log.e("Match", "One or both profiles are null!");
+                        return;
+                    }
+
+                    if(matchType == MatchType.CLASSIC){
+                        deductToken(sessionManager.getCurrentUserId());
+                        if(Boolean.TRUE.equals(insufficientTokens.getValue())){
+                            return;
+                        }
+                    }
+
+                    if (matchType == MatchType.CLASSIC) {
+                        deductToken(sessionManager.getCurrentUserId())
+                                .thenAccept(success -> {
+                                    if (success) createMatch(player1, player2, matchType);
+                                });
+                    } else {
+                        // other logic for other types if needed
+                        createMatch(player1, player2, matchType);
+                    }
+                })
+                .exceptionally(throwable -> {
+                    Log.e("Match", "Error starting match", throwable);
+                    return null;
+                });
     }
 
     private final MutableLiveData<Boolean> isGameActive = new MutableLiveData<>(false);
@@ -40,73 +101,108 @@ public class MatchViewModel extends ViewModel {
     private final MutableLiveData<Integer> player2Score = new MutableLiveData<>(0);
     private final MutableLiveData<String> player1Name = new MutableLiveData<>("Igrač 1");
     private final MutableLiveData<String> player2Name = new MutableLiveData<>("Igrač 2");
-    private final MutableLiveData<Integer> activePlayer = new MutableLiveData<>(0);
+    private final MutableLiveData<String> activePlayer = new MutableLiveData<>("");
+
+    private final MutableLiveData<Boolean> insufficientTokens = new MutableLiveData<>();
+    public LiveData<Boolean> getInsufficientTokens() { return insufficientTokens; }
 
     public LiveData<Boolean> getIsGameActive() { return isGameActive; }
     public LiveData<Integer> getPlayer1Score() { return player1Score; }
     public LiveData<Integer> getPlayer2Score() { return player2Score; }
     public LiveData<String> getPlayer1Name() { return player1Name; }
     public LiveData<String> getPlayer2Name() { return player2Name; }
-    public LiveData<Integer> getActivePlayer() { return activePlayer; }
+    public LiveData<String> getActivePlayer() { return activePlayer; }
 
-    public void setGameActive(boolean active) { isGameActive.setValue(active); }
-
-    public LiveData<IGame> getCurrentGame() { return currentGame; }
-
-    public void startKorakPoKorak() {
-        GameSession session = new GameSession(matchId, player1Id, player2Id);
-        KorakPoKorak game = new KorakPoKorak(session, korakPoKorakService);
-        game.setOnActivePlayerChangedListener(this::onActivePlayerChanged);
-        game.setOnPointsChangedListener(this::onPointsChanged);
-        currentGame.setValue(game);
+    public void setGameActive(boolean active) {
+        isGameActive.setValue(active);
+        Log.d("Match", "Game active: " + isGameActive.getValue());
     }
 
-    public void startMojBroj() {
-        GameSession session = new GameSession(matchId, player1Id, player2Id);
-        MojBroj game = new MojBroj(session, mojBrojService);
-        game.setOnActivePlayerChangedListener(this::onActivePlayerChanged);
-        game.setOnPointsChangedListener(this::onPointsChanged);
-        currentGame.setValue(game);
-    }
+    public LiveData<Integer> getCurrentGameId() { return currentGameId; }
 
     public void setPlayerNames(String name1, String name2) {
         player1Name.setValue(name1);
         player2Name.setValue(name2);
     }
 
-    public void setActivePlayer(int player) {
-        activePlayer.setValue(player);
+    public void setActivePlayer(String playerId) {
+        activePlayer.setValue(playerId);
     }
 
-    public void updatePlayer1Score(int delta) {
-        Integer current = player1Score.getValue();
-        player1Score.setValue((current != null ? current : 0) + delta);
-    }
-
-    public void updatePlayer2Score(int delta) {
-        Integer current = player2Score.getValue();
-        player2Score.setValue((current != null ? current : 0) + delta);
+    public void setActivePlayer(int playerNum){
+        String active;
+        if(playerNum == 1){
+            active = match.getPlayer1Id();
+        }
+        else{
+            active = match.getPlayer2Id();
+        }
+        match.setActivePlayer(active);
+        match.updateMatchSession();
+        onMatchUpdated(match);
     }
 
     public void setPlayer1Score(int score) {
-        player1Score.setValue(score);
+        match.setPlayer1Score(score);
+        match.updateMatchSession();
+        onMatchUpdated(match);
     }
 
     public void setPlayer2Score(int score) {
-        player2Score.setValue(score);
+        match.setPlayer2Score(score);
+        match.updateMatchSession();
+        onMatchUpdated(match);
     }
 
-    private void onPointsChanged(long playerId, int amount){
-        if(playerId == player1Id){
-            updatePlayer1Score(amount);
-        }
-        else if(playerId == player2Id){
-            updatePlayer2Score(amount);
-        }
+    private void onMatchUpdated(Match match){
+        player1Score.postValue(match.getPlayer1Score());
+        player2Score.postValue(match.getPlayer2Score());
+        activePlayer.postValue(match.getActivePlayer());
+        currentGameId.postValue(match.getCurrentGameId());
     }
 
-    // TODO: BAD
-    private void onActivePlayerChanged(long playerId){
-        setActivePlayer((int)playerId);
+    private CompletableFuture<Boolean> deductToken(String playerId) {
+        return userProfileRepository.getProfile(playerId)
+                .thenApply(player -> {
+                    if (player == null) return false;
+                    if (player.getNumTokens() >= 1) {
+                        player.setNumTokens(player.getNumTokens() - 1);
+                        userProfileRepository.saveProfile(player);
+                        sessionManager.setCurrentProfile(player);
+                        return true;
+                    } else {
+                        Log.d("Match", "PLAYER IS POOR");
+                        insufficientTokens.postValue(true);
+                        return false;
+                    }
+                });
+    }
+
+    private void createMatch(UserProfile player1, UserProfile player2, MatchType matchType){
+        MatchSessionData data = new MatchSessionData();
+        data.player1Id = player1.getUserId();
+        data.player2Id = player2.getUserId();
+
+        Log.d("Match", "Players fetched");
+
+        match = new Match(
+                player1.getUserId(),
+                player1.getUserId(),
+                0,
+                0,
+                player1.getUsername(),
+                player2.getUsername(),
+                matchType,
+                matchService,
+                korakPoKorakService,
+                mojBrojService,
+                userProfileRepository,
+                sessionManager,
+                () -> {
+                    isGameActive.postValue(true);
+                    match.setOnMatchUpdatedListener(this::onMatchUpdated);
+                    match.start();
+                }
+        );
     }
 }

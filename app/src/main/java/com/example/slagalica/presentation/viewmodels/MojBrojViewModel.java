@@ -87,7 +87,7 @@ public class MojBrojViewModel extends ViewModel {
     private void startRound() {
         game.startNewRound();
         if (game.hasEnded()) {
-            gameOver.postValue(true);
+            end();
             return;
         }
 
@@ -223,7 +223,7 @@ public class MojBrojViewModel extends ViewModel {
 
         roundOver.postValue(true);
         if (game.hasEnded()) {
-            gameOver.postValue(true);
+            end();
         }
     }
 
@@ -296,4 +296,9 @@ public class MojBrojViewModel extends ViewModel {
         if (roundTimer != null) roundTimer.cancel();
     }
 
+    private void end(){
+        Log.d("MojBroj", "Moj broj ended");
+        game.deleteSession();
+        gameOver.postValue(true);
+    }
 }

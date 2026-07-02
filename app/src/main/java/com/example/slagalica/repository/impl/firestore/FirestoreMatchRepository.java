@@ -1,8 +1,8 @@
 package com.example.slagalica.repository.impl.firestore;
 
+import com.example.slagalica.domain.model.match.MatchSessionData;
 import com.example.slagalica.domain.model.match.games.common.OnSessionUpdateListener;
-import com.example.slagalica.domain.model.match.games.mojbroj.MojBrojSessionData;
-import com.example.slagalica.repository.impl.MojBrojRepository;
+import com.example.slagalica.repository.impl.MatchRepository;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.concurrent.CompletableFuture;
@@ -11,19 +11,29 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class FirestoreMojBrojRepository implements MojBrojRepository {
+public class FirestoreMatchRepository implements MatchRepository {
 
-    private static final String COLLECTION = "mojBrojSessions";
+    private static final String COLLECTION = "matchSessions";
 
     private final FirebaseFirestore db;
 
     @Inject
-    public FirestoreMojBrojRepository(FirebaseFirestore db) {
+    public FirestoreMatchRepository(FirebaseFirestore db) {
         this.db = db;
     }
 
     @Override
-    public CompletableFuture<Void> updateSessionData(String matchId, MojBrojSessionData data) {
+    public CompletableFuture<String> create(MatchSessionData data) {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        db.collection(COLLECTION)
+                .add(data)
+                .addOnSuccessListener(docRef -> future.complete(docRef.getId()))
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<Void> update(String matchId, MatchSessionData data) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         db.collection(COLLECTION)
                 .document(matchId)
@@ -34,12 +44,12 @@ public class FirestoreMojBrojRepository implements MojBrojRepository {
     }
 
     @Override
-    public CompletableFuture<MojBrojSessionData> getSessionData(String matchId) {
-        CompletableFuture<MojBrojSessionData> future = new CompletableFuture<>();
+    public CompletableFuture<MatchSessionData> get(String matchId) {
+        CompletableFuture<MatchSessionData> future = new CompletableFuture<>();
         db.collection(COLLECTION)
                 .document(matchId)
                 .get()
-                .addOnSuccessListener(snapshot -> future.complete(snapshot.toObject(MojBrojSessionData.class)))
+                .addOnSuccessListener(snapshot -> future.complete(snapshot.toObject(MatchSessionData.class)))
                 .addOnFailureListener(future::completeExceptionally);
         return future;
     }
@@ -56,12 +66,12 @@ public class FirestoreMojBrojRepository implements MojBrojRepository {
     }
 
     @Override
-    public void observeSessionData(String matchId, OnSessionUpdateListener<MojBrojSessionData> listener) {
+    public void observe(String matchId, OnSessionUpdateListener<MatchSessionData> listener) {
         db.collection(COLLECTION)
                 .document(matchId)
                 .addSnapshotListener((snapshot, error) -> {
                     if (error != null || snapshot == null) return;
-                    MojBrojSessionData data = snapshot.toObject(MojBrojSessionData.class);
+                    MatchSessionData data = snapshot.toObject(MatchSessionData.class);
                     if (data != null) listener.onSessionUpdated(data);
                 });
     }
