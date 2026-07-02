@@ -13,10 +13,11 @@ import lombok.Setter;
 @NoArgsConstructor
 public class KorakPoKorakSessionData {
     private int currentRound;
-    private long currentPlayer;
+    private String currentPlayer;
     private boolean hasEnded;
     private int currentHint;
     private boolean stealOpportunity;
     private String term;
     private List<String> hints;
+
 }

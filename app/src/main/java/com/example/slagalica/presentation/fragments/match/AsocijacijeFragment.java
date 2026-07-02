@@ -99,10 +99,6 @@ public class AsocijacijeFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
 
-        if (matchViewModel != null) {
-            matchViewModel.setGameActive(false);
-        }
-
         if (roundTimer != null) {
             roundTimer.cancel();
         }
@@ -179,7 +175,7 @@ public class AsocijacijeFragment extends Fragment {
             renderWholeScreen();
 
             if (asocijacijeService.isMatchFinished()) {
-                updateUserStatistics();
+                onGameFinished();
             } else if (!asocijacijeService.getCurrentRound().getGameState().isRoundFinished()) {
                 startRoundTimer();
             }
@@ -210,7 +206,7 @@ public class AsocijacijeFragment extends Fragment {
 
             renderWholeScreen();
             if (asocijacijeService.isMatchFinished()) {
-                updateUserStatistics();
+                onGameFinished();
             }
         });
     }
@@ -440,7 +436,7 @@ public class AsocijacijeFragment extends Fragment {
 
             renderWholeScreen();
             if (asocijacijeService.isMatchFinished()) {
-                updateUserStatistics();
+                onGameFinished();
             }
         });
 
@@ -511,7 +507,7 @@ public class AsocijacijeFragment extends Fragment {
                 Toast.makeText(requireContext(), result.getMessage(), Toast.LENGTH_SHORT).show();
                 renderWholeScreen();
                 if (asocijacijeService.isMatchFinished()) {
-                    updateUserStatistics();
+                    onGameFinished();
                 }
             }
         }.start();
@@ -524,5 +520,10 @@ public class AsocijacijeFragment extends Fragment {
                 value,
                 resources.getDisplayMetrics()
         );
+    }
+
+    private void onGameFinished() {
+        updateUserStatistics();
+        matchViewModel.getMatch().startNextGame();
     }
 }

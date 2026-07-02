@@ -20,6 +20,9 @@ public class KorakPoKorak extends AbstractGame {
     private static final int MAX_POINTS = 40;
     private static final int MIN_POINTS = 0;
 
+    @Getter
+    private int id = 5;
+
     private final KorakPoKorakService gameService;
     @Getter
     private int currentHint = 1;
@@ -128,5 +131,9 @@ public class KorakPoKorak extends AbstractGame {
         if (data.isHasEnded()) {
             notifyGameEnded();
         }
+    }
+
+    public void deleteSession(){
+        gameService.delete(getMatchId());
     }
 }

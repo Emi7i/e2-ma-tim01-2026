@@ -27,14 +27,19 @@ public class KorakPoKorakService {
         return termRepository.getRandomTermWithHints();
     }
 
-    public CompletableFuture<Void> updateSessionData(long matchId, KorakPoKorakSessionData data) {
+    public CompletableFuture<Void> updateSessionData(String matchId, KorakPoKorakSessionData data) {
         return sessionRepository.updateSessionData(matchId, data);
     }
 
-    public CompletableFuture<KorakPoKorakSessionData> getSessionData(long matchId) {
+    public CompletableFuture<KorakPoKorakSessionData> getSessionData(String matchId) {
         return sessionRepository.getSessionData(matchId);
     }
-    public void observeSessionData(long matchId, OnSessionUpdateListener<KorakPoKorakSessionData> listener) {
+
+    public CompletableFuture<Void> delete(String matchId) {
+        return sessionRepository.delete(matchId);
+    }
+
+    public void observeSessionData(String matchId, OnSessionUpdateListener<KorakPoKorakSessionData> listener) {
         sessionRepository.observeSessionData(matchId, listener);
     }
 }

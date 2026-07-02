@@ -1,26 +1,26 @@
 package com.example.slagalica.repository.impl.firestore;
 
+import com.example.slagalica.domain.model.match.games.SpojniceSessionData;
 import com.example.slagalica.domain.model.match.games.common.OnSessionUpdateListener;
 import com.example.slagalica.domain.model.match.games.korakpokorak.KorakPoKorakSessionData;
-import com.example.slagalica.repository.impl.KorakPoKorakRepository;
+import com.example.slagalica.repository.impl.SpojniceSessionRepository;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
 
-public class FirestoreKorakPoKorakRepository implements KorakPoKorakRepository {
-
+public class FirestoreSpojniceSessionRepository implements SpojniceSessionRepository {
     private final FirebaseFirestore db;
-    private static final String COLLECTION_SESSIONS = "korakPoKorakSessions";
+    private static final String COLLECTION_SESSIONS = "spojniceSessions";
 
     @Inject
-    public FirestoreKorakPoKorakRepository(FirebaseFirestore db) {
+    public FirestoreSpojniceSessionRepository(FirebaseFirestore db) {
         this.db = db;
     }
 
     @Override
-    public CompletableFuture<Void> updateSessionData(String matchId, KorakPoKorakSessionData data) {
+    public CompletableFuture<Void> updateSessionData(String matchId, SpojniceSessionData data) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         db.collection(COLLECTION_SESSIONS).document(matchId)
                 .set(data)
@@ -51,11 +51,11 @@ public class FirestoreKorakPoKorakRepository implements KorakPoKorakRepository {
     }
 
     @Override
-    public void observeSessionData(String matchId, OnSessionUpdateListener<KorakPoKorakSessionData> listener) {
+    public void observeSessionData(String matchId, OnSessionUpdateListener<SpojniceSessionData> listener) {
         db.collection(COLLECTION_SESSIONS).document(matchId)
                 .addSnapshotListener((snapshot, error) -> {
                     if (error != null || snapshot == null || !snapshot.exists()) return;
-                    KorakPoKorakSessionData data = snapshot.toObject(KorakPoKorakSessionData.class);
+                    SpojniceSessionData data = snapshot.toObject(SpojniceSessionData.class);
                     if (data != null) {
                         listener.onSessionUpdated(data);
                     }
