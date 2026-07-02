@@ -73,13 +73,6 @@ public class MatchViewModel extends ViewModel {
                         return;
                     }
 
-                    if(matchType == MatchType.CLASSIC){
-                        deductToken(sessionManager.getCurrentUserId());
-                        if(Boolean.TRUE.equals(insufficientTokens.getValue())){
-                            return;
-                        }
-                    }
-
                     if (matchType == MatchType.CLASSIC) {
                         deductToken(sessionManager.getCurrentUserId())
                                 .thenAccept(success -> {
@@ -187,7 +180,7 @@ public class MatchViewModel extends ViewModel {
 
         match = new Match(
                 player1.getUserId(),
-                player1.getUserId(),
+                player2.getUserId(),
                 0,
                 0,
                 player1.getUsername(),
