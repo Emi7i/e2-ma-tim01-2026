@@ -229,25 +229,12 @@ public class MojBrojViewModel extends ViewModel {
 
     private boolean statsUpdated = false;
 
-    public void updateUserStatistics(int player1Score, int player2Score) {
+    public void updateUserStatistics(int player1Score) {
         if (statsUpdated) return;
         statsUpdated = true;
         String userId = getCurrentUserId();
         statsRepository.getStatistics(userId).thenAccept(stats -> {
             UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(userId);
-            
-            // Overall match win/loss (Assume we are player 1)
-            double oldWinRate = (finalStats.getGamesPlayed() > 0) ? (double) finalStats.getWonGames() / finalStats.getGamesPlayed() * 100.0 : 0.0;
-            
-            finalStats.setGamesPlayed(finalStats.getGamesPlayed() + 1);
-            if (player1Score > player2Score) {
-                finalStats.setWonGames(finalStats.getWonGames() + 1);
-            }
-            double newWinRate = (double) finalStats.getWonGames() / finalStats.getGamesPlayed() * 100.0;
-            
-            Log.d("UserStats", String.format("Stats changed: Overall Match - Result: %s | Played: %d | Win Rate: %.1f%% -> %.1f%%",
-                    (player1Score > player2Score ? "WON" : (player1Score < player2Score ? "LOST" : "DRAW")),
-                    finalStats.getGamesPlayed(), oldWinRate, newWinRate));
 
             // Accuracy Update for Moj Broj
             int gameTotal = roundsPlayed;

@@ -15,6 +15,7 @@ import com.example.slagalica.domain.service.match.KorakPoKorakService;
 import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
 import com.example.slagalica.repository.impl.UserProfileRepository;
+import com.example.slagalica.repository.impl.UserStatisticsRepository;
 import com.google.firebase.firestore.auth.User;
 
 import java.util.concurrent.CompletableFuture;
@@ -33,6 +34,7 @@ public class MatchViewModel extends ViewModel {
     private final KorakPoKorakService korakPoKorakService;
     private final MojBrojService mojBrojService;
     private final UserProfileRepository userProfileRepository;
+    private final UserStatisticsRepository userStatisticsRepository;
     private final SessionManager sessionManager;
 
 //    private final MutableLiveData<IGame> currentGame = new MutableLiveData<>();
@@ -43,6 +45,7 @@ public class MatchViewModel extends ViewModel {
             KorakPoKorakService korakPoKorakService,
             MojBrojService mojBrojService,
             UserProfileRepository userProfileRepository,
+            UserStatisticsRepository userStatisticsRepository,
             MatchService matchService,
             SessionManager sessionManager
     ) {
@@ -50,6 +53,7 @@ public class MatchViewModel extends ViewModel {
         this.korakPoKorakService = korakPoKorakService;
         this.mojBrojService = mojBrojService;
         this.userProfileRepository = userProfileRepository;
+        this.userStatisticsRepository = userStatisticsRepository;
         this.sessionManager = sessionManager;
     }
 
@@ -197,6 +201,7 @@ public class MatchViewModel extends ViewModel {
                 korakPoKorakService,
                 mojBrojService,
                 userProfileRepository,
+                userStatisticsRepository,
                 sessionManager,
                 () -> {
                     isGameActive.postValue(true);
