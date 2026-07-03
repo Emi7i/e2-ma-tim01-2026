@@ -9,9 +9,11 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import com.example.slagalica.domain.model.config.SpojniceConfig;
 import com.example.slagalica.domain.model.match.games.Spojnice;
+import com.example.slagalica.domain.model.match.games.SpojniceSessionData;
 import com.example.slagalica.domain.model.progression.UserStatistics;
 import com.example.slagalica.domain.service.match.SpojniceDemoFactory;
 import com.example.slagalica.repository.impl.SpojniceRepository;
+import com.example.slagalica.repository.impl.SpojniceSessionRepository;
 import com.example.slagalica.repository.impl.UserStatisticsRepository;
 
 import java.util.ArrayList;
@@ -19,14 +21,18 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
 import javax.inject.Inject;
 import dagger.hilt.android.lifecycle.HiltViewModel;
+import lombok.Setter;
 
 @HiltViewModel
 public class SpojniceViewModel extends ViewModel {
 
     private final SpojniceRepository repository;
     private final UserStatisticsRepository statsRepository;
+    private final SpojniceSessionRepository spojniceSessionRepository;
     private String getCurrentUserId() {
         if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null) {
             return com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -60,10 +66,17 @@ public class SpojniceViewModel extends ViewModel {
     private int player1CorrectAccumulated = 0;
     private final Map<String, String> pairMap = new HashMap<>(); // Question -> Answer
 
+    @Setter
+    private String matchId;
+
     @Inject
-    public SpojniceViewModel(SpojniceRepository repository, com.example.slagalica.repository.impl.UserStatisticsRepository statsRepository) {
+    public SpojniceViewModel(
+            SpojniceRepository repository,
+            com.example.slagalica.repository.impl.UserStatisticsRepository statsRepository,
+            SpojniceSessionRepository spojniceSessionRepository) {
         this.repository = repository;
         this.statsRepository = statsRepository;
+        this.spojniceSessionRepository = spojniceSessionRepository;
         loadData();
     }
 
@@ -102,17 +115,25 @@ public class SpojniceViewModel extends ViewModel {
     }
 
     private void startRound(int round, List<Spojnice> dataList) {
+        Log.d("Spojnice", "Round: " + round);
+
         currentRound.postValue(round);
+
+        Log.d("Spojnice", "Current round: " + currentRound.getValue());
+
         int startingPlayer = (round == 1) ? 1 : 2;
         startingPlayerOfRound.postValue(startingPlayer);
         
         if (dataList != null && round <= dataList.size()) {
             Spojnice data = dataList.get(round - 1);
             currentData.postValue(data);
+            updateSessionData(dataList);
             setupRoundData(data);
             startPlayerTurn(startingPlayer);
         } else {
+            Log.d("Spojnice", "Rounds exhausted");
             gameFinished.postValue(true);
+            spojniceSessionRepository.delete(matchId);
         }
     }
 
@@ -136,6 +157,7 @@ public class SpojniceViewModel extends ViewModel {
         missedMatches.postValue(new HashMap<>());
         p1RoundScore.postValue(0);
         p2RoundScore.postValue(0);
+        updateSessionData();
     }
 
     private void startPlayerTurn(int player) {
@@ -150,6 +172,7 @@ public class SpojniceViewModel extends ViewModel {
         }
 
         startTimer();
+        updateSessionData();
     }
 
     private void startTimer() {
@@ -206,6 +229,7 @@ public class SpojniceViewModel extends ViewModel {
 
         // Regardless of correct/incorrect, move to next in this player's run
         findNextUnmatched(leftIdx + 1);
+        updateSessionData();
     }
 
     private void findNextUnmatched(int startIndex) {
@@ -241,6 +265,7 @@ public class SpojniceViewModel extends ViewModel {
             // Check if there's anything left for the second player
             if (hasUnmatchedTerms()) {
                 waitingForNextPlayer.setValue(true);
+                updateSessionData();
             } else {
                 endRound();
             }
@@ -294,10 +319,12 @@ public class SpojniceViewModel extends ViewModel {
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 startRound(currentRound.getValue() + 1, allSpojnice.getValue());
             }, 2000);
+            updateSessionData();
         } else {
             p1ScoreDelta.postValue(0);
             p2ScoreDelta.postValue(0);
             gameFinished.postValue(true);
+            spojniceSessionRepository.delete(matchId);
             updateUserStatistics();
         }
     }
@@ -351,5 +378,37 @@ public class SpojniceViewModel extends ViewModel {
     protected void onCleared() {
         super.onCleared();
         if (timer != null) timer.cancel();
+    }
+
+    public void updateSessionData(List<Spojnice> spojniceList){
+        if (spojniceList == null || spojniceList.size() < 2 || matchId == null) return;
+        SpojniceSessionData data = new SpojniceSessionData(
+                currentRound.getValue(),
+                currentPlayerTurn.getValue(),
+                Boolean.TRUE.equals(isGameFinished().getValue()),
+                spojniceList.get(0).getSpojniceId(),
+                spojniceList.get(1).getSpojniceId(),
+                startingPlayerOfRound.getValue(),
+                currentLeftIndex.getValue(),
+                toStringKeyMap(player1Matches.getValue()),
+                toStringKeyMap(player2Matches.getValue()),
+                toStringKeyMap(missedMatches.getValue()),
+                Boolean.TRUE.equals(waitingForNextPlayer.getValue())
+                );
+        spojniceSessionRepository.updateSessionData(matchId, data);
+    }
+
+    private Map<String, Integer> toStringKeyMap(Map<Integer, Integer> map) {
+        if (map == null) return new HashMap<>();
+        Map<String, Integer> result = new HashMap<>();
+        for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
+            result.put(String.valueOf(entry.getKey()), entry.getValue());
+        }
+        return result;
+    }
+
+    // Convenience overload for when allSpojnice is already set
+    public void updateSessionData() {
+        updateSessionData(allSpojnice.getValue());
     }
 }

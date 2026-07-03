@@ -98,7 +98,7 @@ public class MojBrojFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         sensorManager.unregisterListener(shakeDetector);
-        matchViewModel.setGameActive(false);
+//        matchViewModel.setGameActive(false);
         handler.removeCallbacksAndMessages(null);
         binding = null;
     }
@@ -120,9 +120,9 @@ public class MojBrojFragment extends Fragment {
     };
 
     private void observeViewModel() {
-        matchViewModel.getCurrentGame().observe(getViewLifecycleOwner(), igame -> {
-            if (igame instanceof MojBroj) {
-                gameViewModel.start((MojBroj) igame);
+        matchViewModel.getCurrentGameId().observe(getViewLifecycleOwner(), gameId -> {
+            if (gameId == 6) {
+                gameViewModel.start((MojBroj) matchViewModel.getMatch().getCurrentGame());
             }
         });
 
@@ -168,6 +168,8 @@ public class MojBrojFragment extends Fragment {
                 int p1 = matchViewModel.getPlayer1Score().getValue() != null ? matchViewModel.getPlayer1Score().getValue() : 0;
                 int p2 = matchViewModel.getPlayer2Score().getValue() != null ? matchViewModel.getPlayer2Score().getValue() : 0;
                 gameViewModel.updateUserStatistics(p1, p2);
+                // Moj Broj is the last game - this is what actually ends the match
+                matchViewModel.getMatch().startNextGame();
             }
         });
     }

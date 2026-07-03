@@ -30,51 +30,12 @@
         app:layout_constraintBottom_toBottomOf="parent">
 
         <Button
-            android:id="@+id/koZnaZna"
+            android:id="@+id/start"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="60dp"
             android:layout_marginBottom="16dp"
-            android:text="Ko zna zna" />
-
-        <Button
-            android:id="@+id/spojnice"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="60dp"
-            android:layout_marginBottom="16dp"
-            android:text="Spojnice" />
-
-        <Button
-            android:id="@+id/asocijacije"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="60dp"
-            android:layout_marginBottom="16dp"
-            android:text="Asocijacije" />
-
-        <Button
-            android:id="@+id/skocko"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="60dp"
-            android:layout_marginBottom="16dp"
-            android:text="Skocko" />
-
-        <Button
-            android:id="@+id/korakPoKorak"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="60dp"
-            android:layout_marginBottom="16dp"
-            android:text="Korak po korak" />
-
-        <Button
-            android:id="@+id/mojBroj"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="60dp"
-            android:text="Moj broj" />
+            android:text="Započni"/>
 
     </LinearLayout>
 

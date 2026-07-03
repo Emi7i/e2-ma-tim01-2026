@@ -58,6 +58,8 @@ dependencies {
     implementation libs.firebase.firestore
     implementation libs.firebase.auth
 
+    implementation libs.webkit
+
     // Camera + QR scanning
     implementation libs.camera.camera2
     implementation libs.camera.lifecycle

@@ -13,6 +13,7 @@ material = "1.13.0"
 activity = "1.13.0"
 constraintlayout = "2.2.1"
 firebaseFirestore = "26.3.0"
+webkit = "1.12.1"
 cameraX = "1.4.2"
 zxingCore = "3.5.3"
 mlkitBarcode = "17.3.0"
@@ -34,6 +35,7 @@ activity = { group = "androidx.activity", name = "activity", version.ref = "acti
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 projectlombok-lombok = { module = "org.projectlombok:lombok", version.ref = "lombokVersion" }
 google-firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
+webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
 camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "cameraX" }
 camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "cameraX" }
 camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "cameraX" }

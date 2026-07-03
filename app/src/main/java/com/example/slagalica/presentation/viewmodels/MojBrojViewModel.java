@@ -87,7 +87,7 @@ public class MojBrojViewModel extends ViewModel {
     private void startRound() {
         game.startNewRound();
         if (game.hasEnded()) {
-            gameOver.postValue(true);
+            end();
             return;
         }
 
@@ -223,7 +223,7 @@ public class MojBrojViewModel extends ViewModel {
 
         roundOver.postValue(true);
         if (game.hasEnded()) {
-            gameOver.postValue(true);
+            end();
         }
     }
 
@@ -235,19 +235,15 @@ public class MojBrojViewModel extends ViewModel {
         String userId = getCurrentUserId();
         statsRepository.getStatistics(userId).thenAccept(stats -> {
             UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(userId);
-            
-            // Overall match win/loss (Assume we are player 1)
-            double oldWinRate = (finalStats.getGamesPlayed() > 0) ? (double) finalStats.getWonGames() / finalStats.getGamesPlayed() * 100.0 : 0.0;
-            
+
+            // Overall match win/loss
             finalStats.setGamesPlayed(finalStats.getGamesPlayed() + 1);
-            if (player1Score > player2Score) {
+            if (player1Score >= player2Score) {
                 finalStats.setWonGames(finalStats.getWonGames() + 1);
             }
-            double newWinRate = (double) finalStats.getWonGames() / finalStats.getGamesPlayed() * 100.0;
-            
-            Log.d("UserStats", String.format("Stats changed: Overall Match - Result: %s | Played: %d | Win Rate: %.1f%% -> %.1f%%",
+            Log.d("UserStats", String.format("Stats changed: Overall Match - Result: %s | Played: %d | Won: %d",
                     (player1Score > player2Score ? "WON" : (player1Score < player2Score ? "LOST" : "DRAW")),
-                    finalStats.getGamesPlayed(), oldWinRate, newWinRate));
+                    finalStats.getGamesPlayed(), finalStats.getWonGames()));
 
             // Accuracy Update for Moj Broj
             int gameTotal = roundsPlayed;
@@ -296,4 +292,9 @@ public class MojBrojViewModel extends ViewModel {
         if (roundTimer != null) roundTimer.cancel();
     }
 
+    private void end(){
+        Log.d("MojBroj", "Moj broj ended");
+        game.deleteSession();
+        gameOver.postValue(true);
+    }
 }

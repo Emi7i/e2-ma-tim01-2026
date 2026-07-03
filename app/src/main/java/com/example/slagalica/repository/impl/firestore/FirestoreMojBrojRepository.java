@@ -23,10 +23,10 @@ public class FirestoreMojBrojRepository implements MojBrojRepository {
     }
 
     @Override
-    public CompletableFuture<Void> updateSessionData(long matchId, MojBrojSessionData data) {
+    public CompletableFuture<Void> updateSessionData(String matchId, MojBrojSessionData data) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         db.collection(COLLECTION)
-                .document(String.valueOf(matchId))
+                .document(matchId)
                 .set(data)
                 .addOnSuccessListener(unused -> future.complete(null))
                 .addOnFailureListener(future::completeExceptionally);
@@ -34,10 +34,10 @@ public class FirestoreMojBrojRepository implements MojBrojRepository {
     }
 
     @Override
-    public CompletableFuture<MojBrojSessionData> getSessionData(long matchId) {
+    public CompletableFuture<MojBrojSessionData> getSessionData(String matchId) {
         CompletableFuture<MojBrojSessionData> future = new CompletableFuture<>();
         db.collection(COLLECTION)
-                .document(String.valueOf(matchId))
+                .document(matchId)
                 .get()
                 .addOnSuccessListener(snapshot -> future.complete(snapshot.toObject(MojBrojSessionData.class)))
                 .addOnFailureListener(future::completeExceptionally);
@@ -45,9 +45,20 @@ public class FirestoreMojBrojRepository implements MojBrojRepository {
     }
 
     @Override
-    public void observeSessionData(long matchId, OnSessionUpdateListener<MojBrojSessionData> listener) {
+    public CompletableFuture<Void> delete(String matchId) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
         db.collection(COLLECTION)
-                .document(String.valueOf(matchId))
+                .document(matchId)
+                .delete()
+                .addOnSuccessListener(unused -> future.complete(null))
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
+    }
+
+    @Override
+    public void observeSessionData(String matchId, OnSessionUpdateListener<MojBrojSessionData> listener) {
+        db.collection(COLLECTION)
+                .document(matchId)
                 .addSnapshotListener((snapshot, error) -> {
                     if (error != null || snapshot == null) return;
                     MojBrojSessionData data = snapshot.toObject(MojBrojSessionData.class);

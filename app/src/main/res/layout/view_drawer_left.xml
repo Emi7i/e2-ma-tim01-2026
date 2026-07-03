@@ -57,6 +57,15 @@
 
     <com.google.android.material.button.MaterialButton
         style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:id="@+id/region_map"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/left_drawer_region_map"
+        android:textAlignment="textStart"
+        android:padding="12dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        style="@style/Widget.MaterialComponents.Button.TextButton"
         android:id="@+id/notifications"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

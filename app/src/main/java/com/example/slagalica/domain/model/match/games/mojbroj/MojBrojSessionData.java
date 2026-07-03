@@ -13,7 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class MojBrojSessionData {
     private int currentRound;
-    private long currentPlayer;
+    private String currentPlayer;
     private boolean hasEnded;
     private int goalNumber;
     private List<Integer> operands;

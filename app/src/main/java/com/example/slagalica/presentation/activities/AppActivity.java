@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.os.CountDownTimer;
 import android.view.MotionEvent;
 import android.view.View;
@@ -18,6 +19,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.GravityCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.slagalica.R;
@@ -29,6 +31,13 @@ import com.example.slagalica.presentation.fragments.auth.LoginFragment;
 import com.example.slagalica.presentation.fragments.auth.ResetPasswordFragment;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
 import com.example.slagalica.presentation.fragments.common.HomeFragment;
+import com.example.slagalica.presentation.fragments.match.AsocijacijeFragment;
+import com.example.slagalica.presentation.fragments.match.KoZnaZnaFragment;
+import com.example.slagalica.presentation.fragments.match.KorakPoKorakFragment;
+import com.example.slagalica.presentation.fragments.match.MojBrojFragment;
+import com.example.slagalica.presentation.fragments.match.SkockoFragment;
+import com.example.slagalica.presentation.fragments.match.SpojniceFragment;
+import com.example.slagalica.presentation.fragments.common.RegionMapFragment;
 import com.example.slagalica.presentation.fragments.profile.ProfileFragment;
 import com.example.slagalica.presentation.fragments.social.FriendsFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationTargetPlaceholderFragment;
@@ -37,6 +46,8 @@ import com.example.slagalica.presentation.notifications.AppNotificationHelper;
 import com.example.slagalica.domain.model.social.MatchRequest;
 import com.example.slagalica.presentation.viewmodels.MatchRequestViewModel;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
+
+import java.util.Objects;
 
 import javax.inject.Inject;
 
@@ -49,6 +60,7 @@ public class AppActivity extends AppCompatActivity {
     MatchRequestViewModel matchRequestViewModel;
     private CountDownTimer bannerTimer;
     private float bannerTouchStartX;
+    private int lastNavigatedGameId = -1;
 
     @Inject
     SessionManager sessionManager;
@@ -111,6 +123,8 @@ public class AppActivity extends AppCompatActivity {
         // Leave match button
         leftDrawer.findViewById(R.id.leave_match).setOnClickListener(v -> {
             showLeaveGameConfirmationDialog(() -> {
+                matchViewModel.setGameActive(false);
+                lastNavigatedGameId = -1;
                 FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
                 binding.main.closeDrawer(GravityCompat.START);
             });
@@ -120,6 +134,8 @@ public class AppActivity extends AppCompatActivity {
         leftDrawer.findViewById(R.id.home).setOnClickListener(v -> {
             if (matchViewModel.getIsGameActive().getValue() != null && matchViewModel.getIsGameActive().getValue()) {
                 showLeaveGameConfirmationDialog(() -> {
+                    matchViewModel.setGameActive(false);
+                    lastNavigatedGameId = -1;
                     FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
                     binding.main.closeDrawer(GravityCompat.START);
                 });
@@ -142,6 +158,12 @@ public class AppActivity extends AppCompatActivity {
         });
         handleNotificationIntent(getIntent());
         requestNotificationPermission();
+
+        // Region map
+        leftDrawer.findViewById(R.id.region_map).setOnClickListener(v -> {
+            FragmentTransition.to(new RegionMapFragment(), this, true, R.id.appContainer);
+            binding.main.closeDrawer(GravityCompat.START);
+        });
 
         // Reset password
         leftDrawer.findViewById(R.id.reset_password).setOnClickListener(v -> {
@@ -226,7 +248,52 @@ public class AppActivity extends AppCompatActivity {
 
     // Helper method to make the view (activity) observe changes in VM
     private void observeViewModel(){
+        matchViewModel.getCurrentGameId().observe(this, gameId -> {
+            if (gameId == null) return;
+            if (matchViewModel.getMatch() == null) return;
+            if (gameId == lastNavigatedGameId) return;
+            Fragment fragment = null;
+            switch (gameId) {
+                case 0:
+                    Log.d("Match", "Match ended");
+                    matchViewModel.setGameActive(false);
+                    lastNavigatedGameId = 0;
+                    FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
+                    break;
+                case 1:
+                    Log.d("Match", "Switching to ko zna zna fragment...");
+                    fragment = new KoZnaZnaFragment();
+                    break;
+                case 2:
+                    Log.d("Match", "Switching to spojnice fragment...");
+                    fragment = new SpojniceFragment();
+                    break;
+                case 3:
+                    Log.d("Match", "Switching to asocijacije fragment...");
+                    fragment = new AsocijacijeFragment();
+                    break;
+                case 4:
+                    Log.d("Match", "Switching to skocko fragment...");
+                    fragment = new SkockoFragment();
+                    break;
+                case 5:
+                    Log.d("Match", "Switching to korak po korak fragment...");
+                    fragment = new KorakPoKorakFragment();
+                    break;
+                case 6:
+                    Log.d("Match", "Switching to moj broj fragment...");
+                    fragment = new MojBrojFragment();
+                    break;
+            }
+            if (fragment != null) {
+                lastNavigatedGameId = gameId;
+                FragmentTransition.to(fragment, this, false, R.id.appContainer);
+            }
+        });
+
         matchViewModel.getIsGameActive().observe(this, active -> {
+            if (matchViewModel.getMatch() == null) return;
+            if (active == null) return;
             // When isGameActive changes in the VM, this line is triggered
             binding.gameHeader.setVisibility(active ? View.VISIBLE : View.GONE);
 
@@ -237,24 +304,53 @@ public class AppActivity extends AppCompatActivity {
         });
 
         matchViewModel.getPlayer1Name().observe(this, name -> {
+            if (matchViewModel.getMatch() == null) return;
+            if (name == null) return;
             binding.gameHeader.setPlayerNames(name, matchViewModel.getPlayer2Name().getValue());
         });
 
         matchViewModel.getPlayer2Name().observe(this, name -> {
+            if (matchViewModel.getMatch() == null) return;
+            if (name == null) return;
             binding.gameHeader.setPlayerNames(matchViewModel.getPlayer1Name().getValue(), name);
         });
 
         matchViewModel.getPlayer1Score().observe(this, score -> {
+            if (matchViewModel.getMatch() == null) return;
+            if (score == null) return;
             binding.gameHeader.setStars(score, matchViewModel.getPlayer2Score().getValue() != null ? matchViewModel.getPlayer2Score().getValue() : 0);
         });
 
         matchViewModel.getPlayer2Score().observe(this, score -> {
+            if (matchViewModel.getMatch() == null) return;
+            if (score == null) return;
             binding.gameHeader.setStars(matchViewModel.getPlayer1Score().getValue() != null ? matchViewModel.getPlayer1Score().getValue() : 0, score);
         });
 
-        matchViewModel.getActivePlayer().observe(this, player -> {
-            binding.gameHeader.setActivePlayer(player);
+        matchViewModel.getActivePlayer().observe(this, playerId -> {
+            if (matchViewModel.getMatch() == null) return;
+            if (playerId == null) return;
+            if(Objects.equals(matchViewModel.getMatch().getPlayer1Id(), playerId)){
+                binding.gameHeader.setActivePlayer(1);
+            }
+            else{
+                binding.gameHeader.setActivePlayer(2);
+            }
         });
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        sessionManager.setUserOnline(true);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (!isChangingConfigurations()) {
+            sessionManager.setUserOnline(false);
+        }
     }
 
     public void setToolbarTitle(String title) {

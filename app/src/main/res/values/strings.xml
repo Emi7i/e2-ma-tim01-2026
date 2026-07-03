@@ -46,6 +46,14 @@
     <string name="register_region_hint">Region</string>
     <string name="resetuj_ifru">Resetuj šifru</string>
     <string name="log_out">Log out</string>
+    <string name="left_drawer_region_map">Mapa regiona</string>
+    <string name="region_map_title">Regioni Srbije</string>
+    <string name="region_rank_list_title">Mesečna rang lista</string>
+    <string name="region_your_region">Vaš region</string>
+    <string name="region_stars_label">zvezda</string>
+    <string name="region_players_label">igrača</string>
+    <string name="region_test_end_cycle_button">Testiraj: kraj meseca</string>
+    <string name="region_test_backfill_stars_button">Testiraj: popuni zvezde</string>
     <!-- Match requests -->
     <string name="match_request_send">Pozovi na partiju</string>
     <string name="match_request_send_short">Pozovi</string>

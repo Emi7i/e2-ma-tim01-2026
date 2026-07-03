@@ -1,21 +1,19 @@
 package com.example.slagalica.domain.model.match.games.common;
 
 public interface IGame {
-    long getId();
+    int getId();
     int getRoundLength();
     int getRounds();
-    int getMaxPoints();
-    int getMinPoints();
     int getCurrentRound();
-    long getCurrentPlayer();
-    void setCurrentPlayer(long playerId);
-    long getMatchId();
-    long getPlayer1Id();
-    long getPlayer2Id();
+    String getCurrentPlayer();
+    void setCurrentPlayer(String playerId);
+    String getMatchId();
+    String getPlayer1Id();
+    String getPlayer2Id();
     boolean hasEnded();
 
     void startNewRound();
-    long getOtherPlayer();
+    String getOtherPlayer();
     void setOnPointsChangedListener(OnPointsChangedListener listener);
     void setOnGameEndedListener(OnGameEndedListener listener);
     void setOnActivePlayerChangedListener(OnActivePlayerChangedListener listener);
