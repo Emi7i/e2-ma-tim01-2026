@@ -156,8 +156,13 @@
     }
 
     // ------------------------------------------------------------------
-    // Load regions from Overpass
+    // Load regions — try the bundled local asset first (instant, no
+    // network at all), and only fall back to the live Overpass API if
+    // that's missing/corrupt (e.g. a future region added before the
+    // bundled file is updated).
     // ------------------------------------------------------------------
+    var BOUNDARIES_ASSET_URL = 'region_boundaries.json';
+    var OVERPASS_FETCH_TIMEOUT_MS = 8000;
     var query = '[out:json][timeout:30];relation(id:2959530,2959529,1279074,1677007,2088990);out geom;';
     var OVERPASS_ENDPOINTS = [
         'https://overpass-api.de/api/interpreter',
@@ -168,10 +173,13 @@
     function fetchOverpass(endpoints) {
         var url = endpoints[0];
         var rest = endpoints.slice(1);
+        var controller = new AbortController();
+        var timer = setTimeout(function() { controller.abort(); }, OVERPASS_FETCH_TIMEOUT_MS);
         return fetch(url, {
             method:  'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body:    'data=' + encodeURIComponent(query)
+            body:    'data=' + encodeURIComponent(query),
+            signal:  controller.signal
         })
         .then(function(r) { return r.text(); })
         .then(function(text) {
@@ -183,15 +191,62 @@
             return JSON.parse(text);
         })
         .catch(function(err) {
+            // Timeout (AbortError) or network error — try next mirror rather than hang
             if (rest.length > 0) return fetchOverpass(rest);
             throw err;
+        })
+        .finally(function() { clearTimeout(timer); });
+    }
+
+    function loadBundledBoundaries() {
+        return fetch(BOUNDARIES_ASSET_URL)
+            .then(function(r) {
+                if (!r.ok) throw new Error('Bundled boundaries asset missing');
+                return r.json();
+            })
+            .then(function(geojson) {
+                if (!geojson || !geojson.features || geojson.features.length < Object.keys(ID_TO_REGION).length) {
+                    throw new Error('Bundled boundaries asset incomplete');
+                }
+                return geojson;
+            });
+    }
+
+    // Only reached if the bundled asset is missing/incomplete — cache a
+    // successful live fetch so a device stuck on this path only ever
+    // hits the network once, not on every screen visit.
+    var CACHE_KEY = 'regionBoundaries:v1';
+
+    function loadCachedBoundaries() {
+        try {
+            var cached = localStorage.getItem(CACHE_KEY);
+            return cached ? JSON.parse(cached) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function cacheBoundaries(geojson) {
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify(geojson)); } catch (e) {}
+    }
+
+    function loadLiveBoundaries() {
+        var cached = loadCachedBoundaries();
+        if (cached) return Promise.resolve(cached);
+
+        if (typeof osmtogeojson !== 'function') {
+            return Promise.reject(new Error('osmtogeojson nije dostupan'));
+        }
+        return fetchOverpass(OVERPASS_ENDPOINTS).then(function(osm) {
+            var geojson = osmtogeojson(osm);
+            cacheBoundaries(geojson);
+            return geojson;
         });
     }
 
-    fetchOverpass(OVERPASS_ENDPOINTS)
-    .then(function(osm) {
-        var geojson = osmtogeojson(osm);
-
+    loadBundledBoundaries()
+    .catch(function() { return loadLiveBoundaries(); })
+    .then(function(geojson) {
         var geoLayer = L.geoJSON(geojson, {
             filter: function(feature) {
                 var t = feature.geometry && feature.geometry.type;
