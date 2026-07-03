@@ -1,12 +1,8 @@
 package com.example.slagalica.domain.model.ranking;
 
-import com.google.firebase.firestore.DocumentId;
-
 public class RankingEntry {
 
-    @DocumentId
     private String userId;
-
     private String username;
     private String league;
     private long starsEarned;

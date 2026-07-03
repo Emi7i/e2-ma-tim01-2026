@@ -1,13 +1,10 @@
 package com.example.slagalica.domain.model.ranking;
 
-import com.google.firebase.firestore.DocumentId;
 import com.google.firebase.firestore.Exclude;
 
 public class RankingCycle {
 
-    @DocumentId
     private String cycleId;
-
     private String type;
     private long startMillis;
     private long endMillis;
