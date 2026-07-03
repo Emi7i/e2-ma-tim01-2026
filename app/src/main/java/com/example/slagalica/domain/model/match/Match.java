@@ -165,19 +165,27 @@ public class Match {
                     // stars per 40 points
                     int additionalStars = player1Score / 40;
                     player1.setNumStars(player1.getNumStars() + additionalStars);
+                    player1.setMonthlyStars(player1.getMonthlyStars() + additionalStars);
                     additionalStars = player2Score / 40;
                     player2.setNumStars(player2.getNumStars() + additionalStars);
+                    player2.setMonthlyStars(player2.getMonthlyStars() + additionalStars);
 
                     // winner/loser stars
                     if(Objects.equals(player1.getUserId(), winnerId)){
                         player1.setNumStars(player1.getNumStars() + 10);
+                        player1.setMonthlyStars(player1.getMonthlyStars() + 10);
                         long loserStars = player2.getNumStars() - 10;
                         player2.setNumStars(Math.max(0, loserStars));
+                        long loserMonthlyStars = player2.getMonthlyStars() - 10;
+                        player2.setMonthlyStars(Math.max(0, loserMonthlyStars));
                     }
                     else{
                         player2.setNumStars(player2.getNumStars() + 10);
+                        player2.setMonthlyStars(player2.getMonthlyStars() + 10);
                         long loserStars = player1.getNumStars() - 10;
                         player1.setNumStars(Math.max(0, loserStars));
+                        long loserMonthlyStars = player1.getMonthlyStars() - 10;
+                        player1.setMonthlyStars(Math.max(0, loserMonthlyStars));
                     }
 
                     userProfileRepository.saveProfile(player1);

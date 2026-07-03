@@ -101,15 +101,13 @@ public class StatisticsFragment extends Fragment {
     }
 
     private void updateLeagueVisuals(com.example.slagalica.domain.model.profile.UserProfile profile) {
-        // Set Region Rank Border for mini-avatar (gold/silver/bronze for previous cycle's top 3 regions)
-        String regionRank = profile.getRegionRank();
-        int borderResId = regionRank != null
-                ? getResources().getIdentifier("league_border_" + regionRank.toLowerCase(), "drawable", requireContext().getPackageName())
-                : 0;
+        // Border for mini-avatar reflects region rank, same as the main profile screen.
+        int borderResId = com.example.slagalica.presentation.fragments.profile.ProfileFragment.tierBorderFor(profile.getRegionRankTier());
         if (borderResId != 0) {
+            binding.leagueBorder.setVisibility(View.VISIBLE);
             binding.leagueBorder.setImageResource(borderResId);
         } else {
-            binding.leagueBorder.setImageResource(R.drawable.circular_profile_background);
+            binding.leagueBorder.setVisibility(View.GONE);
         }
     }
 
