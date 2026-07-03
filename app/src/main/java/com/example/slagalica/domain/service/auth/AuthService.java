@@ -97,7 +97,7 @@ public class AuthService {
                                         DEFAULT_STARS,
                                         DEFAULT_LEAGUE,
                                         dto.getRegion(),
-                                        null,
+                                        firebaseUser.getUid(),
                                         DEFAULT_RANK,
                                         0L,
                                         false,

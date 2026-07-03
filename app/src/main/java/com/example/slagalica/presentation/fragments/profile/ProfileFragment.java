@@ -12,8 +12,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import android.graphics.Bitmap;
+import android.util.TypedValue;
+
 import com.bumptech.glide.Glide;
 import com.example.slagalica.R;
+import com.example.slagalica.util.QrCodeGenerator;
 import com.example.slagalica.databinding.FragmentProfileBinding;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
 import com.example.slagalica.presentation.viewmodels.ProfileViewModel;
@@ -59,6 +63,7 @@ public class ProfileFragment extends Fragment {
                 binding.rankText.setText(String.format("Rank: %d", profile.getRank()));
 
                 updateLeagueVisuals(profile);
+                updateQrCode(profile);
 
                 if (profile.getAvatar() != null && !profile.getAvatar().isEmpty()) {
                     Glide.with(this)
@@ -105,6 +110,17 @@ public class ProfileFragment extends Fragment {
         binding.starsIcon.setImageResource(R.drawable.icon_stars);
         binding.rankIcon.setImageResource(R.drawable.icon_rank);
         binding.regionIcon.setImageResource(R.drawable.icon_region);
+    }
+
+    private void updateQrCode(com.example.slagalica.domain.model.profile.UserProfile profile) {
+        String content = profile.getQrCode() != null ? profile.getQrCode() : profile.getUserId();
+        if (content == null || content.isEmpty()) return;
+        int sizePx = (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, 160, getResources().getDisplayMetrics());
+        Bitmap qr = QrCodeGenerator.generate(content, sizePx);
+        if (qr != null) {
+            binding.qrCodeImage.setImageBitmap(qr);
+        }
     }
 
     private int getLeagueBadgeResId(String league) {

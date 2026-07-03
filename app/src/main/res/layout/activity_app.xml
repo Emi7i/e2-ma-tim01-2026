@@ -40,6 +40,13 @@
 
         </com.google.android.material.appbar.MaterialToolbar>
 
+        <include
+            android:id="@+id/matchRequestBanner"
+            layout="@layout/view_match_request_banner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
         <LinearLayout
             android:id="@+id/leagueChangeBanner"
             android:layout_width="match_parent"
