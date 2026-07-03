@@ -6,6 +6,8 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.os.CountDownTimer;
+import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.activity.EdgeToEdge;
@@ -37,9 +39,12 @@ import com.example.slagalica.presentation.fragments.match.SkockoFragment;
 import com.example.slagalica.presentation.fragments.match.SpojniceFragment;
 import com.example.slagalica.presentation.fragments.common.RegionMapFragment;
 import com.example.slagalica.presentation.fragments.profile.ProfileFragment;
+import com.example.slagalica.presentation.fragments.social.FriendsFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationTargetPlaceholderFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationsFragment;
 import com.example.slagalica.presentation.notifications.AppNotificationHelper;
+import com.example.slagalica.domain.model.social.MatchRequest;
+import com.example.slagalica.presentation.viewmodels.MatchRequestViewModel;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 
 import java.util.Objects;
@@ -52,6 +57,9 @@ import dagger.hilt.android.AndroidEntryPoint;
 public class AppActivity extends AppCompatActivity {
     ActivityAppBinding binding;
     MatchViewModel matchViewModel;
+    MatchRequestViewModel matchRequestViewModel;
+    private CountDownTimer bannerTimer;
+    private float bannerTouchStartX;
     private int lastNavigatedGameId = -1;
 
     @Inject
@@ -83,9 +91,12 @@ public class AppActivity extends AppCompatActivity {
             return insets;
         });
 
-        // Setup VM
+        // Setup VMs
         matchViewModel = new ViewModelProvider(this).get(MatchViewModel.class);
+        matchRequestViewModel = new ViewModelProvider(this).get(MatchRequestViewModel.class);
         observeViewModel();
+        observeMatchRequests();
+        matchRequestViewModel.startListeningForIncoming();
 
         if (savedInstanceState == null) {
             FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
@@ -134,6 +145,12 @@ public class AppActivity extends AppCompatActivity {
             }
         });
 
+        // Friends button
+        leftDrawer.findViewById(R.id.friends).setOnClickListener(v -> {
+            FragmentTransition.to(new FriendsFragment(), this, true, R.id.appContainer);
+            binding.main.closeDrawer(GravityCompat.START);
+        });
+
         // Notifications button
         leftDrawer.findViewById(R.id.notifications).setOnClickListener(v -> {
             FragmentTransition.to(new NotificationsFragment(), this, true, R.id.appContainer);
@@ -161,6 +178,61 @@ public class AppActivity extends AppCompatActivity {
             finish();
             binding.main.closeDrawer(GravityCompat.START);
         });
+    }
+
+    private void observeMatchRequests() {
+        matchRequestViewModel.getIncomingRequest().observe(this, request -> {
+            if (request != null) {
+                showMatchRequestBanner(request);
+            } else {
+                hideMatchRequestBanner();
+            }
+        });
+    }
+
+    private void showMatchRequestBanner(MatchRequest request) {
+        binding.matchRequestBanner.bannerSender.setText(
+                request.getSenderUsername() + " želi da igra sa vama");
+        binding.matchRequestBanner.getRoot().setVisibility(View.VISIBLE);
+
+        binding.matchRequestBanner.bannerAcceptButton.setOnClickListener(
+                v -> matchRequestViewModel.acceptIncoming());
+
+        binding.matchRequestBanner.getRoot().setOnTouchListener((v, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    bannerTouchStartX = event.getX();
+                    return true;
+                case MotionEvent.ACTION_UP:
+                    float dx = Math.abs(event.getX() - bannerTouchStartX);
+                    if (dx > 80) {
+                        matchRequestViewModel.rejectIncoming();
+                    }
+                    return true;
+            }
+            return false;
+        });
+
+        if (bannerTimer != null) bannerTimer.cancel();
+        binding.matchRequestBanner.bannerProgress.setProgress(100);
+        bannerTimer = new CountDownTimer(10_000, 100) {
+            @Override
+            public void onTick(long millisLeft) {
+                binding.matchRequestBanner.bannerProgress.setProgress((int) (millisLeft / 100));
+            }
+            @Override
+            public void onFinish() {
+                matchRequestViewModel.expireIncoming();
+            }
+        }.start();
+    }
+
+    private void hideMatchRequestBanner() {
+        if (bannerTimer != null) {
+            bannerTimer.cancel();
+            bannerTimer = null;
+        }
+        binding.matchRequestBanner.getRoot().setVisibility(View.GONE);
     }
 
     private void showLeaveGameConfirmationDialog(Runnable onConfirm) {

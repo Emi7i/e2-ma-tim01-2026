@@ -54,4 +54,18 @@
     <string name="region_players_label">igrača</string>
     <string name="region_test_end_cycle_button">Testiraj: kraj meseca</string>
     <string name="region_test_backfill_stars_button">Testiraj: popuni zvezde</string>
+    <!-- Match requests -->
+    <string name="match_request_send">Pozovi na partiju</string>
+    <string name="match_request_send_short">Pozovi</string>
+    <string name="match_request_cancel">Otkaži zahtev</string>
+    <string name="match_request_title">Poziv na partiju</string>
+    <string name="match_request_accept">Prihvati</string>
+    <!-- Friends -->
+    <string name="friends_search_hint">Korisničko ime</string>
+    <string name="friends_add">Dodaj</string>
+    <string name="friends_add_by_qr">Dodaj QR kodom</string>
+    <string name="friend_profile_title">Profil prijatelja</string>
+    <string name="friend_profile_rank">Mesečni rang</string>
+    <string name="friend_profile_stars">Ukupne zvezde</string>
+    <string name="friend_profile_league">Liga</string>
 </resources>
