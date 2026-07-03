@@ -82,8 +82,6 @@ public class ProfileFragment extends Fragment {
     }
 
     private void updateLeagueVisuals(com.example.slagalica.domain.model.profile.UserProfile profile) {
-        String league = profile.getLeague() != null ? profile.getLeague().toLowerCase() : "";
-
         // 1. Avatar border reflects region rank — gold/silver/bronze if the
         // player's region placed top 3 last cycle, a plain edge ring otherwise.
         // Leagues are a separate concept (badge/text below) and don't affect it.
@@ -133,12 +131,6 @@ public class ProfileFragment extends Fragment {
         if ("silver".equals(tier)) return R.drawable.league_border_silver;
         if ("bronze".equals(tier)) return R.drawable.league_border_bronze;
         return 0;
-    }
-
-    static int leagueBadgeFor(String league) {
-        if ("gold".equals(league))   return R.drawable.league_badge_gold;
-        if ("silver".equals(league)) return R.drawable.league_badge_silver;
-        return R.drawable.league_badge_bronze;
     }
 
     private void setupClickListeners() {

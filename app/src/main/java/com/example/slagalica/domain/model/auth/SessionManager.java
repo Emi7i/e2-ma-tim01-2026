@@ -66,12 +66,17 @@ public class SessionManager {
     // unlike isOnline which only lives in memory for this process. Without this check,
     // relaunching the app during testing (no clean logout) would increment activePlayers
     // again every time without ever decrementing it.
+    //
+    // Uses a targeted field update rather than saveProfile(profile) — this runs on
+    // every login/app-open, and a full-object overwrite here can race with any other
+    // write to the same document (e.g. stars from a match, a backfill) and silently
+    // clobber it back to whatever stale snapshot this profile object was fetched from.
     private void applyOnlineState(UserProfile profile, boolean online) {
         isOnline = online;
         if (profile.isActive() == online) return;
         profile.setActive(online);
         regionStatsRepository.incrementField(profile.getRegion(), "activePlayers", online ? 1L : -1L);
-        userProfileRepository.saveProfile(profile);
+        userProfileRepository.updateFields(profile.getUserId(), java.util.Collections.singletonMap("active", online));
     }
 
     public String getCurrentUserId() {
