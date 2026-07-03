@@ -35,6 +35,7 @@ import com.example.slagalica.presentation.fragments.match.KorakPoKorakFragment;
 import com.example.slagalica.presentation.fragments.match.MojBrojFragment;
 import com.example.slagalica.presentation.fragments.match.SkockoFragment;
 import com.example.slagalica.presentation.fragments.match.SpojniceFragment;
+import com.example.slagalica.presentation.fragments.common.RegionMapFragment;
 import com.example.slagalica.presentation.fragments.profile.ProfileFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationTargetPlaceholderFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationsFragment;
@@ -140,6 +141,12 @@ public class AppActivity extends AppCompatActivity {
         });
         handleNotificationIntent(getIntent());
         requestNotificationPermission();
+
+        // Region map
+        leftDrawer.findViewById(R.id.region_map).setOnClickListener(v -> {
+            FragmentTransition.to(new RegionMapFragment(), this, true, R.id.appContainer);
+            binding.main.closeDrawer(GravityCompat.START);
+        });
 
         // Reset password
         leftDrawer.findViewById(R.id.reset_password).setOnClickListener(v -> {
@@ -258,6 +265,20 @@ public class AppActivity extends AppCompatActivity {
                 binding.gameHeader.setActivePlayer(2);
             }
         });
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        sessionManager.setUserOnline(true);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (!isChangingConfigurations()) {
+            sessionManager.setUserOnline(false);
+        }
     }
 
     public void setToolbarTitle(String title) {

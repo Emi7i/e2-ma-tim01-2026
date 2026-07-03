@@ -13,6 +13,7 @@ material = "1.13.0"
 activity = "1.13.0"
 constraintlayout = "2.2.1"
 firebaseFirestore = "26.3.0"
+webkit = "1.12.1"
 
 [libraries]
 com-google-firebase-firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
@@ -31,6 +32,7 @@ activity = { group = "androidx.activity", name = "activity", version.ref = "acti
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 projectlombok-lombok = { module = "org.projectlombok:lombok", version.ref = "lombokVersion" }
 google-firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
+webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

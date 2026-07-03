@@ -5,6 +5,7 @@ import com.example.slagalica.domain.model.auth.RegistrationDTO;
 import com.example.slagalica.domain.model.auth.ResetPasswordDTO;
 import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.domain.model.progression.UserStatistics;
+import com.example.slagalica.repository.impl.RegionStatsRepository;
 import com.example.slagalica.repository.impl.UserProfileRepository;
 import com.example.slagalica.repository.impl.UserStatisticsRepository;
 import com.example.slagalica.util.AsyncUtils;
@@ -30,14 +31,17 @@ public class AuthService {
     private final FirebaseAuth firebaseAuth;
     private final UserProfileRepository userProfileRepository;
     private final UserStatisticsRepository userStatisticsRepository;
+    private final RegionStatsRepository regionStatsRepository;
 
     @Inject
     public AuthService(FirebaseAuth firebaseAuth,
                        UserProfileRepository userProfileRepository,
-                       UserStatisticsRepository userStatisticsRepository) {
+                       UserStatisticsRepository userStatisticsRepository,
+                       RegionStatsRepository regionStatsRepository) {
         this.firebaseAuth = firebaseAuth;
         this.userProfileRepository = userProfileRepository;
         this.userStatisticsRepository = userStatisticsRepository;
+        this.regionStatsRepository = regionStatsRepository;
     }
 
     /**
@@ -55,23 +59,31 @@ public class AuthService {
 
         return userProfileRepository.findByUsername(dto.getUsername())
                 .thenCompose(existing -> {
-                    if (existing != null) {
+                    if (existing != null && !existing.getEmail().equalsIgnoreCase(dto.getEmail())) {
+                        // Username belongs to a different email — genuinely taken
                         CompletableFuture<Void> failed = new CompletableFuture<>();
                         failed.completeExceptionally(new IllegalArgumentException("Username već postoji"));
                         return failed;
                     }
+                    // existing == null  → normal registration
+                    // existing != null, same email → Auth account may have been deleted (orphaned profile); try Auth
+                    String orphanedUserId = existing != null ? existing.getUserId() : null;
 
                     return AsyncUtils.toFuture(firebaseAuth.createUserWithEmailAndPassword(dto.getEmail(), dto.getPassword()))
                             .thenCompose(authResult -> {
                                 FirebaseUser firebaseUser = authResult.getUser();
                                 if (firebaseUser == null) {
                                     CompletableFuture<Void> failed = new CompletableFuture<>();
-                                    failed.completeExceptionally(new IllegalStateException("Neuspešna registracija. Šta?"));
+                                    failed.completeExceptionally(new IllegalStateException("Neuspešna registracija."));
                                     return failed;
                                 }
 
-                                // Send verification email
                                 firebaseUser.sendEmailVerification();
+
+                                // Clean up orphaned Firestore document if it existed under a different UID
+                                if (orphanedUserId != null && !orphanedUserId.equals(firebaseUser.getUid())) {
+                                    userProfileRepository.deleteProfile(orphanedUserId);
+                                }
 
                                 UserProfile profile = new UserProfile(
                                         firebaseUser.getUid(),
@@ -83,11 +95,15 @@ public class AuthService {
                                         DEFAULT_LEAGUE,
                                         dto.getRegion(),
                                         null,
-                                        DEFAULT_RANK
+                                        DEFAULT_RANK,
+                                        0L,
+                                        false,
+                                        null
                                 );
 
                                 UserStatistics stats = UserStatistics.createNew(firebaseUser.getUid());
                                 userStatisticsRepository.saveStatistics(stats);
+                                regionStatsRepository.incrementField(dto.getRegion(), "registeredPlayers", 1L);
 
                                 return userProfileRepository.saveProfile(profile);
                             });

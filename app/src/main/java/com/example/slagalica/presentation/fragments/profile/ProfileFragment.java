@@ -82,27 +82,42 @@ public class ProfileFragment extends Fragment {
     }
 
     private void updateLeagueVisuals(com.example.slagalica.domain.model.profile.UserProfile profile) {
-        String league = profile.getLeague().toLowerCase();
-        
-        // 1. Set League Border
-        int borderResId = getResources().getIdentifier("league_border_" + league, "drawable", requireContext().getPackageName());
+        String league = profile.getLeague() != null ? profile.getLeague().toLowerCase() : "";
+
+        // 1. Avatar border reflects region rank — gold/silver/bronze if the
+        // player's region placed top 3 last cycle, a plain edge ring otherwise.
+        // Leagues are a separate concept (badge/text below) and don't affect it.
+        int borderResId = tierBorderFor(profile.getRegionRankTier());
         if (borderResId != 0) {
+            binding.leagueBorder.setVisibility(View.VISIBLE);
             binding.leagueBorder.setImageResource(borderResId);
+            binding.defaultAvatarBorder.setVisibility(View.GONE);
         } else {
-            // Default border or shape if image not found
-            binding.leagueBorder.setImageResource(R.drawable.circular_profile_background);
+            binding.leagueBorder.setVisibility(View.GONE);
+            binding.defaultAvatarBorder.setVisibility(View.VISIBLE);
         }
 
         // 2. Set League Badge/Icon
-        int badgeResId = getResources().getIdentifier("league_badge_" + league, "drawable", requireContext().getPackageName());
-        if (badgeResId != 0) {
-            binding.leagueIcon.setImageResource(badgeResId);
-        }
+        binding.leagueIcon.setImageResource(leagueBadgeFor(league));
 
         // 3. Set Static Icons
         binding.starsIcon.setImageResource(R.drawable.icon_stars);
         binding.rankIcon.setImageResource(R.drawable.icon_rank);
         binding.regionIcon.setImageResource(R.drawable.icon_region);
+    }
+
+    // Returns 0 (no valid resource id) if tier doesn't match a known gold/silver/bronze value.
+    static int tierBorderFor(String tier) {
+        if ("gold".equals(tier))   return R.drawable.league_border_gold;
+        if ("silver".equals(tier)) return R.drawable.league_border_silver;
+        if ("bronze".equals(tier)) return R.drawable.league_border_bronze;
+        return 0;
+    }
+
+    static int leagueBadgeFor(String league) {
+        if ("gold".equals(league))   return R.drawable.league_badge_gold;
+        if ("silver".equals(league)) return R.drawable.league_badge_silver;
+        return R.drawable.league_badge_bronze;
     }
 
     private void setupClickListeners() {
