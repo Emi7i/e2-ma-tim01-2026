@@ -229,12 +229,21 @@ public class MojBrojViewModel extends ViewModel {
 
     private boolean statsUpdated = false;
 
-    public void updateUserStatistics(int player1Score) {
+    public void updateUserStatistics(int player1Score, int player2Score) {
         if (statsUpdated) return;
         statsUpdated = true;
         String userId = getCurrentUserId();
         statsRepository.getStatistics(userId).thenAccept(stats -> {
             UserStatistics finalStats = (stats != null) ? stats : UserStatistics.createNew(userId);
+
+            // Overall match win/loss
+            finalStats.setGamesPlayed(finalStats.getGamesPlayed() + 1);
+            if (player1Score >= player2Score) {
+                finalStats.setWonGames(finalStats.getWonGames() + 1);
+            }
+            Log.d("UserStats", String.format("Stats changed: Overall Match - Result: %s | Played: %d | Won: %d",
+                    (player1Score > player2Score ? "WON" : (player1Score < player2Score ? "LOST" : "DRAW")),
+                    finalStats.getGamesPlayed(), finalStats.getWonGames()));
 
             // Accuracy Update for Moj Broj
             int gameTotal = roundsPlayed;

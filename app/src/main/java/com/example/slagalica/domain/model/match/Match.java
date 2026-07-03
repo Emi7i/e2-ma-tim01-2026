@@ -10,12 +10,10 @@ import com.example.slagalica.domain.model.match.games.common.OnMatchUpdatedListe
 import com.example.slagalica.domain.model.match.games.korakpokorak.KorakPoKorak;
 import com.example.slagalica.domain.model.match.games.mojbroj.MojBroj;
 import com.example.slagalica.domain.model.profile.UserProfile;
-import com.example.slagalica.domain.model.progression.UserStatistics;
 import com.example.slagalica.domain.service.match.KorakPoKorakService;
 import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
 import com.example.slagalica.repository.impl.UserProfileRepository;
-import com.example.slagalica.repository.impl.UserStatisticsRepository;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -43,7 +41,6 @@ public class Match {
     private final KorakPoKorakService korakPoKorakService;
     private final MojBrojService mojBrojService;
     private final UserProfileRepository userProfileRepository;
-    private final UserStatisticsRepository userStatisticsRepository;
     private final SessionManager sessionManager;
 
     private OnMatchUpdatedListener onMatchUpdatedListener;
@@ -60,7 +57,6 @@ public class Match {
                  KorakPoKorakService korakPoKorakService,
                  MojBrojService mojBrojService,
                  UserProfileRepository userProfileRepository,
-                 UserStatisticsRepository userStatisticsRepository,
                  SessionManager sessionManager,
                  Runnable onReadyCallback){
         this.player1Id = player1Id;
@@ -75,7 +71,6 @@ public class Match {
         this.korakPoKorakService = korakPoKorakService;
         this.mojBrojService = mojBrojService;
         this.userProfileRepository = userProfileRepository;
-        this.userStatisticsRepository = userStatisticsRepository;
         this.sessionManager = sessionManager;
         this.currentGameId = 1;
 
@@ -96,7 +91,7 @@ public class Match {
                     if (onReadyCallback != null) onReadyCallback.run();
                 })
                 .exceptionally(throwable -> {
-                    // handle error
+                    Log.e("Match", "Failed to create match / run onReadyCallback", throwable);
                     return null;
                 });
     }
@@ -142,7 +137,7 @@ public class Match {
         if(matchType == MatchType.CLASSIC){
             resolveClassicRewards();
         }
-        updateWonGamesStatistics();
+        // Note: Win/rate statistics are calculated in Moj Broj
         currentGameId = 0; // signal game over
         updateMatchSession();
         matchService.delete(id)
@@ -151,78 +146,6 @@ public class Match {
                     return null;
                 });
         Log.d("Match", "Match ended!");
-    }
-
-    // Records the overall match win/loss for both players now that the whole
-    // match (all games combined) is actually over, rather than guessing at
-    // a single game's end.
-    private void updateWonGamesStatistics(){
-        String winnerId = player1Score >= player2Score ? player1Id : player2Id;
-        Log.d("UserStats", String.format("Match ended - Player1: %d | Player2: %d | Winner: %s",
-                player1Score, player2Score, winnerId));
-
-        if (Objects.equals(player1Id, player2Id)) {
-            // both "players" resolve to the same account (local testing) - apply a
-            // single read-modify-write instead of two, which would otherwise race
-            // and have the second write clobber the first on the same document.
-            userStatisticsRepository.getStatistics(player1Id).thenAccept(stats -> {
-                UserStatistics playerStats = (stats != null) ? stats : UserStatistics.createNew(player1Id);
-                playerStats.setGamesPlayed(playerStats.getGamesPlayed() + 1);
-                playerStats.setWonGames(playerStats.getWonGames() + 1);
-                playerStats.calculateOverallStats();
-
-                userStatisticsRepository.saveStatistics(playerStats)
-                        .thenRun(() -> Log.d("UserStats", "Saved match win/loss stats for " + player1Id))
-                        .exceptionally(e -> {
-                            Log.e("UserStats", "Failed to save match statistics", e);
-                            return null;
-                        });
-            }).exceptionally(e -> {
-                Log.e("UserStats", "Failed to fetch statistics for " + player1Id, e);
-                return null;
-            });
-            return;
-        }
-
-        CompletableFuture<UserStatistics> player1StatsFuture = userStatisticsRepository.getStatistics(player1Id);
-        CompletableFuture<UserStatistics> player2StatsFuture = userStatisticsRepository.getStatistics(player2Id);
-
-        CompletableFuture.allOf(player1StatsFuture, player2StatsFuture)
-                .thenAccept(ignored -> {
-                    UserStatistics player1Stats = player1StatsFuture.join();
-                    if (player1Stats == null) player1Stats = UserStatistics.createNew(player1Id);
-                    UserStatistics player2Stats = player2StatsFuture.join();
-                    if (player2Stats == null) player2Stats = UserStatistics.createNew(player2Id);
-
-                    player1Stats.setGamesPlayed(player1Stats.getGamesPlayed() + 1);
-                    player2Stats.setGamesPlayed(player2Stats.getGamesPlayed() + 1);
-
-                    if (Objects.equals(winnerId, player1Id)) {
-                        player1Stats.setWonGames(player1Stats.getWonGames() + 1);
-                    } else {
-                        player2Stats.setWonGames(player2Stats.getWonGames() + 1);
-                    }
-
-                    player1Stats.calculateOverallStats();
-                    player2Stats.calculateOverallStats();
-
-                    userStatisticsRepository.saveStatistics(player1Stats)
-                            .thenRun(() -> Log.d("UserStats", "Saved match win/loss stats for " + player1Id))
-                            .exceptionally(e -> {
-                                Log.e("UserStats", "Failed to save player1 statistics", e);
-                                return null;
-                            });
-                    userStatisticsRepository.saveStatistics(player2Stats)
-                            .thenRun(() -> Log.d("UserStats", "Saved match win/loss stats for " + player2Id))
-                            .exceptionally(e -> {
-                                Log.e("UserStats", "Failed to save player2 statistics", e);
-                                return null;
-                            });
-                })
-                .exceptionally(throwable -> {
-                    Log.e("UserStats", "Error fetching statistics", throwable);
-                    return null;
-                });
     }
 
     // Resolves rewards for classic match.
