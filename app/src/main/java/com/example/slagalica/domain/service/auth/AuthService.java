@@ -24,8 +24,9 @@ public class AuthService {
 
     private static final long DEFAULT_TOKENS = 5L;
     private static final long DEFAULT_STARS = 0L;
-    private static final String DEFAULT_LEAGUE = "Bronze";
+    private static final String DEFAULT_LEAGUE = "Student";
     private static final long DEFAULT_RANK = 0L;
+    private static final String DEFAULT_REGION_RANK = null;
 
     private final FirebaseAuth firebaseAuth;
     private final UserProfileRepository userProfileRepository;
@@ -83,7 +84,8 @@ public class AuthService {
                                         DEFAULT_LEAGUE,
                                         dto.getRegion(),
                                         null,
-                                        DEFAULT_RANK
+                                        DEFAULT_RANK,
+                                        DEFAULT_REGION_RANK
                                 );
 
                                 UserStatistics stats = UserStatistics.createNew(firebaseUser.getUid());

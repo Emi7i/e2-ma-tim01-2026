@@ -101,10 +101,11 @@ public class StatisticsFragment extends Fragment {
     }
 
     private void updateLeagueVisuals(com.example.slagalica.domain.model.profile.UserProfile profile) {
-        String league = profile.getLeague().toLowerCase();
-        
-        // Set League Border for mini-avatar
-        int borderResId = getResources().getIdentifier("league_border_" + league, "drawable", requireContext().getPackageName());
+        // Set Region Rank Border for mini-avatar (gold/silver/bronze for previous cycle's top 3 regions)
+        String regionRank = profile.getRegionRank();
+        int borderResId = regionRank != null
+                ? getResources().getIdentifier("league_border_" + regionRank.toLowerCase(), "drawable", requireContext().getPackageName())
+                : 0;
         if (borderResId != 0) {
             binding.leagueBorder.setImageResource(borderResId);
         } else {
