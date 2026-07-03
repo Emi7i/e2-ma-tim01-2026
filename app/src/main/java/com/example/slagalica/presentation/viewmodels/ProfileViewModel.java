@@ -64,6 +64,25 @@ public class ProfileViewModel extends ViewModel {
         }
     }
 
+    public void addToken() {
+        UserProfile current = sessionManager.getCurrentProfile().getValue();
+        if (current != null) {
+            isLoading.setValue(true);
+            current.setNumTokens(current.getNumTokens() + 1);
+            userProfileRepository.saveProfile(current)
+                .thenAccept(v -> {
+                    userProfile.postValue(current);
+                    sessionManager.setCurrentProfile(current);
+                    isLoading.postValue(false);
+                })
+                .exceptionally(e -> {
+                    error.postValue(e.getMessage());
+                    isLoading.postValue(false);
+                    return null;
+                });
+        }
+    }
+
     public LiveData<UserProfile> getUserProfile() {
         return sessionManager.getCurrentProfile();
     }

@@ -120,6 +120,10 @@ public class ProfileFragment extends Fragment {
             androidx.drawerlayout.widget.DrawerLayout drawerLayout = requireActivity().findViewById(R.id.main);
             drawerLayout.closeDrawer(GravityCompat.END);
         });
+
+        binding.shopButton.setOnClickListener(v -> {
+            viewModel.addToken();
+        });
     }
 
     private void showAvatarSelectionDialog() {

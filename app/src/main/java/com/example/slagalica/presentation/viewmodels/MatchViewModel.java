@@ -73,17 +73,15 @@ public class MatchViewModel extends ViewModel {
                         return;
                     }
 
-                    if(matchType == MatchType.CLASSIC){
-                        deductToken(sessionManager.getCurrentUserId());
-                        if(Boolean.TRUE.equals(insufficientTokens.getValue())){
-                            return;
-                        }
-                    }
-
                     if (matchType == MatchType.CLASSIC) {
                         deductToken(sessionManager.getCurrentUserId())
                                 .thenAccept(success -> {
+                                    Log.d("Match", "deductToken result: " + success);
                                     if (success) createMatch(player1, player2, matchType);
+                                })
+                                .exceptionally(throwable -> {
+                                    Log.e("Match", "deductToken failed", throwable);
+                                    return null;
                                 });
                     } else {
                         // other logic for other types if needed
@@ -169,6 +167,7 @@ public class MatchViewModel extends ViewModel {
                         player.setNumTokens(player.getNumTokens() - 1);
                         userProfileRepository.saveProfile(player);
                         sessionManager.setCurrentProfile(player);
+                        insufficientTokens.postValue(false);
                         return true;
                     } else {
                         Log.d("Match", "PLAYER IS POOR");

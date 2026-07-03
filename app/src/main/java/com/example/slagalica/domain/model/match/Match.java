@@ -91,7 +91,7 @@ public class Match {
                     if (onReadyCallback != null) onReadyCallback.run();
                 })
                 .exceptionally(throwable -> {
-                    // handle error
+                    Log.e("Match", "Failed to create match / run onReadyCallback", throwable);
                     return null;
                 });
     }
@@ -120,8 +120,14 @@ public class Match {
     }
 
     public void start(){
+        // startForTesting(); // uncomment to instantly end the match with player 1 having 1 point (for testing win/loss stats)
         // startMojBroj(); // for fast testing!
         startKoZnaZna();
+    }
+
+    private void startForTesting(){
+        player1Score = 1;
+        endMatch();
     }
 
     public void endMatch(){
@@ -131,6 +137,7 @@ public class Match {
         if(matchType == MatchType.CLASSIC){
             resolveClassicRewards();
         }
+        // Note: Win/rate statistics are calculated in Moj Broj
         currentGameId = 0; // signal game over
         updateMatchSession();
         matchService.delete(id)

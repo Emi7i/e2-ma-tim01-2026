@@ -113,6 +113,7 @@ public class AppActivity extends AppCompatActivity {
         leftDrawer.findViewById(R.id.leave_match).setOnClickListener(v -> {
             showLeaveGameConfirmationDialog(() -> {
                 matchViewModel.setGameActive(false);
+                lastNavigatedGameId = -1;
                 FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
                 binding.main.closeDrawer(GravityCompat.START);
             });
@@ -122,6 +123,8 @@ public class AppActivity extends AppCompatActivity {
         leftDrawer.findViewById(R.id.home).setOnClickListener(v -> {
             if (matchViewModel.getIsGameActive().getValue() != null && matchViewModel.getIsGameActive().getValue()) {
                 showLeaveGameConfirmationDialog(() -> {
+                    matchViewModel.setGameActive(false);
+                    lastNavigatedGameId = -1;
                     FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
                     binding.main.closeDrawer(GravityCompat.START);
                 });
