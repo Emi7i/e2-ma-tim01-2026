@@ -133,11 +133,15 @@ public class FriendProfileFragment extends Fragment {
         binding.leagueText.setText(profile.getLeague());
         binding.rankText.setText("#" + profile.getRank());
 
-        String league = profile.getLeague() != null ? profile.getLeague().toLowerCase() : "";
-        int borderResId = getResources().getIdentifier("league_border_" + league, "drawable",
-                requireContext().getPackageName());
-        binding.leagueBorder.setImageResource(borderResId != 0
-                ? borderResId : R.drawable.circular_profile_background);
+        int borderResId = ProfileFragment.tierBorderFor(profile.getRegionRankTier());
+        if (borderResId != 0) {
+            binding.leagueBorder.setVisibility(View.VISIBLE);
+            binding.leagueBorder.setImageResource(borderResId);
+            binding.defaultAvatarBorder.setVisibility(View.GONE);
+        } else {
+            binding.leagueBorder.setVisibility(View.GONE);
+            binding.defaultAvatarBorder.setVisibility(View.VISIBLE);
+        }
 
         if (profile.getAvatar() != null && !profile.getAvatar().isEmpty()) {
             Glide.with(this)
