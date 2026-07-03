@@ -152,60 +152,51 @@ public class Match {
     // Resolves rewards for classic match.
     // Add other methods for other scenarios,
     // for example tournament? or do that elsewhere
+    //
+    // Only ever reads/writes the logged-in user's own profile — a client isn't
+    // allowed to write the opponent's document, so each participant's own client
+    // is responsible for crediting/penalizing itself when the match ends.
     private void resolveClassicRewards(){
+        String myId = sessionManager.getCurrentUserId();
+        boolean iAmPlayer1 = Objects.equals(player1Id, myId);
+        boolean iAmPlayer2 = Objects.equals(player2Id, myId);
+        if (!iAmPlayer1 && !iAmPlayer2) {
+            return;
+        }
+
         // player 1 is winner even if they have the same points >:D
         String winnerId = player1Score >= player2Score ? player1Id : player2Id;
-        CompletableFuture<UserProfile> player1Future = userProfileRepository.getProfile(player1Id);
-        CompletableFuture<UserProfile> player2Future = userProfileRepository.getProfile(player2Id);
+        int myScore = iAmPlayer1 ? player1Score : player2Score;
+        boolean iWon = Objects.equals(myId, winnerId);
 
-        CompletableFuture.allOf(player1Future, player2Future)
-                .thenAccept(ignored -> {
-                    UserProfile player1 = player1Future.join();
-                    UserProfile player2 = player2Future.join();
+        userProfileRepository.getProfile(myId)
+                .thenAccept(me -> {
+                    if (me == null) return;
 
                     // stars per 40 points
-                    int additionalStars = player1Score / 40;
-                    player1.setNumStars(player1.getNumStars() + additionalStars);
-                    player1.setMonthlyStars(player1.getMonthlyStars() + additionalStars);
-                    additionalStars = player2Score / 40;
-                    player2.setNumStars(player2.getNumStars() + additionalStars);
-                    player2.setMonthlyStars(player2.getMonthlyStars() + additionalStars);
+                    int additionalStars = myScore / 40;
+                    me.setNumStars(me.getNumStars() + additionalStars);
+                    me.setMonthlyStars(me.getMonthlyStars() + additionalStars);
 
                     // winner/loser stars
-                    if(Objects.equals(player1.getUserId(), winnerId)){
-                        player1.setNumStars(player1.getNumStars() + 10);
-                        player1.setMonthlyStars(player1.getMonthlyStars() + 10);
-                        long loserStars = player2.getNumStars() - 10;
-                        player2.setNumStars(Math.max(0, loserStars));
-                        long loserMonthlyStars = player2.getMonthlyStars() - 10;
-                        player2.setMonthlyStars(Math.max(0, loserMonthlyStars));
-                    }
-                    else{
-                        player2.setNumStars(player2.getNumStars() + 10);
-                        player2.setMonthlyStars(player2.getMonthlyStars() + 10);
-                        long loserStars = player1.getNumStars() - 10;
-                        player1.setNumStars(Math.max(0, loserStars));
-                        long loserMonthlyStars = player1.getMonthlyStars() - 10;
-                        player1.setMonthlyStars(Math.max(0, loserMonthlyStars));
+                    if (iWon) {
+                        me.setNumStars(me.getNumStars() + 10);
+                        me.setMonthlyStars(me.getMonthlyStars() + 10);
+                    } else {
+                        me.setNumStars(Math.max(0, me.getNumStars() - 10));
+                        me.setMonthlyStars(Math.max(0, me.getMonthlyStars() - 10));
                     }
 
                     // Player automatically enters/leaves a league the moment their
                     // star total crosses a threshold, in either direction.
-                    player1.setLeague(League.fromStars(player1.getNumStars()).getDisplayName());
-                    player2.setLeague(League.fromStars(player2.getNumStars()).getDisplayName());
+                    me.setLeague(League.fromStars(me.getNumStars()).getDisplayName());
 
-                    userProfileRepository.saveProfile(player1);
-                    userProfileRepository.saveProfile(player2);
-
-                    String myId = sessionManager.getCurrentUserId();
-                    if (Objects.equals(player1.getUserId(), myId)) {
-                        sessionManager.setCurrentProfile(player1);
-                    } else if (Objects.equals(player2.getUserId(), myId)) {
-                        sessionManager.setCurrentProfile(player2);
-                    }
+                    userProfileRepository.saveProfile(me)
+                            .exceptionally(e -> { Log.e("Match", "Failed to save rewards", e); return null; });
+                    sessionManager.setCurrentProfile(me);
                 })
                 .exceptionally(throwable -> {
-                    Log.e("Tag", "Error fetching profiles", throwable);
+                    Log.e("Match", "Error fetching profile", throwable);
                     return null;
                 });
     }

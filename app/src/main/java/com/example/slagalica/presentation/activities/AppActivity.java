@@ -53,6 +53,10 @@ public class AppActivity extends AppCompatActivity {
     ActivityAppBinding binding;
     MatchViewModel matchViewModel;
     private int lastNavigatedGameId = -1;
+    // Tracks which Match instance lastNavigatedGameId applies to, so a brand new
+    // match (which can also end at gameId 0, e.g. startForTesting()) isn't silently
+    // ignored by a guard value left over from the previous match.
+    private com.example.slagalica.domain.model.match.Match lastObservedMatch = null;
 
     @Inject
     SessionManager sessionManager;
@@ -179,6 +183,10 @@ public class AppActivity extends AppCompatActivity {
         matchViewModel.getCurrentGameId().observe(this, gameId -> {
             if (gameId == null) return;
             if (matchViewModel.getMatch() == null) return;
+            if (matchViewModel.getMatch() != lastObservedMatch) {
+                lastObservedMatch = matchViewModel.getMatch();
+                lastNavigatedGameId = -1;
+            }
             if (gameId == lastNavigatedGameId) return;
             Fragment fragment = null;
             switch (gameId) {
