@@ -87,8 +87,6 @@ public class ProfileFragment extends Fragment {
     }
 
     private void updateLeagueVisuals(com.example.slagalica.domain.model.profile.UserProfile profile) {
-        String league = profile.getLeague() != null ? profile.getLeague().toLowerCase() : "";
-
         // 1. Avatar border reflects region rank — gold/silver/bronze if the
         // player's region placed top 3 last cycle, a plain edge ring otherwise.
         // Leagues are a separate concept (badge/text below) and don't affect it.
@@ -103,7 +101,10 @@ public class ProfileFragment extends Fragment {
         }
 
         // 2. Set League Badge/Icon
-        binding.leagueIcon.setImageResource(leagueBadgeFor(league));
+        int badgeResId = getLeagueBadgeResId(profile.getLeague());
+        if (badgeResId != 0) {
+            binding.leagueIcon.setImageResource(badgeResId);
+        }
 
         // 3. Set Static Icons
         binding.starsIcon.setImageResource(R.drawable.icon_stars);
@@ -122,18 +123,31 @@ public class ProfileFragment extends Fragment {
         }
     }
 
+    private int getLeagueBadgeResId(String league) {
+        switch (com.example.slagalica.domain.model.progression.League.fromDisplayName(league)) {
+            case POCETNIK:
+                return R.drawable.starter_league;
+            case STUDENT:
+                return R.drawable.student_league;
+            case PRAKTIKANT:
+                return R.drawable.praktikant_league;
+            case ZAPOSLENI:
+                return R.drawable.zaposleni_league;
+            case INZENJER:
+                return R.drawable.inzenjer_league;
+            case DIPLOMIRANI_INZENJER:
+                return R.drawable.dipl_league;
+            default:
+                return 0;
+        }
+    }
+
     // Returns 0 (no valid resource id) if tier doesn't match a known gold/silver/bronze value.
     static int tierBorderFor(String tier) {
         if ("gold".equals(tier))   return R.drawable.league_border_gold;
         if ("silver".equals(tier)) return R.drawable.league_border_silver;
         if ("bronze".equals(tier)) return R.drawable.league_border_bronze;
         return 0;
-    }
-
-    static int leagueBadgeFor(String league) {
-        if ("gold".equals(league))   return R.drawable.league_badge_gold;
-        if ("silver".equals(league)) return R.drawable.league_badge_silver;
-        return R.drawable.league_badge_bronze;
     }
 
     private void setupClickListeners() {

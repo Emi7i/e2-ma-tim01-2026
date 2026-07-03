@@ -3,7 +3,9 @@ package com.example.slagalica.repository.impl.firestore;
 import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.repository.impl.UserProfileRepository;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import javax.inject.Inject;
 
@@ -36,6 +38,16 @@ public class FirestoreUserProfileRepository implements UserProfileRepository {
     public CompletableFuture<Void> saveProfile(UserProfile profile) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         db.collection(COLLECTION_USERS).document(profile.getUserId()).set(profile)
+                .addOnSuccessListener(aVoid -> future.complete(null))
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<Void> updateFields(String userId, Map<String, Object> fields) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        db.collection(COLLECTION_USERS).document(userId)
+                .set(fields, SetOptions.merge())
                 .addOnSuccessListener(aVoid -> future.complete(null))
                 .addOnFailureListener(future::completeExceptionally);
         return future;

@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.os.CountDownTimer;
 import android.view.MotionEvent;
@@ -25,7 +27,9 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.slagalica.R;
 import com.example.slagalica.databinding.ActivityAppBinding;
 import com.example.slagalica.domain.model.auth.SessionManager;
+import com.example.slagalica.domain.model.progression.LeagueChangeEvent;
 import com.example.slagalica.domain.model.social.NotificationItem;
+import com.example.slagalica.domain.service.progression.LeagueNotificationService;
 import com.example.slagalica.domain.service.social.NotificationsService;
 import com.example.slagalica.presentation.fragments.auth.LoginFragment;
 import com.example.slagalica.presentation.fragments.auth.ResetPasswordFragment;
@@ -61,9 +65,19 @@ public class AppActivity extends AppCompatActivity {
     private CountDownTimer bannerTimer;
     private float bannerTouchStartX;
     private int lastNavigatedGameId = -1;
+    // Tracks which Match instance lastNavigatedGameId applies to, so a brand new
+    // match (which can also end at gameId 0, e.g. startForTesting()) isn't silently
+    // ignored by a guard value left over from the previous match.
+    private com.example.slagalica.domain.model.match.Match lastObservedMatch = null;
 
     @Inject
     SessionManager sessionManager;
+
+    @Inject
+    LeagueNotificationService leagueNotificationService;
+
+    private final Handler leagueBannerHandler = new Handler(Looper.getMainLooper());
+    private Runnable hideLeagueBannerRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,6 +111,7 @@ public class AppActivity extends AppCompatActivity {
         observeViewModel();
         observeMatchRequests();
         matchRequestViewModel.startListeningForIncoming();
+        observeLeagueChanges();
 
         if (savedInstanceState == null) {
             FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
@@ -251,6 +266,10 @@ public class AppActivity extends AppCompatActivity {
         matchViewModel.getCurrentGameId().observe(this, gameId -> {
             if (gameId == null) return;
             if (matchViewModel.getMatch() == null) return;
+            if (matchViewModel.getMatch() != lastObservedMatch) {
+                lastObservedMatch = matchViewModel.getMatch();
+                lastNavigatedGameId = -1;
+            }
             if (gameId == lastNavigatedGameId) return;
             Fragment fragment = null;
             switch (gameId) {
@@ -337,6 +356,43 @@ public class AppActivity extends AppCompatActivity {
                 binding.gameHeader.setActivePlayer(2);
             }
         });
+    }
+
+    // Spec 2.g: shown while the app is foregrounded (LeagueNotificationService
+    // routes to a system notification instead when it isn't). Auto-dismisses
+    // after 10s; tapping it dismisses early.
+    private void observeLeagueChanges() {
+        leagueNotificationService.getEvent().observe(this, this::showLeagueChangeBanner);
+    }
+
+    private void showLeagueChangeBanner(LeagueChangeEvent event) {
+        if (event == null) return;
+
+        binding.leagueChangeBannerText.setText(event.getMessage());
+        binding.leagueChangeBanner.setBackgroundColor(ContextCompat.getColor(this,
+                event.isPromoted() ? R.color.green_light : R.color.orange_light));
+        binding.leagueChangeBanner.setOnClickListener(v -> hideLeagueChangeBanner());
+        binding.leagueChangeBanner.setVisibility(View.VISIBLE);
+
+        if (hideLeagueBannerRunnable != null) {
+            leagueBannerHandler.removeCallbacks(hideLeagueBannerRunnable);
+        }
+        hideLeagueBannerRunnable = this::hideLeagueChangeBanner;
+        leagueBannerHandler.postDelayed(hideLeagueBannerRunnable, 10_000);
+    }
+
+    private void hideLeagueChangeBanner() {
+        binding.leagueChangeBanner.setVisibility(View.GONE);
+        if (hideLeagueBannerRunnable != null) {
+            leagueBannerHandler.removeCallbacks(hideLeagueBannerRunnable);
+            hideLeagueBannerRunnable = null;
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        leagueBannerHandler.removeCallbacksAndMessages(null);
     }
 
     @Override
