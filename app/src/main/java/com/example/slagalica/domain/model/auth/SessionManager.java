@@ -103,6 +103,13 @@ public class SessionManager {
         userProfileRepository.updateFields(profile.getUserId(), java.util.Collections.singletonMap("active", online));
     }
 
+    // Whether the app is currently foregrounded (kept up to date by
+    // AppActivity.onStart()/onStop() via setUserOnline). Used to decide between
+    // an in-app banner and a system notification for events like league changes.
+    public boolean isOnline() {
+        return isOnline;
+    }
+
     public String getCurrentUserId() {
         return firebaseAuth.getCurrentUser() != null ? firebaseAuth.getCurrentUser().getUid() : null;
     }

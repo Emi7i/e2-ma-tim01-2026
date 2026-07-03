@@ -14,6 +14,7 @@ import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.domain.service.match.KorakPoKorakService;
 import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
+import com.example.slagalica.domain.service.progression.LeagueNotificationService;
 import com.example.slagalica.repository.impl.UserProfileRepository;
 import com.google.firebase.firestore.auth.User;
 
@@ -34,6 +35,7 @@ public class MatchViewModel extends ViewModel {
     private final MojBrojService mojBrojService;
     private final UserProfileRepository userProfileRepository;
     private final SessionManager sessionManager;
+    private final LeagueNotificationService leagueNotificationService;
 
 //    private final MutableLiveData<IGame> currentGame = new MutableLiveData<>();
     private final MutableLiveData<Integer> currentGameId = new MutableLiveData<>();
@@ -44,13 +46,15 @@ public class MatchViewModel extends ViewModel {
             MojBrojService mojBrojService,
             UserProfileRepository userProfileRepository,
             MatchService matchService,
-            SessionManager sessionManager
+            SessionManager sessionManager,
+            LeagueNotificationService leagueNotificationService
     ) {
         this.matchService = matchService;
         this.korakPoKorakService = korakPoKorakService;
         this.mojBrojService = mojBrojService;
         this.userProfileRepository = userProfileRepository;
         this.sessionManager = sessionManager;
+        this.leagueNotificationService = leagueNotificationService;
     }
 
     public void startMatch(String player1Id, String player2Id, MatchType matchType) {
@@ -197,6 +201,7 @@ public class MatchViewModel extends ViewModel {
                 mojBrojService,
                 userProfileRepository,
                 sessionManager,
+                leagueNotificationService,
                 () -> {
                     isGameActive.postValue(true);
                     match.setOnMatchUpdatedListener(this::onMatchUpdated);

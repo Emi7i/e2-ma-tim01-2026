@@ -11,6 +11,7 @@ import com.example.slagalica.domain.model.match.games.korakpokorak.KorakPoKorak;
 import com.example.slagalica.domain.model.match.games.mojbroj.MojBroj;
 import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.domain.model.progression.League;
+import com.example.slagalica.domain.service.progression.LeagueNotificationService;
 import com.example.slagalica.domain.service.match.KorakPoKorakService;
 import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
@@ -43,6 +44,7 @@ public class Match {
     private final MojBrojService mojBrojService;
     private final UserProfileRepository userProfileRepository;
     private final SessionManager sessionManager;
+    private final LeagueNotificationService leagueNotificationService;
 
     private OnMatchUpdatedListener onMatchUpdatedListener;
 
@@ -59,6 +61,7 @@ public class Match {
                  MojBrojService mojBrojService,
                  UserProfileRepository userProfileRepository,
                  SessionManager sessionManager,
+                 LeagueNotificationService leagueNotificationService,
                  Runnable onReadyCallback){
         this.player1Id = player1Id;
         this.player2Id = player2Id;
@@ -73,6 +76,7 @@ public class Match {
         this.mojBrojService = mojBrojService;
         this.userProfileRepository = userProfileRepository;
         this.sessionManager = sessionManager;
+        this.leagueNotificationService = leagueNotificationService;
         this.currentGameId = 1;
 
         MatchSessionData data = new MatchSessionData(
@@ -175,6 +179,7 @@ public class Match {
                     if (me == null) return;
 
                     long starsBefore = me.getNumStars();
+                    League oldLeague = League.fromDisplayName(me.getLeague());
 
                     // stars per 40 points
                     int additionalStars = myScore / 40;
@@ -195,11 +200,16 @@ public class Match {
 
                     // Player automatically enters/leaves a league the moment their
                     // star total crosses a threshold, in either direction.
-                    me.setLeague(League.fromStars(me.getNumStars()).getDisplayName());
+                    League newLeague = League.fromStars(me.getNumStars());
+                    me.setLeague(newLeague.getDisplayName());
 
                     userProfileRepository.saveProfile(me)
                             .exceptionally(e -> { Log.e("Match", "Failed to save rewards", e); return null; });
                     sessionManager.setCurrentProfile(me);
+
+                    if (newLeague != oldLeague) {
+                        leagueNotificationService.notifyChange(myId, newLeague, newLeague.ordinal() > oldLeague.ordinal());
+                    }
                 })
                 .exceptionally(throwable -> {
                     Log.e("Match", "Error fetching profile", throwable);
