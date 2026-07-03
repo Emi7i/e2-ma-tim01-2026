@@ -36,6 +36,7 @@ import com.example.slagalica.presentation.fragments.match.MojBrojFragment;
 import com.example.slagalica.presentation.fragments.match.SkockoFragment;
 import com.example.slagalica.presentation.fragments.match.SpojniceFragment;
 import com.example.slagalica.presentation.fragments.profile.ProfileFragment;
+import com.example.slagalica.presentation.fragments.ranking.RankingFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationTargetPlaceholderFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationsFragment;
 import com.example.slagalica.presentation.notifications.AppNotificationHelper;
@@ -128,6 +129,16 @@ public class AppActivity extends AppCompatActivity {
                 FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
                 binding.main.closeDrawer(GravityCompat.START);
             }
+        });
+
+        leftDrawer.findViewById(R.id.rank_list).setOnClickListener(v -> {
+            FragmentTransition.to(
+                    new RankingFragment(),
+                    this,
+                    true,
+                    R.id.appContainer
+            );
+            binding.main.closeDrawer(GravityCompat.START);
         });
 
         // Notifications button
