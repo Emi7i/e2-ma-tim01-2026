@@ -128,6 +128,7 @@ public class Match {
 
     private void startForTesting(){
         player1Score = 1;
+        player2Score = 0;
         endMatch();
     }
 
@@ -173,6 +174,8 @@ public class Match {
                 .thenAccept(me -> {
                     if (me == null) return;
 
+                    long starsBefore = me.getNumStars();
+
                     // stars per 40 points
                     int additionalStars = myScore / 40;
                     me.setNumStars(me.getNumStars() + additionalStars);
@@ -186,6 +189,9 @@ public class Match {
                         me.setNumStars(Math.max(0, me.getNumStars() - 10));
                         me.setMonthlyStars(Math.max(0, me.getMonthlyStars() - 10));
                     }
+
+                    Log.d("Match", "Reward: iWon=" + iWon + " myScore=" + myScore
+                            + " stars " + starsBefore + " -> " + me.getNumStars());
 
                     // Player automatically enters/leaves a league the moment their
                     // star total crosses a threshold, in either direction.
