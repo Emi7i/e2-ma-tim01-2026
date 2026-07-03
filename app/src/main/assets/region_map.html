@@ -97,7 +97,16 @@
     // ------------------------------------------------------------------
     // Player dots: random points inside the region polygon
     // ------------------------------------------------------------------
-    function addPlayerDots(layer, color, count) {
+    var playerDotMarkers = {}; // region.key → L.circleMarker[] currently on the map
+
+    function addPlayerDots(layer, color, count, regionKey) {
+        // Clear any dots already drawn for this region so repeated stats
+        // reloads (e.g. after a test-button refresh) don't stack duplicates.
+        if (playerDotMarkers[regionKey]) {
+            playerDotMarkers[regionKey].forEach(function(m) { map.removeLayer(m); });
+        }
+        var markers = playerDotMarkers[regionKey] = [];
+
         if (!count || count <= 0) return;
         var bounds  = layer.getBounds();
         var minLat  = bounds.getSouth(), maxLat = bounds.getNorth();
@@ -113,7 +122,7 @@
             var lng = minLng + Math.random() * lngSpan;
             var pt  = L.latLng(lat, lng);
             if (!pointInLayer(pt, layer)) continue;
-            L.circleMarker(pt, {
+            markers.push(L.circleMarker(pt, {
                 pane:        'playerPane',
                 radius:      4,
                 color:       '#fff',
@@ -121,7 +130,7 @@
                 fillColor:   color,
                 fillOpacity: 0.85,
                 interactive: false
-            }).addTo(map);
+            }).addTo(map));
             placed++;
         }
     }
@@ -290,7 +299,7 @@
 
                 // Player dots (if data already arrived)
                 if (regionData[region.key]) {
-                    addPlayerDots(layer, region.color, regionData[region.key].players || 0);
+                    addPlayerDots(layer, region.color, regionData[region.key].players || 0, region.key);
                 }
             }
         }).addTo(map);
@@ -307,16 +316,16 @@
     function setRegionData(jsonStr) {
         try { regionData = JSON.parse(jsonStr); } catch(e) { return; }
 
-        // If regions already loaded, draw dots now
+        // If regions already loaded, redraw dots now (addPlayerDots clears
+        // this region's previous dots first, so re-invoking is always safe)
         Object.keys(regionLayers).forEach(function(key) {
             var data = regionData[key];
-            if (data && data.players > 0) {
-                var entry = null;
-                Object.keys(ID_TO_REGION).forEach(function(id) {
-                    if (ID_TO_REGION[id].key === key) entry = ID_TO_REGION[id];
-                });
-                if (entry) addPlayerDots(regionLayers[key], entry.color, data.players);
-            }
+            if (!data) return;
+            var entry = null;
+            Object.keys(ID_TO_REGION).forEach(function(id) {
+                if (ID_TO_REGION[id].key === key) entry = ID_TO_REGION[id];
+            });
+            if (entry) addPlayerDots(regionLayers[key], entry.color, data.players, key);
         });
     }
 

@@ -37,6 +37,25 @@
             android:orientation="vertical"
             android:paddingBottom="8dp" />
 
+        <Button
+            android:id="@+id/backfillStarsTestButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="4dp"
+            android:text="@string/region_test_backfill_stars_button"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/endCycleTestButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="12dp"
+            android:text="@string/region_test_end_cycle_button"
+            android:textStyle="bold" />
+
     </LinearLayout>
 
 </LinearLayout>

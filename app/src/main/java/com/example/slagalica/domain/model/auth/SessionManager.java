@@ -50,7 +50,7 @@ public class SessionManager {
                 .thenAccept(profile -> {
                     currentProfile.postValue(profile);
                     if (profile != null && profile.getRegion() != null) {
-                        applyOnlineState(profile.getRegion(), true);
+                        applyOnlineState(profile, true);
                     }
                 })
                 .exceptionally(ex -> { currentProfile.postValue(null); return null; });
@@ -59,13 +59,19 @@ public class SessionManager {
     public void setUserOnline(boolean online) {
         UserProfile profile = currentProfile.getValue();
         if (profile == null || profile.getRegion() == null) return;
-        applyOnlineState(profile.getRegion(), online);
+        applyOnlineState(profile, online);
     }
 
-    private void applyOnlineState(String region, boolean online) {
-        if (online == isOnline) return;
+    // profile.isActive() is the persisted source of truth (survives app kill/relaunch),
+    // unlike isOnline which only lives in memory for this process. Without this check,
+    // relaunching the app during testing (no clean logout) would increment activePlayers
+    // again every time without ever decrementing it.
+    private void applyOnlineState(UserProfile profile, boolean online) {
         isOnline = online;
-        regionStatsRepository.incrementField(region, "activePlayers", online ? 1L : -1L);
+        if (profile.isActive() == online) return;
+        profile.setActive(online);
+        regionStatsRepository.incrementField(profile.getRegion(), "activePlayers", online ? 1L : -1L);
+        userProfileRepository.saveProfile(profile);
     }
 
     public String getCurrentUserId() {

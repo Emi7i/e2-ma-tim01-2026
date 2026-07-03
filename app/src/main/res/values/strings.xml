@@ -52,4 +52,6 @@
     <string name="region_your_region">Vaš region</string>
     <string name="region_stars_label">zvezda</string>
     <string name="region_players_label">igrača</string>
+    <string name="region_test_end_cycle_button">Testiraj: kraj meseca</string>
+    <string name="region_test_backfill_stars_button">Testiraj: popuni zvezde</string>
 </resources>

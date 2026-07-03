@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel;
 import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.domain.model.progression.RegionStats;
 import com.example.slagalica.domain.model.progression.RegionStatsDocument;
+import com.example.slagalica.domain.service.progression.RegionCycleService;
 import com.example.slagalica.repository.impl.RegionStatsRepository;
 import com.example.slagalica.repository.impl.UserProfileRepository;
 
@@ -33,14 +34,17 @@ public class RegionViewModel extends ViewModel {
 
     private final RegionStatsRepository regionStatsRepository;
     private final UserProfileRepository userProfileRepository;
+    private final RegionCycleService    regionCycleService;
     private final MutableLiveData<List<RegionStats>> regionStats = new MutableLiveData<>();
     private final MutableLiveData<Boolean>           isLoading   = new MutableLiveData<>(false);
 
     @Inject
     public RegionViewModel(RegionStatsRepository regionStatsRepository,
-                            UserProfileRepository userProfileRepository) {
+                            UserProfileRepository userProfileRepository,
+                            RegionCycleService regionCycleService) {
         this.regionStatsRepository = regionStatsRepository;
         this.userProfileRepository = userProfileRepository;
+        this.regionCycleService = regionCycleService;
     }
 
     public void loadRegionStats() {
@@ -50,6 +54,39 @@ public class RegionViewModel extends ViewModel {
                 .thenAccept(list -> {
                     regionStats.postValue(list);
                     isLoading.postValue(false);
+                })
+                .exceptionally(e -> {
+                    isLoading.postValue(false);
+                    return null;
+                });
+    }
+
+    // One-time migration hook: pre-existing profiles never had monthlyStars
+    // populated, so region totals show 0 until this seeds it from numStars.
+    public void backfillMonthlyStars(Runnable onComplete) {
+        isLoading.setValue(true);
+        regionCycleService.backfillMonthlyStarsFromTotal()
+                .thenAccept(v -> {
+                    isLoading.postValue(false);
+                    loadRegionStats();
+                    if (onComplete != null) onComplete.run();
+                })
+                .exceptionally(e -> {
+                    isLoading.postValue(false);
+                    return null;
+                });
+    }
+
+    // Testing hook: ranks regions by this cycle's stars, credits the top 3 with a
+    // historical placement, and resets everyone's monthlyStars — normally this
+    // would run on a monthly schedule instead of on demand.
+    public void endCycleNow(Runnable onComplete) {
+        isLoading.setValue(true);
+        regionCycleService.endCycleNow()
+                .thenAccept(v -> {
+                    isLoading.postValue(false);
+                    loadRegionStats();
+                    if (onComplete != null) onComplete.run();
                 })
                 .exceptionally(e -> {
                     isLoading.postValue(false);
@@ -74,13 +111,14 @@ public class RegionViewModel extends ViewModel {
         }
 
         // totalMonthlyStars isn't tracked as a Firestore counter anywhere — compute it
-        // live by summing each region's users' stars (monthlyStars is never written
-        // anywhere; numStars is the field gameplay actually populates).
+        // live by summing each region's users' current-cycle stars. monthlyStars
+        // resets to 0 at cycle end (see RegionCycleService); numStars is the
+        // separate lifetime total shown on the profile screen.
         Map<String, Long> starsByRegion = new HashMap<>();
         for (UserProfile profile : profiles) {
             String region = profile.getRegion();
             if (region == null || !map.containsKey(region)) continue;
-            starsByRegion.merge(region, profile.getNumStars(), Long::sum);
+            starsByRegion.merge(region, profile.getMonthlyStars(), Long::sum);
         }
         for (Map.Entry<String, Long> entry : starsByRegion.entrySet()) {
             map.get(entry.getKey()).setTotalMonthlyStars(entry.getValue());

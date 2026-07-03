@@ -68,7 +68,7 @@ public class FirebaseSeeder {
                 UserProfile testProfile = new UserProfile(
                         testUserId, "Bugcat", "bug@cat.com",
                         "https://media1.tenor.com/m/kqLCp6Ow_dQAAAAd/bug-cat-capoo-blue.gif",
-                        100L, 10L, "Gold", "Global", "qr_code_data", 42L, 0L
+                        100L, 10L, "Gold", "Global", "qr_code_data", 42L, 0L, false, null
                 );
                 userProfileRepository.saveProfile(testProfile)
                         .thenAccept(aVoid -> Log.d("FirebaseSeeder", "SUCCESS: Profile created!"))

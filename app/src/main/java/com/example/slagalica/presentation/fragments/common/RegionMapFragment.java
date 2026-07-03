@@ -67,6 +67,12 @@ public class RegionMapFragment extends Fragment {
         setupWebView();
         observeViewModel();
         regionViewModel.loadRegionStats();
+
+        binding.endCycleTestButton.setOnClickListener(v ->
+                regionViewModel.endCycleNow(() -> sessionManager.loadCurrentProfile()));
+
+        binding.backfillStarsTestButton.setOnClickListener(v ->
+                regionViewModel.backfillMonthlyStars(() -> sessionManager.loadCurrentProfile()));
     }
 
     @SuppressLint("SetJavaScriptEnabled")
