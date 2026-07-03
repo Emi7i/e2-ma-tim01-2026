@@ -4,6 +4,7 @@ import com.example.slagalica.domain.model.auth.LoginDTO;
 import com.example.slagalica.domain.model.auth.RegistrationDTO;
 import com.example.slagalica.domain.model.auth.ResetPasswordDTO;
 import com.example.slagalica.domain.model.profile.UserProfile;
+import com.example.slagalica.domain.model.progression.League;
 import com.example.slagalica.domain.model.progression.UserStatistics;
 import com.example.slagalica.repository.impl.RegionStatsRepository;
 import com.example.slagalica.repository.impl.UserProfileRepository;
@@ -15,6 +16,7 @@ import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import java.time.LocalDate;
 import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
@@ -25,7 +27,7 @@ public class AuthService {
 
     private static final long DEFAULT_TOKENS = 5L;
     private static final long DEFAULT_STARS = 0L;
-    private static final String DEFAULT_LEAGUE = "Student";
+    private static final String DEFAULT_LEAGUE = League.POCETNIK.getDisplayName();
     private static final long DEFAULT_RANK = 0L;
     private static final String DEFAULT_REGION_RANK = null;
 
@@ -99,7 +101,8 @@ public class AuthService {
                                         DEFAULT_RANK,
                                         0L,
                                         false,
-                                        DEFAULT_REGION_RANK
+                                        DEFAULT_REGION_RANK,
+                                        LocalDate.now().toString()
                                 );
 
                                 UserStatistics stats = UserStatistics.createNew(firebaseUser.getUid());

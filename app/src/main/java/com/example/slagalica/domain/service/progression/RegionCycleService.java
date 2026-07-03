@@ -31,7 +31,7 @@ public class RegionCycleService {
     // Ranks regions by this cycle's total stars, credits the top 3 regions'
     // historical placement counters, assigns every player in a top-3 region the
     // matching avatar-border tier, then resets everyone's monthlyStars to 0 for
-    // the next cycle.
+    // the next cycle. Region-vs-region only, not a per-player rank list.
     public CompletableFuture<Void> endCycleNow() {
         return userProfileRepository.getAllProfiles().thenCompose(profiles -> {
             Map<String, Long> starsByRegion = new HashMap<>();

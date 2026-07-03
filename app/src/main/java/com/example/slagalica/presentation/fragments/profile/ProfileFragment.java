@@ -108,21 +108,22 @@ public class ProfileFragment extends Fragment {
     }
 
     private int getLeagueBadgeResId(String league) {
-        if (league == null) {
-            return 0;
+        switch (com.example.slagalica.domain.model.progression.League.fromDisplayName(league)) {
+            case POCETNIK:
+                return R.drawable.starter_league;
+            case STUDENT:
+                return R.drawable.student_league;
+            case PRAKTIKANT:
+                return R.drawable.praktikant_league;
+            case ZAPOSLENI:
+                return R.drawable.zaposleni_league;
+            case INZENJER:
+                return R.drawable.inzenjer_league;
+            case DIPLOMIRANI_INZENJER:
+                return R.drawable.dipl_league;
+            default:
+                return 0;
         }
-        if (league.equalsIgnoreCase("Student")) {
-            return R.drawable.student_league;
-        } else if (league.equalsIgnoreCase("Praktikant")) {
-            return R.drawable.praktikant_league;
-        } else if (league.equalsIgnoreCase("Zaposleni")) {
-            return R.drawable.zaposleni_league;
-        } else if (league.equalsIgnoreCase("Inženjer")) {
-            return R.drawable.inzenjer_league;
-        } else if (league.equalsIgnoreCase("Diplomirani Inženjer")) {
-            return R.drawable.dipl_league;
-        }
-        return 0;
     }
 
     // Returns 0 (no valid resource id) if tier doesn't match a known gold/silver/bronze value.

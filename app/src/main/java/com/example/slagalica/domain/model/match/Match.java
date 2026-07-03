@@ -10,6 +10,7 @@ import com.example.slagalica.domain.model.match.games.common.OnMatchUpdatedListe
 import com.example.slagalica.domain.model.match.games.korakpokorak.KorakPoKorak;
 import com.example.slagalica.domain.model.match.games.mojbroj.MojBroj;
 import com.example.slagalica.domain.model.profile.UserProfile;
+import com.example.slagalica.domain.model.progression.League;
 import com.example.slagalica.domain.service.match.KorakPoKorakService;
 import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
@@ -187,6 +188,11 @@ public class Match {
                         long loserMonthlyStars = player1.getMonthlyStars() - 10;
                         player1.setMonthlyStars(Math.max(0, loserMonthlyStars));
                     }
+
+                    // Player automatically enters/leaves a league the moment their
+                    // star total crosses a threshold, in either direction.
+                    player1.setLeague(League.fromStars(player1.getNumStars()).getDisplayName());
+                    player2.setLeague(League.fromStars(player2.getNumStars()).getDisplayName());
 
                     userProfileRepository.saveProfile(player1);
                     userProfileRepository.saveProfile(player2);
