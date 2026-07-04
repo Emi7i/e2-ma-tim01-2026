@@ -93,8 +93,7 @@ public class HomeFragment extends Fragment {
                                                         matchmakingRegistration.remove();
                                                         matchmakingRegistration = null;
                                                     }
-                                                    String matchId = java.util.UUID.randomUUID().toString();
-                                                    matchViewModel.startMatch(entry.getMatchedWith(), currentUserId, MatchType.CLASSIC, matchId);
+                                                    matchViewModel.startMatch(entry.getMatchedWith(), currentUserId, MatchType.CLASSIC, entry.getMatchId());
                                                 })
                                         );
                                     }));

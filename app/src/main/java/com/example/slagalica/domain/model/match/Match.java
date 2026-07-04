@@ -89,10 +89,12 @@ public class Match {
         this.matchService.update(matchId, data)
                 .thenAccept(unused -> {
                     Log.d("Match", "Match created with existing id: " + matchId);
+                    matchService.observe(matchId, this::onRemoteMatchUpdated);
                     if (onReadyCallback != null) onReadyCallback.run();
                 })
                 .exceptionally(throwable -> {
                     Log.d("Match", "Error creating match");
+                    matchService.observe(matchId, this::onRemoteMatchUpdated);
                     return null;
                 });
     }
@@ -312,6 +314,55 @@ public class Match {
         );
         this.matchService.update(id, data);
         onMatchUpdatedListener.onMatchUpdated(this);
+    }
+
+    public void onRemoteMatchUpdated(MatchSessionData data) {
+        if (!isMyTurn()) {
+            boolean gameChanged = data.getCurrentGameId() != this.currentGameId;
+
+            this.player1Score = data.getPlayer1Score();
+            this.player2Score = data.getPlayer2Score();
+            this.activePlayer = data.getActivePlayer();
+            this.currentGameId = data.getCurrentGameId();
+
+            if (onMatchUpdatedListener != null) {
+                onMatchUpdatedListener.onMatchUpdated(this);
+            }
+
+            if (gameChanged) {
+                attachLocalGameForCurrentId();
+            }
+
+            if (this.currentGameId == 0) {
+                // match ended remotely
+                Log.d("Match", "Match ended (remote)!");
+            }
+        }
+
+
+    }
+
+    private void attachLocalGameForCurrentId() {
+        switch (currentGameId) {
+            case 4:
+                GameSession session = new GameSession(id, player1Id, player2Id);
+                KorakPoKorak game = new KorakPoKorak(session, korakPoKorakService, sessionManager);
+                game.setOnActivePlayerChangedListener(this::onActivePlayerChanged);
+                game.setOnPointsChangedListener(this::onPointsChanged);
+                game.setOnGameEndedListener(this::onGameEnded);
+                game.getGameService().observeSessionData(id, game::onRemoteSessionUpdated);
+                currentGame = game;
+                break;
+            case 5:
+                GameSession mbSession = new GameSession(id, player1Id, player2Id);
+                MojBroj mbGame = new MojBroj(mbSession, mojBrojService);
+                mbGame.setOnActivePlayerChangedListener(this::onActivePlayerChanged);
+                mbGame.setOnPointsChangedListener(this::onPointsChanged);
+                mbGame.setOnGameEndedListener(this::onGameEnded);
+                currentGame = mbGame;
+                break;
+            // cases 1-3: presumably no IGame instance needed, just fragment switch driven by currentGameId
+        }
     }
 
     private boolean isMyTurn() {
