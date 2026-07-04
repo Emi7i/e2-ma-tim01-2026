@@ -89,7 +89,7 @@ public class Match {
         this.matchService.update(matchId, data)
                 .thenAccept(unused -> {
                     Log.d("Match", "Match created with existing id: " + matchId);
-                    matchService.observe(matchId, this::onRemoteMatchUpdated);
+                    matchService.observe(matchId, this::handleRemoteMatchEvent);
                     if (onReadyCallback != null) onReadyCallback.run();
                 })
                 .exceptionally(throwable -> {
@@ -124,11 +124,12 @@ public class Match {
         this.sessionManager = sessionManager;
 
         Log.d("Match", "Joined existing match: " + matchId);
+        matchService.observe(matchId, this::handleRemoteMatchEvent);
         if (onReadyCallback != null) onReadyCallback.run();
     }
 
     public void startNextGame(){
-        if (!isMyTurn()) return;
+//        if (!isMyTurn()) return;
         switch(currentGameId){
             case 1:
                 startSpojnice();
@@ -157,7 +158,6 @@ public class Match {
     }
 
     public void endMatch(){
-        if (!isMyTurn()) return;
         // TODO: probably resolve rewards only on matches not
         // from challenges. add a bool to check if its for a challenge
         // to resolve rewards differently
@@ -302,6 +302,9 @@ public class Match {
     }
 
     public void updateMatchSession(){
+        if (onMatchUpdatedListener != null) {
+            onMatchUpdatedListener.onMatchUpdated(this); // always update local UI/VM
+        }
         if(!isMyTurn()) return;
         MatchSessionData data = new MatchSessionData(
                 null,
@@ -313,38 +316,46 @@ public class Match {
                 activePlayer
         );
         this.matchService.update(id, data);
-        onMatchUpdatedListener.onMatchUpdated(this);
     }
 
     public void onRemoteMatchUpdated(MatchSessionData data) {
-        if (!isMyTurn()) {
-            boolean gameChanged = data.getCurrentGameId() != this.currentGameId;
+        boolean gameChanged = data.getCurrentGameId() != this.currentGameId;
 
-            this.player1Score = data.getPlayer1Score();
-            this.player2Score = data.getPlayer2Score();
-            this.activePlayer = data.getActivePlayer();
-            this.currentGameId = data.getCurrentGameId();
+        this.player1Score = data.getPlayer1Score();
+        this.player2Score = data.getPlayer2Score();
+        this.activePlayer = data.getActivePlayer();
+        this.currentGameId = data.getCurrentGameId();
 
+        if (onMatchUpdatedListener != null) {
+            onMatchUpdatedListener.onMatchUpdated(this);
+        }
+
+        if (gameChanged && !isMyTurn()) {
+            attachLocalGameForCurrentId();
+        }
+
+        if (this.currentGameId == 0) {
+            // match ended remotely
+            Log.d("Match", "Match ended (remote)!");
+        }
+    }
+
+    private void handleRemoteMatchEvent(MatchSessionData data) {
+        if (data == null) {
+            // Document was deleted — match ended remotely
+            this.currentGameId = 0;
             if (onMatchUpdatedListener != null) {
                 onMatchUpdatedListener.onMatchUpdated(this);
             }
-
-            if (gameChanged) {
-                attachLocalGameForCurrentId();
-            }
-
-            if (this.currentGameId == 0) {
-                // match ended remotely
-                Log.d("Match", "Match ended (remote)!");
-            }
+            Log.d("Match", "Match ended (remote, doc deleted)!");
+            return;
         }
-
-
+        onRemoteMatchUpdated(data);
     }
 
     private void attachLocalGameForCurrentId() {
         switch (currentGameId) {
-            case 4:
+            case 5:
                 GameSession session = new GameSession(id, player1Id, player2Id);
                 KorakPoKorak game = new KorakPoKorak(session, korakPoKorakService, sessionManager);
                 game.setOnActivePlayerChangedListener(this::onActivePlayerChanged);
@@ -353,7 +364,7 @@ public class Match {
                 game.getGameService().observeSessionData(id, game::onRemoteSessionUpdated);
                 currentGame = game;
                 break;
-            case 5:
+            case 6:
                 GameSession mbSession = new GameSession(id, player1Id, player2Id);
                 MojBroj mbGame = new MojBroj(mbSession, mojBrojService);
                 mbGame.setOnActivePlayerChangedListener(this::onActivePlayerChanged);

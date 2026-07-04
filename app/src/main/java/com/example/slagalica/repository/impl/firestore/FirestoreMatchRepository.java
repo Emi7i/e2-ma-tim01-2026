@@ -71,6 +71,10 @@ public class FirestoreMatchRepository implements MatchRepository {
                 .document(matchId)
                 .addSnapshotListener((snapshot, error) -> {
                     if (error != null || snapshot == null) return;
+                    if (snapshot == null || !snapshot.exists()) {
+                        listener.onRemoteSessionUpdated(null);
+                        return;
+                    }
                     MatchSessionData data = snapshot.toObject(MatchSessionData.class);
                     if (data != null) listener.onRemoteSessionUpdated(data);
                 });

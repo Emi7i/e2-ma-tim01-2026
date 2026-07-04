@@ -9,11 +9,13 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.slagalica.domain.model.auth.SessionManager;
 import com.example.slagalica.domain.model.match.games.korakpokorak.KorakPoKorak;
 import com.example.slagalica.domain.model.progression.UserStatistics;
 import com.example.slagalica.repository.impl.UserStatisticsRepository;
 
 import java.util.List;
+import java.util.Objects;
 
 import javax.inject.Inject;
 
@@ -25,6 +27,7 @@ public class KorakPoKorakViewModel extends ViewModel {
     @Getter
     private KorakPoKorak game;
     private CountDownTimer timer;
+    private SessionManager sessionManager;
 
     private static final long REVEAL_PAUSE_MS = 8000L;
 
@@ -41,8 +44,9 @@ public class KorakPoKorakViewModel extends ViewModel {
     private int correctRounds = 0;
 
     @Inject
-    public KorakPoKorakViewModel(UserStatisticsRepository statsRepository) {
+    public KorakPoKorakViewModel(UserStatisticsRepository statsRepository, SessionManager sessionManager) {
         this.statsRepository = statsRepository;
+        this.sessionManager = sessionManager;
     }
 
     @Getter
@@ -72,9 +76,7 @@ public class KorakPoKorakViewModel extends ViewModel {
     }
 
     private boolean isMyTurn() {
-        // TODO: BAD
-//        return game.getCurrentPlayer() == LOGGED_IN_USER_ID;
-        return true;
+        return Objects.equals(game.getCurrentPlayer(), sessionManager.getCurrentUserId());
     }
 
 

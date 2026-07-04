@@ -58,6 +58,7 @@ public class FirestoreKorakPoKorakRepository implements KorakPoKorakRepository {
                 .addSnapshotListener((snapshot, error) -> {
                     if (error != null || snapshot == null || !snapshot.exists()) {
                         Log.d("KorakPoKorak", "Error adding listener");
+                        return;
                     }
                     KorakPoKorakSessionData data = snapshot.toObject(KorakPoKorakSessionData.class);
                     if (data != null) {

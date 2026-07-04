@@ -24,5 +24,5 @@ public class SpojniceSessionData {
     private Map<String, Integer> player1Matches;
     private Map<String, Integer> player2Matches;
     private Map<String, Integer> missedMatches;
-    private boolean isWaitingForNextPlater;
+    private boolean isWaitingForNextPlayer;
 }

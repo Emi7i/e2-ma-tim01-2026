@@ -123,7 +123,7 @@ public class KorakPoKorak extends AbstractGame {
     }
 
     public void onRemoteSessionUpdated(KorakPoKorakSessionData data) {
-        if(!isCurrentUserActive()) {
+        if(!isMyTurn()) {
             this.currentHint = data.getCurrentHint();
             this.hints = data.getHints();
             this.term = data.getTerm();
@@ -140,7 +140,7 @@ public class KorakPoKorak extends AbstractGame {
 
     }
 
-    private boolean isCurrentUserActive(){
+    private boolean isMyTurn(){
         return Objects.equals(getCurrentPlayer(), sessionManager.getCurrentUserId());
     }
 
