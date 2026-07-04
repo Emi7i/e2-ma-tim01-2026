@@ -100,14 +100,6 @@ public class NotificationsFragment extends Fragment {
 
                         renderNotifications();
                     });
-                })
-                .exceptionally(e -> {
-                    requireActivity().runOnUiThread(() ->
-                            Toast.makeText(requireContext(),
-                                    "Greška pri učitavanju notifikacija iz baze",
-                                    Toast.LENGTH_SHORT).show()
-                    );
-                    return null;
                 });
     }
 
