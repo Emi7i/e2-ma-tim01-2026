@@ -28,8 +28,12 @@ import com.example.slagalica.R;
 import com.example.slagalica.databinding.ActivityAppBinding;
 import com.example.slagalica.domain.model.auth.SessionManager;
 import com.example.slagalica.domain.model.progression.LeagueChangeEvent;
+import com.example.slagalica.domain.model.ranking.RankingReward;
+import com.example.slagalica.domain.model.social.NotificationActionStatus;
 import com.example.slagalica.domain.model.social.NotificationItem;
 import com.example.slagalica.domain.service.progression.LeagueNotificationService;
+import com.example.slagalica.domain.model.social.NotificationTarget;
+import com.example.slagalica.domain.model.social.NotificationType;
 import com.example.slagalica.domain.service.social.NotificationsService;
 import com.example.slagalica.presentation.fragments.auth.LoginFragment;
 import com.example.slagalica.presentation.fragments.auth.ResetPasswordFragment;
@@ -44,12 +48,15 @@ import com.example.slagalica.presentation.fragments.match.SpojniceFragment;
 import com.example.slagalica.presentation.fragments.common.RegionMapFragment;
 import com.example.slagalica.presentation.fragments.profile.ProfileFragment;
 import com.example.slagalica.presentation.fragments.social.FriendsFragment;
+import com.example.slagalica.presentation.fragments.ranking.RankingFragment;
+import com.example.slagalica.presentation.fragments.ranking.RankingRewardDialogFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationTargetPlaceholderFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationsFragment;
 import com.example.slagalica.presentation.notifications.AppNotificationHelper;
 import com.example.slagalica.domain.model.social.MatchRequest;
 import com.example.slagalica.presentation.viewmodels.MatchRequestViewModel;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
+import com.example.slagalica.presentation.viewmodels.RankingViewModel;
 
 import java.util.Objects;
 
@@ -65,6 +72,7 @@ public class AppActivity extends AppCompatActivity {
     private CountDownTimer bannerTimer;
     private float bannerTouchStartX;
     private int lastNavigatedGameId = -1;
+    private RankingViewModel rankingViewModel;
     // Tracks which Match instance lastNavigatedGameId applies to, so a brand new
     // match (which can also end at gameId 0, e.g. startForTesting()) isn't silently
     // ignored by a guard value left over from the previous match.
@@ -108,6 +116,11 @@ public class AppActivity extends AppCompatActivity {
         // Setup VMs
         matchViewModel = new ViewModelProvider(this).get(MatchViewModel.class);
         matchRequestViewModel = new ViewModelProvider(this).get(MatchRequestViewModel.class);
+
+        rankingViewModel = new ViewModelProvider(this).get(RankingViewModel.class);
+        observeRankingRewards();
+        rankingViewModel.finalizeExpiredCyclesAndLoadReward(sessionManager.getCurrentUserId());
+
         observeViewModel();
         observeMatchRequests();
         matchRequestViewModel.startListeningForIncoming();
@@ -160,6 +173,16 @@ public class AppActivity extends AppCompatActivity {
             }
         });
 
+        leftDrawer.findViewById(R.id.rank_list).setOnClickListener(v -> {
+            FragmentTransition.to(
+                    new RankingFragment(),
+                    this,
+                    true,
+                    R.id.appContainer
+            );
+            binding.main.closeDrawer(GravityCompat.START);
+        });
+
         // Friends button
         leftDrawer.findViewById(R.id.friends).setOnClickListener(v -> {
             FragmentTransition.to(new FriendsFragment(), this, true, R.id.appContainer);
@@ -193,6 +216,51 @@ public class AppActivity extends AppCompatActivity {
             finish();
             binding.main.closeDrawer(GravityCompat.START);
         });
+    }
+
+    private void observeRankingRewards() {
+        rankingViewModel.getPendingReward().observe(
+                this,
+                reward -> {
+                    if (reward == null) {
+                        return;
+                    }
+
+                    sessionManager.loadCurrentProfile();
+
+                    NotificationItem notificationItem = createLocalRewardNotification(reward);
+
+                    AppNotificationHelper.showSystemNotification(this, notificationItem);
+
+                    if (getSupportFragmentManager().findFragmentByTag(RankingRewardDialogFragment.TAG) == null) {
+                        RankingRewardDialogFragment.newInstance(reward).show(getSupportFragmentManager(), RankingRewardDialogFragment.TAG);
+                    }
+                }
+        );
+    }
+
+    private NotificationItem createLocalRewardNotification(RankingReward reward) {
+        String cycleLabel = reward.getCycleTypeEnum().getDisplayName();
+
+        return new NotificationItem(
+                "ranking_reward_" + reward.getRewardId(),
+                NotificationType.REWARD,
+                "Nagrada sa rang liste",
+                "Osvojili ste "
+                        + reward.getPlacement()
+                        + ". mesto na "
+                        + cycleLabel.toLowerCase()
+                        + " rang listi i dobili "
+                        + reward.getTokenReward()
+                        + " tokena.",
+                "Sistem",
+                System.currentTimeMillis(),
+                false,
+                true,
+                false,
+                NotificationTarget.REWARD,
+                NotificationActionStatus.NONE
+        );
     }
 
     private void observeMatchRequests() {
@@ -427,6 +495,17 @@ public class AppActivity extends AppCompatActivity {
             return;
         }
 
+        String target = intent.getStringExtra(AppNotificationHelper.EXTRA_NOTIFICATION_TARGET);
+        if (NotificationTarget.REWARD.name().equals(target) || NotificationTarget.RANKING.name().equals(target) || notificationId.startsWith("ranking_reward_")) {
+            FragmentTransition.to(
+                    new RankingFragment(),
+                    this,
+                    true,
+                    R.id.appContainer
+            );
+            return;
+        }
+
         FragmentTransition.to(
                 NotificationTargetPlaceholderFragment.newInstance(notificationId),
                 this,
@@ -445,5 +524,12 @@ public class AppActivity extends AppCompatActivity {
                 );
             }
         }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleNotificationIntent(intent);
     }
 }

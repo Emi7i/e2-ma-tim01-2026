@@ -15,6 +15,7 @@ import com.example.slagalica.domain.service.progression.LeagueNotificationServic
 import com.example.slagalica.domain.service.match.KorakPoKorakService;
 import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
+import com.example.slagalica.repository.impl.RankingRepository;
 import com.example.slagalica.repository.impl.UserProfileRepository;
 
 import java.util.Objects;
@@ -43,6 +44,7 @@ public class Match {
     private final KorakPoKorakService korakPoKorakService;
     private final MojBrojService mojBrojService;
     private final UserProfileRepository userProfileRepository;
+    private final RankingRepository rankingRepository;
     private final SessionManager sessionManager;
     private final LeagueNotificationService leagueNotificationService;
 
@@ -60,6 +62,7 @@ public class Match {
                  KorakPoKorakService korakPoKorakService,
                  MojBrojService mojBrojService,
                  UserProfileRepository userProfileRepository,
+                 RankingRepository rankingRepository,
                  SessionManager sessionManager,
                  LeagueNotificationService leagueNotificationService,
                  Runnable onReadyCallback){
@@ -75,6 +78,7 @@ public class Match {
         this.korakPoKorakService = korakPoKorakService;
         this.mojBrojService = mojBrojService;
         this.userProfileRepository = userProfileRepository;
+        this.rankingRepository = rankingRepository;
         this.sessionManager = sessionManager;
         this.leagueNotificationService = leagueNotificationService;
         this.currentGameId = 1;
@@ -137,20 +141,37 @@ public class Match {
     }
 
     public void endMatch(){
-        // TODO: probably resolve rewards only on matches not
-        // from challenges. add a bool to check if its for a challenge
-        // to resolve rewards differently
-        if(matchType == MatchType.CLASSIC){
-            resolveClassicRewards();
+        CompletableFuture<Void> completion;
+
+        if(matchType == MatchType.CLASSIC){  // Za klasicnu partiju obracunavaju se zvezde i rang lista.
+            completion = resolveClassicRewards();
+        } else {
+            completion = CompletableFuture.completedFuture(null);   //za ostale tipove se ne obradjuju nagrade
         }
         // Note: Win/rate statistics are calculated in Moj Broj
         currentGameId = 0; // signal game over
         updateMatchSession();
-        matchService.delete(id)
-                .exceptionally(e -> {
-                    Log.e("Match", "Failed to delete match session", e);
-                    return null;
-                });
+
+        completion.whenComplete((ignored, throwable) -> {    // Match sesija se brise tek nakon zavrsene obrade nagrada.
+            if (throwable != null) {
+                Log.e(
+                        "Match",
+                        "Failed to resolve match rewards",
+                        throwable
+                );
+            }
+
+            matchService.delete(id)
+                    .exceptionally(error -> {
+                        Log.e(
+                                "Match",
+                                "Failed to delete match session",
+                                error
+                        );
+                        return null;
+                    });
+        });
+
         Log.d("Match", "Match ended!");
     }
 
@@ -161,18 +182,18 @@ public class Match {
     // Only ever reads/writes the logged-in user's own profile — a client isn't
     // allowed to write the opponent's document, so each participant's own client
     // is responsible for crediting/penalizing itself when the match ends.
-    private void resolveClassicRewards(){
+    private CompletableFuture<Void> resolveClassicRewards(){
         String myId = sessionManager.getCurrentUserId();
         boolean iAmPlayer1 = Objects.equals(player1Id, myId);
         boolean iAmPlayer2 = Objects.equals(player2Id, myId);
         if (!iAmPlayer1 && !iAmPlayer2) {
             return;
         }
-
         // player 1 is winner even if they have the same points >:D
         String winnerId = player1Score >= player2Score ? player1Id : player2Id;
-        int myScore = iAmPlayer1 ? player1Score : player2Score;
+        int myScore = iAmPlayer1 ? player1Score : player2Score;     //ucitavanje profila oba igraca
         boolean iWon = Objects.equals(myId, winnerId);
+
 
         userProfileRepository.getProfile(myId)
                 .thenAccept(me -> {
@@ -180,6 +201,10 @@ public class Match {
 
                     long starsBefore = me.getNumStars();
                     League oldLeague = League.fromDisplayName(me.getLeague());
+
+
+                    long oldPlayer1Stars = player1.getNumStars();       //cuvamo staro stanje za racunanje promene zvezda
+                    long oldPlayer2Stars = player2.getNumStars();
 
                     // stars per 40 points
                     int additionalStars = myScore / 40;

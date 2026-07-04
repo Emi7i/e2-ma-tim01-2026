@@ -52,6 +52,7 @@ dependencies {
     implementation libs.glide
     implementation libs.hilt.android
     annotationProcessor libs.hilt.compiler
+    implementation libs.recyclerview
 
     // Firebase
     implementation platform(libs.firebase.bom)
