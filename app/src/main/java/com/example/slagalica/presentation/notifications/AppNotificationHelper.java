@@ -72,6 +72,7 @@ public class AppNotificationHelper {
 
         Intent openIntent = new Intent(context, AppActivity.class);
         openIntent.putExtra(EXTRA_NOTIFICATION_ID, item.getId());
+        openIntent.putExtra(EXTRA_NOTIFICATION_TARGET, item.getTarget().name());
         openIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         PendingIntent contentIntent = PendingIntent.getActivity(
@@ -104,7 +105,6 @@ public class AppNotificationHelper {
 
             Intent declineIntent = new Intent(context, NotificationActionReceiver.class);
             declineIntent.putExtra(EXTRA_NOTIFICATION_ID, item.getId());
-            openIntent.putExtra(EXTRA_NOTIFICATION_TARGET, item.getTarget().name());
             declineIntent.putExtra(EXTRA_NOTIFICATION_ACTION, ACTION_DECLINE);
 
             PendingIntent declinePendingIntent = PendingIntent.getBroadcast(

@@ -18,6 +18,7 @@ import androidx.fragment.app.Fragment;
 
 import com.example.slagalica.R;
 import com.example.slagalica.databinding.FragmentNotificationsBinding;
+import com.example.slagalica.domain.model.auth.SessionManager;
 import com.example.slagalica.domain.model.social.NotificationActionStatus;
 import com.example.slagalica.domain.model.social.NotificationDocument;
 import com.example.slagalica.domain.model.social.NotificationFilter;
@@ -41,8 +42,8 @@ import dagger.hilt.android.AndroidEntryPoint;
 @AndroidEntryPoint
 public class NotificationsFragment extends Fragment {
 
-    private static final String TEST_USER_ID = "test_user_123";
-
+    @Inject
+    SessionManager sessionManager;
     private FragmentNotificationsBinding binding;
 
     @Inject
@@ -88,13 +89,12 @@ public class NotificationsFragment extends Fragment {
     }
 
     private void loadNotificationsFromFirestore() {
-        notificationsRepository.getNotificationsForUser(TEST_USER_ID)
+        notificationsRepository.getNotificationsForUser(sessionManager.getCurrentUserId())
                 .thenAccept(documents -> {
                     requireActivity().runOnUiThread(() -> {
                         notificationItems.clear();
 
                         for (NotificationDocument doc : documents) {
-                            notificationItems.add(notificationsMapper.toRuntime(doc));
                             notificationItems.add(notificationsMapper.toRuntime(doc));
                         }
 
@@ -176,7 +176,7 @@ public class NotificationsFragment extends Fragment {
 
         demoNotificationIndex++;
 
-        NotificationDocument document = notificationsMapper.toDocument(demoItem, TEST_USER_ID);
+        NotificationDocument document = notificationsMapper.toDocument(demoItem, sessionManager.getCurrentUserId());
 
         notificationsRepository.saveNotification(document)
                 .thenAccept(v -> requireActivity().runOnUiThread(() -> {
@@ -363,7 +363,7 @@ public class NotificationsFragment extends Fragment {
     }
 
     private void updateNotificationInFirestore(NotificationItem item) {
-        NotificationDocument document = notificationsMapper.toDocument(item, TEST_USER_ID);
+        NotificationDocument document = notificationsMapper.toDocument(item, sessionManager.getCurrentUserId());
 
         notificationsRepository.updateNotification(document)
                 .thenAccept(v -> requireActivity().runOnUiThread(this::loadNotificationsFromFirestore))
