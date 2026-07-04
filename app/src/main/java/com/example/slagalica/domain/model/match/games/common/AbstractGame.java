@@ -7,6 +7,7 @@ public abstract class AbstractGame implements IGame {
     protected OnPointsChangedListener pointsListener;
     protected OnGameEndedListener endedListener;
     protected OnActivePlayerChangedListener activePlayerChangedListener;
+    protected OnSessionUpdateListener onSessionUpdateListener;
 
     protected AbstractGame(GameConfig config, GameSession session) {
         this.config = config;
@@ -87,6 +88,9 @@ public abstract class AbstractGame implements IGame {
         this.activePlayerChangedListener = listener;
     }
 
+    public void setOnSessionUpdateListener(OnSessionUpdateListener listener) {
+        this.onSessionUpdateListener = listener;
+    }
 
     @Override
     public void startNewRound(){

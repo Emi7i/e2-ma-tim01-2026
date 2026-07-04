@@ -1,5 +1,6 @@
 package com.example.slagalica.domain.model.match.games.korakpokorak;
 
+import com.example.slagalica.domain.model.auth.SessionManager;
 import com.example.slagalica.domain.model.match.games.common.AbstractGame;
 import com.example.slagalica.domain.model.match.games.common.GameConfig;
 import com.example.slagalica.domain.model.match.games.common.GameSession;
@@ -22,7 +23,7 @@ public class KorakPoKorak extends AbstractGame {
 
     @Getter
     private int id = 5;
-
+    @Getter
     private final KorakPoKorakService gameService;
     @Getter
     private int currentHint = 1;
@@ -33,9 +34,12 @@ public class KorakPoKorak extends AbstractGame {
     @Getter
     private boolean stealOpportunity = false;
 
-    public KorakPoKorak(GameSession session, KorakPoKorakService service) {
+    private SessionManager sessionManager;
+
+    public KorakPoKorak(GameSession session, KorakPoKorakService service, SessionManager sessionManager) {
         super(new GameConfig(5, ROUND_LENGTH, ROUNDS, MAX_POINTS, MIN_POINTS), session);
         gameService = service;
+        this.sessionManager = sessionManager;
     }
 
     public void startNewRound(Runnable onReady){
@@ -118,19 +122,26 @@ public class KorakPoKorak extends AbstractGame {
         gameService.updateSessionData(getMatchId(), data);
     }
 
-    public void applyRemoteUpdate(KorakPoKorakSessionData data) {
-        this.currentHint = data.getCurrentHint();
-        this.hints = data.getHints();
-        this.term = data.getTerm();
-        this.stealOpportunity = data.isStealOpportunity();
+    public void onRemoteSessionUpdated(KorakPoKorakSessionData data) {
+        if(!isCurrentUserActive()) {
+            this.currentHint = data.getCurrentHint();
+            this.hints = data.getHints();
+            this.term = data.getTerm();
+            this.stealOpportunity = data.isStealOpportunity();
 
-        session.setCurrentRound(data.getCurrentRound());
-        session.setCurrentPlayer(data.getCurrentPlayer());
-        session.setHasEnded(data.isHasEnded());
+            session.setCurrentRound(data.getCurrentRound());
+            session.setCurrentPlayer(data.getCurrentPlayer());
+            session.setHasEnded(data.isHasEnded());
 
-        if (data.isHasEnded()) {
-            notifyGameEnded();
+            if (data.isHasEnded()) {
+                notifyGameEnded();
+            }
         }
+
+    }
+
+    private boolean isCurrentUserActive(){
+        return Objects.equals(getCurrentPlayer(), sessionManager.getCurrentUserId());
     }
 
     public void deleteSession(){

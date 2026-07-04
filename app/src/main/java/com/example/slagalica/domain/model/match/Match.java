@@ -215,6 +215,7 @@ public class Match {
         game.setOnActivePlayerChangedListener(this::onActivePlayerChanged);
         game.setOnPointsChangedListener(this::onPointsChanged);
         game.setOnGameEndedListener(this::onGameEnded);
+        game.getGameService().observeSessionData(id, game::onRemoteSessionUpdated);
         currentGameId = game.getId();
         currentGame = game;
         updateMatchSession();

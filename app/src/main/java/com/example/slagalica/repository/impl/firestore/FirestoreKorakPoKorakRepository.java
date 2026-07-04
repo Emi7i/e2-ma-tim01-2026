@@ -1,5 +1,7 @@
 package com.example.slagalica.repository.impl.firestore;
 
+import android.util.Log;
+
 import com.example.slagalica.domain.model.match.games.common.OnSessionUpdateListener;
 import com.example.slagalica.domain.model.match.games.korakpokorak.KorakPoKorakSessionData;
 import com.example.slagalica.repository.impl.KorakPoKorakRepository;
@@ -54,10 +56,12 @@ public class FirestoreKorakPoKorakRepository implements KorakPoKorakRepository {
     public void observeSessionData(String matchId, OnSessionUpdateListener<KorakPoKorakSessionData> listener) {
         db.collection(COLLECTION_SESSIONS).document(matchId)
                 .addSnapshotListener((snapshot, error) -> {
-                    if (error != null || snapshot == null || !snapshot.exists()) return;
+                    if (error != null || snapshot == null || !snapshot.exists()) {
+                        Log.d("KorakPoKorak", "Error adding listener");
+                    }
                     KorakPoKorakSessionData data = snapshot.toObject(KorakPoKorakSessionData.class);
                     if (data != null) {
-                        listener.onSessionUpdated(data);
+                        listener.onRemoteSessionUpdated(data);
                     }
                 });
     }
