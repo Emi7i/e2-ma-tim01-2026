@@ -72,7 +72,19 @@ public class FirestoreMatchRepository implements MatchRepository {
                 .addSnapshotListener((snapshot, error) -> {
                     if (error != null || snapshot == null) return;
                     MatchSessionData data = snapshot.toObject(MatchSessionData.class);
-                    if (data != null) listener.onSessionUpdated(data);
+                    if (data != null) listener.onRemoteSessionUpdated(data);
                 });
+    }
+
+
+    @Override
+    public CompletableFuture<Boolean> exists(String matchId) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        db.collection(COLLECTION)
+                .document(matchId)
+                .get()
+                .addOnSuccessListener(snapshot -> future.complete(snapshot.exists()))
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
     }
 }

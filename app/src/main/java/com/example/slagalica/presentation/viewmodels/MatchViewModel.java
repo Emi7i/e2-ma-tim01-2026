@@ -14,6 +14,7 @@ import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.domain.service.match.KorakPoKorakService;
 import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
+import com.example.slagalica.repository.impl.MatchRepository;
 import com.example.slagalica.repository.impl.UserProfileRepository;
 import com.google.firebase.firestore.auth.User;
 
@@ -34,6 +35,7 @@ public class MatchViewModel extends ViewModel {
     private final MojBrojService mojBrojService;
     private final UserProfileRepository userProfileRepository;
     private final SessionManager sessionManager;
+    private final MatchRepository matchRepository;
 
 //    private final MutableLiveData<IGame> currentGame = new MutableLiveData<>();
     private final MutableLiveData<Integer> currentGameId = new MutableLiveData<>();
@@ -44,16 +46,18 @@ public class MatchViewModel extends ViewModel {
             MojBrojService mojBrojService,
             UserProfileRepository userProfileRepository,
             MatchService matchService,
-            SessionManager sessionManager
+            SessionManager sessionManager,
+            MatchRepository matchRepository
     ) {
         this.matchService = matchService;
         this.korakPoKorakService = korakPoKorakService;
         this.mojBrojService = mojBrojService;
         this.userProfileRepository = userProfileRepository;
         this.sessionManager = sessionManager;
+        this.matchRepository = matchRepository;
     }
 
-    public void startMatch(String player1Id, String player2Id, MatchType matchType) {
+    public void startMatch(String player1Id, String player2Id, MatchType matchType, String matchId) {
         Log.d("Match", "Starting match...");
         CompletableFuture<UserProfile> player1Future = userProfileRepository.getProfile(player1Id);
         CompletableFuture<UserProfile> player2Future = userProfileRepository.getProfile(player2Id);
@@ -73,6 +77,8 @@ public class MatchViewModel extends ViewModel {
                         return;
                     }
 
+                    // why are there two of these what did i do
+
                     if(matchType == MatchType.CLASSIC){
                         deductToken(sessionManager.getCurrentUserId());
                         if(Boolean.TRUE.equals(insufficientTokens.getValue())){
@@ -83,11 +89,11 @@ public class MatchViewModel extends ViewModel {
                     if (matchType == MatchType.CLASSIC) {
                         deductToken(sessionManager.getCurrentUserId())
                                 .thenAccept(success -> {
-                                    if (success) createMatch(player1, player2, matchType);
+                                    if (success) createMatch(player1, player2, matchType, matchId);
                                 });
                     } else {
                         // other logic for other types if needed
-                        createMatch(player1, player2, matchType);
+                        createMatch(player1, player2, matchType, matchId);
                     }
                 })
                 .exceptionally(throwable -> {
@@ -178,31 +184,64 @@ public class MatchViewModel extends ViewModel {
                 });
     }
 
-    private void createMatch(UserProfile player1, UserProfile player2, MatchType matchType){
+    private void createMatch(UserProfile player1, UserProfile player2, MatchType matchType, String matchId){
         MatchSessionData data = new MatchSessionData();
         data.player1Id = player1.getUserId();
         data.player2Id = player2.getUserId();
 
         Log.d("Match", "Players fetched");
 
-        match = new Match(
-                player1.getUserId(),
-                player1.getUserId(),
-                0,
-                0,
-                player1.getUsername(),
-                player2.getUsername(),
-                matchType,
-                matchService,
-                korakPoKorakService,
-                mojBrojService,
-                userProfileRepository,
-                sessionManager,
-                () -> {
-                    isGameActive.postValue(true);
-                    match.setOnMatchUpdatedListener(this::onMatchUpdated);
-                    match.start();
-                }
-        );
+        matchRepository.exists(matchId)
+                .thenAccept(exists -> {
+                    if (!exists) {
+                        match = new Match(
+                                matchId,
+                                player1.getUserId(),
+                                player2.getUserId(),
+                                0,
+                                0,
+                                player1.getUsername(),
+                                player2.getUsername(),
+                                matchType,
+                                matchService,
+                                korakPoKorakService,
+                                mojBrojService,
+                                userProfileRepository,
+                                sessionManager,
+                                () -> {
+                                    isGameActive.postValue(true);
+                                    match.setOnMatchUpdatedListener(this::onMatchUpdated);
+                                    match.start();
+                                }
+                        );
+                    } else {
+                        matchRepository.get(matchId)
+                                .thenAccept(existingData -> {
+                                    match = new Match(
+                                            matchId,
+                                            existingData,
+                                            matchType,
+                                            matchService,
+                                            korakPoKorakService,
+                                            mojBrojService,
+                                            userProfileRepository,
+                                            sessionManager,
+                                            () -> {
+                                                isGameActive.postValue(true);
+                                                match.setOnMatchUpdatedListener(this::onMatchUpdated);
+                                                match.start();
+                                            }
+                                    );
+                                })
+                                .exceptionally(ex -> {
+                                    Log.e("Match", "Failed to load existing match", ex);
+                                    return null;
+                                });
+                    }
+                })
+                .exceptionally(ex -> {
+                    Log.e("Match", "Failed to check match existence", ex);
+                    return null;
+                });
     }
 }

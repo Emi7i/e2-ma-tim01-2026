@@ -46,6 +46,7 @@ public class Match {
     private OnMatchUpdatedListener onMatchUpdatedListener;
 
     public Match(
+                String matchId,
                  String player1Id,
                  String player2Id,
                  int player1Score,
@@ -73,9 +74,10 @@ public class Match {
         this.userProfileRepository = userProfileRepository;
         this.sessionManager = sessionManager;
         this.currentGameId = 1;
+        this.id = matchId;
 
         MatchSessionData data = new MatchSessionData(
-                null,
+                matchId,
                 player1Id,
                 player2Id,
                 player1Score,
@@ -84,19 +86,47 @@ public class Match {
                 player1Id
         );
 
-        this.matchService.create(data)
-                .thenAccept(matchId -> {
-                    this.id = matchId;
-                    Log.d("Match", "Match created");
+        this.matchService.update(matchId, data)
+                .thenAccept(unused -> {
+                    Log.d("Match", "Match created with existing id: " + matchId);
                     if (onReadyCallback != null) onReadyCallback.run();
                 })
                 .exceptionally(throwable -> {
-                    // handle error
+                    Log.d("Match", "Error creating match");
                     return null;
                 });
     }
 
+    // for joining existing match
+    public Match(String matchId,
+                 MatchSessionData existingData,
+                 MatchType matchType,
+                 MatchService matchService,
+                 KorakPoKorakService korakPoKorakService,
+                 MojBrojService mojBrojService,
+                 UserProfileRepository userProfileRepository,
+                 SessionManager sessionManager,
+                 Runnable onReadyCallback) {
+        this.id = matchId;
+        this.player1Id = existingData.getPlayer1Id();
+        this.player2Id = existingData.getPlayer2Id();
+        this.player1Score = existingData.getPlayer1Score();
+        this.player2Score = existingData.getPlayer2Score();
+        this.activePlayer = existingData.getActivePlayer();
+        this.currentGameId = existingData.getCurrentGameId();
+        this.matchType = matchType;
+        this.matchService = matchService;
+        this.korakPoKorakService = korakPoKorakService;
+        this.mojBrojService = mojBrojService;
+        this.userProfileRepository = userProfileRepository;
+        this.sessionManager = sessionManager;
+
+        Log.d("Match", "Joined existing match: " + matchId);
+        if (onReadyCallback != null) onReadyCallback.run();
+    }
+
     public void startNextGame(){
+        if (!isMyTurn()) return;
         switch(currentGameId){
             case 1:
                 startSpojnice();
@@ -125,6 +155,7 @@ public class Match {
     }
 
     public void endMatch(){
+        if (!isMyTurn()) return;
         // TODO: probably resolve rewards only on matches not
         // from challenges. add a bool to check if its for a challenge
         // to resolve rewards differently
@@ -211,7 +242,7 @@ public class Match {
 
     public void startKorakPoKorak() {
         GameSession session = new GameSession(id, player1Id, player2Id);
-        KorakPoKorak game = new KorakPoKorak(session, korakPoKorakService);
+        KorakPoKorak game = new KorakPoKorak(session, korakPoKorakService, sessionManager);
         game.setOnActivePlayerChangedListener(this::onActivePlayerChanged);
         game.setOnPointsChangedListener(this::onPointsChanged);
         game.setOnGameEndedListener(this::onGameEnded);
@@ -269,6 +300,7 @@ public class Match {
     }
 
     public void updateMatchSession(){
+        if(!isMyTurn()) return;
         MatchSessionData data = new MatchSessionData(
                 null,
                 player1Id,
@@ -280,5 +312,9 @@ public class Match {
         );
         this.matchService.update(id, data);
         onMatchUpdatedListener.onMatchUpdated(this);
+    }
+
+    private boolean isMyTurn() {
+        return Objects.equals(activePlayer, sessionManager.getCurrentUserId());
     }
 }

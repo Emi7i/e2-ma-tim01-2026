@@ -57,7 +57,7 @@ public class FirestoreSpojniceSessionRepository implements SpojniceSessionReposi
                     if (error != null || snapshot == null || !snapshot.exists()) return;
                     SpojniceSessionData data = snapshot.toObject(SpojniceSessionData.class);
                     if (data != null) {
-                        listener.onSessionUpdated(data);
+                        listener.onRemoteSessionUpdated(data);
                     }
                 });
     }

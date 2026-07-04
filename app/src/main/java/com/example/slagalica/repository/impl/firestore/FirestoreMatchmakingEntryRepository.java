@@ -1,9 +1,11 @@
 package com.example.slagalica.repository.impl.firestore;
 
 import com.example.slagalica.domain.model.match.MatchmakingEntry;
+import com.example.slagalica.domain.model.match.games.common.OnMatchmakingUpdateListener;
 import com.example.slagalica.repository.impl.MatchmakingEntryRepository;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 
 import java.util.concurrent.CompletableFuture;
@@ -31,11 +33,14 @@ public class FirestoreMatchmakingEntryRepository implements MatchmakingEntryRepo
     }
 
     @Override
-    public CompletableFuture<Void> add(String userId) {
-        CompletableFuture<Void> future = new CompletableFuture<>();
+    public CompletableFuture<String> add(String userId) {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        String matchId = java.util.UUID.randomUUID().toString();
+        MatchmakingEntry entry = new MatchmakingEntry(userId);
+        entry.setMatchId(matchId);
         db.collection(COLLECTION_QUEUE).document(userId)
-                .set(new MatchmakingEntry(userId))
-                .addOnSuccessListener(unused -> future.complete(null))
+                .set(entry)
+                .addOnSuccessListener(unused -> future.complete(matchId))
                 .addOnFailureListener(future::completeExceptionally);
         return future;
     }
@@ -70,5 +75,27 @@ public class FirestoreMatchmakingEntryRepository implements MatchmakingEntryRepo
                 })
                 .addOnFailureListener(future::completeExceptionally);
         return future;
+    }
+
+    @Override
+    public CompletableFuture<Void> claim(String userId, String matchedWith) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        db.collection(COLLECTION_QUEUE).document(userId)
+                .update("matchedWith", matchedWith)
+                .addOnSuccessListener(unused -> future.complete(null))
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
+    }
+
+    @Override
+    public ListenerRegistration observeEntry(String userId, OnMatchmakingUpdateListener listener) {
+        return db.collection(COLLECTION_QUEUE).document(userId)
+                .addSnapshotListener((snapshot, error) -> {
+                    if (error != null || snapshot == null || !snapshot.exists()) return;
+                    MatchmakingEntry entry = snapshot.toObject(MatchmakingEntry.class);
+                    if (entry != null && entry.getMatchedWith() != null) {
+                        listener.onMatchFound(entry);
+                    }
+                });
     }
 }

@@ -24,6 +24,7 @@ import com.example.slagalica.presentation.fragments.match.SpojniceFragment;
 import com.example.slagalica.presentation.fragments.match.SkockoFragment;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 import com.example.slagalica.repository.impl.MatchmakingEntryRepository;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import javax.inject.Inject;
 
@@ -33,6 +34,7 @@ import dagger.hilt.android.AndroidEntryPoint;
 public class HomeFragment extends Fragment {
     MatchViewModel matchViewModel;
     FragmentHomeBinding binding;
+    private ListenerRegistration matchmakingRegistration;
 
     @Inject
     MatchmakingEntryRepository matchmakingEntryRepository;
@@ -64,16 +66,57 @@ public class HomeFragment extends Fragment {
         });
 
         binding.start.setOnClickListener(v -> {
-            // TODO: match only with people in the matchmaking entry queue
-            String player1Id = sessionManager.getCurrentUserId();
-            String player2Id = "rAvFq0wuLHQvUwbD0FK0olNLocG3"; // player 2 always skocko for now :)))
-            matchViewModel.startMatch(player1Id, player2Id, MatchType.CLASSIC);
+            binding.start.setText("Čekam...");
+            binding.start.setEnabled(false);
+
+            String currentUserId = sessionManager.getCurrentUserId();
+
+            matchmakingEntryRepository.getOldest(currentUserId)
+                    .thenCompose(opponentEntry -> {
+                        if (opponentEntry != null) {
+                            // Someone's already waiting — claim them and start the match now
+                            String matchId = opponentEntry.getMatchId();
+                            return matchmakingEntryRepository.claim(opponentEntry.getUserId(), currentUserId)
+                                    .thenAccept(unused -> {
+                                        matchmakingEntryRepository.delete(opponentEntry.getUserId());
+                                        requireActivity().runOnUiThread(() ->
+                                                matchViewModel.startMatch(currentUserId, opponentEntry.getUserId(), MatchType.CLASSIC, matchId));
+                                    });
+                        } else {
+                            // Nobody waiting — join queue and listen for someone to claim us
+                            return matchmakingEntryRepository.add(currentUserId)
+                                    .thenAccept(unused -> requireActivity().runOnUiThread(() -> {
+                                        matchmakingRegistration = matchmakingEntryRepository.observeEntry(currentUserId, entry ->
+                                                requireActivity().runOnUiThread(() -> {
+                                                    matchmakingEntryRepository.delete(currentUserId);
+                                                    if (matchmakingRegistration != null) {
+                                                        matchmakingRegistration.remove();
+                                                        matchmakingRegistration = null;
+                                                    }
+                                                    String matchId = java.util.UUID.randomUUID().toString();
+                                                    matchViewModel.startMatch(entry.getMatchedWith(), currentUserId, MatchType.CLASSIC, matchId);
+                                                })
+                                        );
+                                    }));
+                        }
+                    })
+                    .exceptionally(ex -> {
+                        requireActivity().runOnUiThread(() -> {
+                            binding.start.setText("Započni");
+                            binding.start.setEnabled(true);
+                            Toast.makeText(requireContext(), "Greška, pokušajte ponovo", Toast.LENGTH_SHORT).show();
+                        });
+                        return null;
+                    });
         });
     }
 
     @Override
     public void onDestroyView() {
-
+        if (matchmakingRegistration != null) {
+            matchmakingRegistration.remove();
+            matchmakingRegistration = null;
+        }
         super.onDestroyView();
         binding=null;
     }

@@ -62,7 +62,7 @@ public class FirestoreMojBrojRepository implements MojBrojRepository {
                 .addSnapshotListener((snapshot, error) -> {
                     if (error != null || snapshot == null) return;
                     MojBrojSessionData data = snapshot.toObject(MojBrojSessionData.class);
-                    if (data != null) listener.onSessionUpdated(data);
+                    if (data != null) listener.onRemoteSessionUpdated(data);
                 });
     }
 }
