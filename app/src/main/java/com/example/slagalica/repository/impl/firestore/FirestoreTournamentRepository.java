@@ -213,9 +213,7 @@ public class FirestoreTournamentRepository implements TournamentRepository {
     }
 
     @Override
-    public CompletableFuture<TournamentSession> getActiveTournamentForUser(
-            String userId
-    ) {
+    public CompletableFuture<TournamentSession> getActiveTournamentForUser(String userId) {
         CompletableFuture<TournamentSession> future = new CompletableFuture<>();
 
         if (userId == null) {
@@ -225,20 +223,25 @@ public class FirestoreTournamentRepository implements TournamentRepository {
 
         db.collection(COLLECTION_TOURNAMENTS)
                 .whereArrayContains("playerIds", userId)
-                .orderBy("updatedAtMillis", Query.Direction.DESCENDING)
-                .limit(5)
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     TournamentSession active = null;
+                    long latestUpdatedAt = Long.MIN_VALUE;
 
                     for (QueryDocumentSnapshot document : snapshot) {
                         TournamentSession session = document.toObject(TournamentSession.class);
                         session.setTournamentId(document.getId());
 
-                        if (session.getStatusEnum() != TournamentStatus.FINISHED
-                                && session.getStatusEnum() != TournamentStatus.CANCELLED) {
+                        if (session.getStatusEnum() == TournamentStatus.FINISHED || session.getStatusEnum() == TournamentStatus.CANCELLED) {
+                            continue;
+                        }
+
+                        Long updatedAt = document.getLong("updatedAtMillis");
+                        long updatedAtMillis = updatedAt == null ? 0L : updatedAt;
+
+                        if (active == null || updatedAtMillis > latestUpdatedAt) {
                             active = session;
-                            break;
+                            latestUpdatedAt = updatedAtMillis;
                         }
                     }
 
@@ -258,7 +261,6 @@ public class FirestoreTournamentRepository implements TournamentRepository {
 
         return future;
     }
-
     @Override
     public CompletableFuture<TournamentMatch> getNextPlayableMatchForUser(
             String tournamentId,
@@ -675,7 +677,7 @@ public class FirestoreTournamentRepository implements TournamentRepository {
         data.put("userId", profile.getUserId());
         data.put("username", profile.getUsername());
         data.put("email", profile.getEmail());
-        data.put("avatarUrl", profile.getAvatarUrl());
+        data.put("avatarUrl", profile.getAvatar());
         data.put("league", profile.getLeague());
         data.put("numStars", profile.getNumStars());
         data.put("createdAtMillis", now);
@@ -687,7 +689,7 @@ public class FirestoreTournamentRepository implements TournamentRepository {
                 profile.getUserId(),
                 profile.getUsername(),
                 profile.getEmail(),
-                profile.getAvatarUrl(),
+                profile.getAvatar(),
                 profile.getLeague(),
                 profile.getNumStars(),
                 seed,

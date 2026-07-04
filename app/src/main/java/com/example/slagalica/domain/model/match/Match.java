@@ -10,10 +10,12 @@ import com.example.slagalica.domain.model.match.games.common.OnMatchUpdatedListe
 import com.example.slagalica.domain.model.match.games.korakpokorak.KorakPoKorak;
 import com.example.slagalica.domain.model.match.games.mojbroj.MojBroj;
 import com.example.slagalica.domain.model.profile.UserProfile;
+import com.example.slagalica.domain.model.tournament.TournamentRound;
 import com.example.slagalica.domain.service.match.KorakPoKorakService;
 import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
 import com.example.slagalica.repository.impl.RankingRepository;
+import com.example.slagalica.repository.impl.TournamentRepository;
 import com.example.slagalica.repository.impl.UserProfileRepository;
 
 import java.util.Objects;
@@ -44,6 +46,9 @@ public class Match {
     private final UserProfileRepository userProfileRepository;
     private final RankingRepository rankingRepository;
     private final SessionManager sessionManager;
+    private TournamentRepository tournamentRepository;
+    private String tournamentId;
+    private String tournamentMatchId;
 
     private OnMatchUpdatedListener onMatchUpdatedListener;
 
@@ -131,8 +136,10 @@ public class Match {
     public void endMatch(){
         CompletableFuture<Void> completion;
 
-        if(matchType == MatchType.CLASSIC){  // Za klasicnu partiju obracunavaju se zvezde i rang lista.
+        if(matchType == null || matchType == MatchType.CLASSIC){  // Za klasicnu partiju obracunavaju se zvezde i rang lista.
             completion = resolveClassicRewards();
+        }  else if (matchType == MatchType.TOURNAMENT_SEMIFINAL || matchType == MatchType.TOURNAMENT_FINAL) {
+            completion = resolveTournamentRewards();
         } else {
             completion = CompletableFuture.completedFuture(null);   //za ostale tipove se ne obradjuju nagrade
         }
@@ -320,5 +327,29 @@ public class Match {
         );
         this.matchService.update(id, data);
         onMatchUpdatedListener.onMatchUpdated(this);
+    }
+
+    public void attachTournament(TournamentRepository tournamentRepository, String tournamentId, String tournamentMatchId) {
+        this.tournamentRepository = tournamentRepository;
+        this.tournamentId = tournamentId;
+        this.tournamentMatchId = tournamentMatchId;
+    }
+
+    private CompletableFuture<Void> resolveTournamentRewards() {
+        if (tournamentRepository == null || tournamentId == null || tournamentMatchId == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        TournamentRound round = matchType == MatchType.TOURNAMENT_FINAL ? TournamentRound.FINAL : TournamentRound.SEMIFINAL;
+
+        return tournamentRepository.recordTournamentMatchResult(
+                tournamentId,
+                tournamentMatchId,
+                round,
+                player1Id,
+                player2Id,
+                player1Score,
+                player2Score
+        );
     }
 }

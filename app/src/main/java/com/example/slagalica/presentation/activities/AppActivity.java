@@ -44,6 +44,7 @@ import com.example.slagalica.presentation.fragments.ranking.RankingFragment;
 import com.example.slagalica.presentation.fragments.ranking.RankingRewardDialogFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationTargetPlaceholderFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationsFragment;
+import com.example.slagalica.presentation.fragments.tournament.TournamentFragment;
 import com.example.slagalica.presentation.notifications.AppNotificationHelper;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 import com.example.slagalica.presentation.viewmodels.RankingViewModel;
@@ -160,6 +161,19 @@ public class AppActivity extends AppCompatActivity {
         });
         handleNotificationIntent(getIntent());
         requestNotificationPermission();
+
+
+
+        // Tournament
+        leftDrawer.findViewById(R.id.tournament).setOnClickListener(v -> {
+            FragmentTransition.to(
+                    new TournamentFragment(),
+                    this,
+                    true,
+                    R.id.appContainer
+            );
+            binding.main.closeDrawer(GravityCompat.START);
+        });
 
         // Reset password
         leftDrawer.findViewById(R.id.reset_password).setOnClickListener(v -> {

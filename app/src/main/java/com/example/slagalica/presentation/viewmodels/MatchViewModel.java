@@ -15,6 +15,7 @@ import com.example.slagalica.domain.service.match.KorakPoKorakService;
 import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
 import com.example.slagalica.repository.impl.RankingRepository;
+import com.example.slagalica.repository.impl.TournamentRepository;
 import com.example.slagalica.repository.impl.UserProfileRepository;
 import com.google.firebase.firestore.auth.User;
 
@@ -36,6 +37,7 @@ public class MatchViewModel extends ViewModel {
     private final UserProfileRepository userProfileRepository;
     private final SessionManager sessionManager;
     private final RankingRepository rankingRepository;
+    private final TournamentRepository tournamentRepository;
 
 //    private final MutableLiveData<IGame> currentGame = new MutableLiveData<>();
     private final MutableLiveData<Integer> currentGameId = new MutableLiveData<>();
@@ -47,7 +49,8 @@ public class MatchViewModel extends ViewModel {
             UserProfileRepository userProfileRepository,
             MatchService matchService,
             SessionManager sessionManager,
-            RankingRepository rankingRepository
+            RankingRepository rankingRepository,
+            TournamentRepository tournamentRepository
     ) {
         this.matchService = matchService;
         this.korakPoKorakService = korakPoKorakService;
@@ -55,10 +58,13 @@ public class MatchViewModel extends ViewModel {
         this.userProfileRepository = userProfileRepository;
         this.sessionManager = sessionManager;
         this.rankingRepository = rankingRepository;
+        this.tournamentRepository = tournamentRepository;
     }
 
     public void startMatch(String player1Id, String player2Id, MatchType matchType) {
         Log.d("Match", "Starting match...");
+        MatchType safeMatchType = matchType == null ? MatchType.CLASSIC : matchType;
+
         CompletableFuture<UserProfile> player1Future = userProfileRepository.getProfile(player1Id);
         CompletableFuture<UserProfile> player2Future = userProfileRepository.getProfile(player2Id);
 
@@ -77,14 +83,14 @@ public class MatchViewModel extends ViewModel {
                         return;
                     }
 
-                    if (matchType == MatchType.CLASSIC) {
+                    if (safeMatchType == MatchType.CLASSIC) {     //da bi classic skinuo 1token, a ostali tipovi ne skidaju
                         deductToken(sessionManager.getCurrentUserId())
                                 .thenAccept(success -> {
-                                    if (success) createMatch(player1, player2, matchType);
+                                    if (success) createMatch(player1, player2, safeMatchType);
                                 });
                     } else {
                         // other logic for other types if needed
-                        createMatch(player1, player2, matchType);
+                        createMatch(player1, player2, safeMatchType);
                     }
                 })
                 .exceptionally(throwable -> {
@@ -202,5 +208,23 @@ public class MatchViewModel extends ViewModel {
                     match.start();
                 }
         );
+    }
+
+    public void startTournamentMatch(
+            UserProfile player1,
+            UserProfile player2,
+            MatchType matchType,
+            String tournamentId,
+            String tournamentMatchId
+    ) {
+        createMatch(player1, player2, matchType);
+
+        if (match != null) {
+            match.attachTournament(
+                    tournamentRepository,
+                    tournamentId,
+                    tournamentMatchId
+            );
+        }
     }
 }
