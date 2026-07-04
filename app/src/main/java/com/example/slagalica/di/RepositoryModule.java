@@ -7,6 +7,7 @@ import com.example.slagalica.repository.impl.MatchRepository;
 import com.example.slagalica.repository.impl.MatchmakingEntryRepository;
 import com.example.slagalica.repository.impl.MojBrojRepository;
 import com.example.slagalica.repository.impl.NotificationsRepository;
+import com.example.slagalica.repository.impl.RankingRepository;
 import com.example.slagalica.repository.impl.SkockoContentRepository;
 import com.example.slagalica.repository.impl.SpojniceRepository;
 import com.example.slagalica.repository.impl.SpojniceSessionRepository;
@@ -20,6 +21,7 @@ import com.example.slagalica.repository.impl.firestore.FirestoreMatchRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreMatchmakingEntryRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreMojBrojRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreNotificationsRepository;
+import com.example.slagalica.repository.impl.firestore.FirestoreRankingRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreSkockoContentRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreSpojniceRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreSpojniceSessionRepository;
@@ -100,5 +102,11 @@ public abstract class RepositoryModule {
     @Singleton
     public abstract MatchmakingEntryRepository bindMatchmakingEntryRepository(
             FirestoreMatchmakingEntryRepository impl
+    );
+
+    @Binds
+    @Singleton
+    public abstract RankingRepository bindRankingRepository(
+            FirestoreRankingRepository impl
     );
 }

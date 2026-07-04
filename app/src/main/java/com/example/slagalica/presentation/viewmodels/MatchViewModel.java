@@ -14,6 +14,7 @@ import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.domain.service.match.KorakPoKorakService;
 import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
+import com.example.slagalica.repository.impl.RankingRepository;
 import com.example.slagalica.repository.impl.UserProfileRepository;
 import com.google.firebase.firestore.auth.User;
 
@@ -34,6 +35,7 @@ public class MatchViewModel extends ViewModel {
     private final MojBrojService mojBrojService;
     private final UserProfileRepository userProfileRepository;
     private final SessionManager sessionManager;
+    private final RankingRepository rankingRepository;
 
 //    private final MutableLiveData<IGame> currentGame = new MutableLiveData<>();
     private final MutableLiveData<Integer> currentGameId = new MutableLiveData<>();
@@ -44,13 +46,15 @@ public class MatchViewModel extends ViewModel {
             MojBrojService mojBrojService,
             UserProfileRepository userProfileRepository,
             MatchService matchService,
-            SessionManager sessionManager
+            SessionManager sessionManager,
+            RankingRepository rankingRepository
     ) {
         this.matchService = matchService;
         this.korakPoKorakService = korakPoKorakService;
         this.mojBrojService = mojBrojService;
         this.userProfileRepository = userProfileRepository;
         this.sessionManager = sessionManager;
+        this.rankingRepository = rankingRepository;
     }
 
     public void startMatch(String player1Id, String player2Id, MatchType matchType) {
@@ -71,13 +75,6 @@ public class MatchViewModel extends ViewModel {
                     if (player1 == null || player2 == null) {
                         Log.e("Match", "One or both profiles are null!");
                         return;
-                    }
-
-                    if(matchType == MatchType.CLASSIC){
-                        deductToken(sessionManager.getCurrentUserId());
-                        if(Boolean.TRUE.equals(insufficientTokens.getValue())){
-                            return;
-                        }
                     }
 
                     if (matchType == MatchType.CLASSIC) {
@@ -187,7 +184,7 @@ public class MatchViewModel extends ViewModel {
 
         match = new Match(
                 player1.getUserId(),
-                player1.getUserId(),
+                player2.getUserId(),
                 0,
                 0,
                 player1.getUsername(),
@@ -197,6 +194,7 @@ public class MatchViewModel extends ViewModel {
                 korakPoKorakService,
                 mojBrojService,
                 userProfileRepository,
+                rankingRepository,
                 sessionManager,
                 () -> {
                     isGameActive.postValue(true);

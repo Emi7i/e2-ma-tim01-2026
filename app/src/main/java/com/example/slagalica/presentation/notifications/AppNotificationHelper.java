@@ -28,6 +28,8 @@ public class AppNotificationHelper {
     public static final String ACTION_ACCEPT = "action_accept";
     public static final String ACTION_DECLINE = "action_decline";
 
+    public static final String EXTRA_NOTIFICATION_TARGET = "extra_notification_target";
+
     public static void createNotificationChannels(Context context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             return;
@@ -70,6 +72,7 @@ public class AppNotificationHelper {
 
         Intent openIntent = new Intent(context, AppActivity.class);
         openIntent.putExtra(EXTRA_NOTIFICATION_ID, item.getId());
+        openIntent.putExtra(EXTRA_NOTIFICATION_TARGET, item.getTarget().name());
         openIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         PendingIntent contentIntent = PendingIntent.getActivity(

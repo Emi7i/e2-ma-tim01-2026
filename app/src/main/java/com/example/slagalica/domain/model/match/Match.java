@@ -13,6 +13,7 @@ import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.domain.service.match.KorakPoKorakService;
 import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
+import com.example.slagalica.repository.impl.RankingRepository;
 import com.example.slagalica.repository.impl.UserProfileRepository;
 
 import java.util.Objects;
@@ -41,6 +42,7 @@ public class Match {
     private final KorakPoKorakService korakPoKorakService;
     private final MojBrojService mojBrojService;
     private final UserProfileRepository userProfileRepository;
+    private final RankingRepository rankingRepository;
     private final SessionManager sessionManager;
 
     private OnMatchUpdatedListener onMatchUpdatedListener;
@@ -57,6 +59,7 @@ public class Match {
                  KorakPoKorakService korakPoKorakService,
                  MojBrojService mojBrojService,
                  UserProfileRepository userProfileRepository,
+                 RankingRepository rankingRepository,
                  SessionManager sessionManager,
                  Runnable onReadyCallback){
         this.player1Id = player1Id;
@@ -71,6 +74,7 @@ public class Match {
         this.korakPoKorakService = korakPoKorakService;
         this.mojBrojService = mojBrojService;
         this.userProfileRepository = userProfileRepository;
+        this.rankingRepository = rankingRepository;
         this.sessionManager = sessionManager;
         this.currentGameId = 1;
 
@@ -125,35 +129,61 @@ public class Match {
     }
 
     public void endMatch(){
-        // TODO: probably resolve rewards only on matches not
-        // from challenges. add a bool to check if its for a challenge
-        // to resolve rewards differently
-        if(matchType == MatchType.CLASSIC){
-            resolveClassicRewards();
+        CompletableFuture<Void> completion;
+
+        if(matchType == MatchType.CLASSIC){  // Za klasicnu partiju obracunavaju se zvezde i rang lista.
+            completion = resolveClassicRewards();
+        } else {
+            completion = CompletableFuture.completedFuture(null);   //za ostale tipove se ne obradjuju nagrade
         }
         currentGameId = 0; // signal game over
         updateMatchSession();
-        matchService.delete(id)
-                .exceptionally(e -> {
-                    Log.e("Match", "Failed to delete match session", e);
-                    return null;
-                });
+
+        completion.whenComplete((ignored, throwable) -> {    // Match sesija se brise tek nakon zavrsene obrade nagrada.
+            if (throwable != null) {
+                Log.e(
+                        "Match",
+                        "Failed to resolve match rewards",
+                        throwable
+                );
+            }
+
+            matchService.delete(id)
+                    .exceptionally(error -> {
+                        Log.e(
+                                "Match",
+                                "Failed to delete match session",
+                                error
+                        );
+                        return null;
+                    });
+        });
+
         Log.d("Match", "Match ended!");
     }
 
     // Resolves rewards for classic match.
     // Add other methods for other scenarios,
     // for example tournament? or do that elsewhere
-    private void resolveClassicRewards(){
+    private CompletableFuture<Void> resolveClassicRewards(){
         // player 1 is winner even if they have the same points >:D
         String winnerId = player1Score >= player2Score ? player1Id : player2Id;
-        CompletableFuture<UserProfile> player1Future = userProfileRepository.getProfile(player1Id);
+        CompletableFuture<UserProfile> player1Future = userProfileRepository.getProfile(player1Id);     //ucitavanje profila oba igraca
         CompletableFuture<UserProfile> player2Future = userProfileRepository.getProfile(player2Id);
 
-        CompletableFuture.allOf(player1Future, player2Future)
-                .thenAccept(ignored -> {
+        return CompletableFuture.allOf(player1Future, player2Future)
+                .thenCompose(ignored -> {
                     UserProfile player1 = player1Future.join();
                     UserProfile player2 = player2Future.join();
+
+                    if (player1 == null || player2 == null) {
+                        throw new IllegalStateException(
+                                "Profil jednog od igraca ne postoji."
+                        );
+                    }
+
+                    long oldPlayer1Stars = player1.getNumStars();       //cuvamo staro stanje za racunanje promene zvezda
+                    long oldPlayer2Stars = player2.getNumStars();
 
                     // stars per 40 points
                     int additionalStars = player1Score / 40;
@@ -173,19 +203,30 @@ public class Match {
                         player1.setNumStars(Math.max(0, loserStars));
                     }
 
-                    userProfileRepository.saveProfile(player1);
-                    userProfileRepository.saveProfile(player2);
+                    long player1Delta = player1.getNumStars() - oldPlayer1Stars;   //zvedze za ovu partiju
+                    long player2Delta = player2.getNumStars() - oldPlayer2Stars;
 
-                    String myId = sessionManager.getCurrentUserId();
-                    if (Objects.equals(player1.getUserId(), myId)) {
-                        sessionManager.setCurrentProfile(player1);
-                    } else if (Objects.equals(player2.getUserId(), myId)) {
-                        sessionManager.setCurrentProfile(player2);
-                    }
-                })
-                .exceptionally(throwable -> {
-                    Log.e("Tag", "Error fetching profiles", throwable);
-                    return null;
+                    //cuvanje oba profila
+                    CompletableFuture<Void> saveProfiles = CompletableFuture.allOf(userProfileRepository.saveProfile(player1), userProfileRepository.saveProfile(player2));
+
+
+                    return saveProfiles.thenCompose(saveIgnored -> {
+                        String myId = sessionManager.getCurrentUserId();
+                        if (Objects.equals(player1.getUserId(), myId)) {        //refresh profila
+                            sessionManager.setCurrentProfile(player1);
+                        } else if (Objects.equals(player2.getUserId(), myId)) {
+                            sessionManager.setCurrentProfile(player2);
+                        }
+
+                        return rankingRepository.recordClassicMatch(           // upis rezultata u nedeljnu i mesecnu rang listu.
+                                id,
+                                player1,
+                                player1Delta,
+                                player2,
+                                player2Delta,
+                                System.currentTimeMillis()
+                        );
+                    });
                 });
     }
 
