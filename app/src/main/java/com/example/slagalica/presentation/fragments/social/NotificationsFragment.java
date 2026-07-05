@@ -346,6 +346,11 @@ public class NotificationsFragment extends Fragment {
         item.setRead(true);
         updateNotificationInFirestore(item);
 
+        if (item.getTarget() == NotificationTarget.CHAT) {
+            FragmentTransition.to(new ChatFragment(), requireActivity(), true, R.id.appContainer);
+            return;
+        }
+
         FragmentTransition.to(
                 NotificationTargetPlaceholderFragment.newInstance(item.getId()),
                 requireActivity(),
