@@ -14,6 +14,10 @@ activity = "1.13.0"
 constraintlayout = "2.2.1"
 firebaseFirestore = "26.3.0"
 recyclerview = "1.3.2"
+webkit = "1.12.1"
+cameraX = "1.4.2"
+zxingCore = "3.5.3"
+mlkitBarcode = "17.3.0"
 
 [libraries]
 com-google-firebase-firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
@@ -33,6 +37,12 @@ constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayo
 projectlombok-lombok = { module = "org.projectlombok:lombok", version.ref = "lombokVersion" }
 google-firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
 recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
+webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
+camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "cameraX" }
+camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "cameraX" }
+camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "cameraX" }
+mlkit-barcode-scanning = { group = "com.google.mlkit", name = "barcode-scanning", version.ref = "mlkitBarcode" }
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxingCore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

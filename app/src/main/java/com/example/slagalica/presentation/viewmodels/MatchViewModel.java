@@ -14,6 +14,7 @@ import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.domain.service.match.KorakPoKorakService;
 import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
+import com.example.slagalica.domain.service.progression.LeagueNotificationService;
 import com.example.slagalica.repository.impl.RankingRepository;
 import com.example.slagalica.repository.impl.UserProfileRepository;
 import com.google.firebase.firestore.auth.User;
@@ -36,6 +37,7 @@ public class MatchViewModel extends ViewModel {
     private final UserProfileRepository userProfileRepository;
     private final SessionManager sessionManager;
     private final RankingRepository rankingRepository;
+    private final LeagueNotificationService leagueNotificationService;
 
 //    private final MutableLiveData<IGame> currentGame = new MutableLiveData<>();
     private final MutableLiveData<Integer> currentGameId = new MutableLiveData<>();
@@ -47,6 +49,7 @@ public class MatchViewModel extends ViewModel {
             UserProfileRepository userProfileRepository,
             MatchService matchService,
             SessionManager sessionManager,
+            LeagueNotificationService leagueNotificationService,
             RankingRepository rankingRepository
     ) {
         this.matchService = matchService;
@@ -54,6 +57,7 @@ public class MatchViewModel extends ViewModel {
         this.mojBrojService = mojBrojService;
         this.userProfileRepository = userProfileRepository;
         this.sessionManager = sessionManager;
+        this.leagueNotificationService = leagueNotificationService;
         this.rankingRepository = rankingRepository;
     }
 
@@ -80,7 +84,12 @@ public class MatchViewModel extends ViewModel {
                     if (matchType == MatchType.CLASSIC) {
                         deductToken(sessionManager.getCurrentUserId())
                                 .thenAccept(success -> {
+                                    Log.d("Match", "deductToken result: " + success);
                                     if (success) createMatch(player1, player2, matchType);
+                                })
+                                .exceptionally(throwable -> {
+                                    Log.e("Match", "deductToken failed", throwable);
+                                    return null;
                                 });
                     } else {
                         // other logic for other types if needed
@@ -166,6 +175,7 @@ public class MatchViewModel extends ViewModel {
                         player.setNumTokens(player.getNumTokens() - 1);
                         userProfileRepository.saveProfile(player);
                         sessionManager.setCurrentProfile(player);
+                        insufficientTokens.postValue(false);
                         return true;
                     } else {
                         Log.d("Match", "PLAYER IS POOR");
@@ -196,6 +206,7 @@ public class MatchViewModel extends ViewModel {
                 userProfileRepository,
                 rankingRepository,
                 sessionManager,
+                leagueNotificationService,
                 () -> {
                     isGameActive.postValue(true);
                     match.setOnMatchUpdatedListener(this::onMatchUpdated);

@@ -20,4 +20,9 @@ public class UserProfile {
     private String region;
     private String qrCode;
     private long rank;
+    // Monthly stars are connected to regions and reset at end of the month
+    private long monthlyStars;
+    private boolean active;
+    private String regionRankTier;
+    private String lastTokenGrantDate;
 }

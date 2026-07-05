@@ -9,6 +9,7 @@ import com.example.slagalica.domain.model.match.games.SkockoCombinationDocument;
 import com.example.slagalica.domain.model.match.games.Spojnice;
 import com.example.slagalica.domain.model.match.games.korakpokorak.TermWithHints;
 import com.example.slagalica.domain.model.profile.UserProfile;
+import com.example.slagalica.domain.model.progression.League;
 import com.example.slagalica.domain.model.progression.UserStatistics;
 import com.example.slagalica.domain.model.social.NotificationDocument;
 import com.example.slagalica.domain.service.match.KoZnaZnaDemoFactory;
@@ -68,7 +69,7 @@ public class FirebaseSeeder {
                 UserProfile testProfile = new UserProfile(
                         testUserId, "Bugcat", "bug@cat.com",
                         "https://media1.tenor.com/m/kqLCp6Ow_dQAAAAd/bug-cat-capoo-blue.gif",
-                        100L, 10L, "Gold", "Global", "qr_code_data", 42L
+                        100L, 10L, League.fromStars(10L).getDisplayName(), "Global", "qr_code_data", 42L, 0L, false, null, null
                 );
                 userProfileRepository.saveProfile(testProfile)
                         .thenAccept(aVoid -> Log.d("FirebaseSeeder", "SUCCESS: Profile created!"))

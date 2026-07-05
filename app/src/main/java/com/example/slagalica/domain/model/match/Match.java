@@ -10,6 +10,8 @@ import com.example.slagalica.domain.model.match.games.common.OnMatchUpdatedListe
 import com.example.slagalica.domain.model.match.games.korakpokorak.KorakPoKorak;
 import com.example.slagalica.domain.model.match.games.mojbroj.MojBroj;
 import com.example.slagalica.domain.model.profile.UserProfile;
+import com.example.slagalica.domain.model.progression.League;
+import com.example.slagalica.domain.service.progression.LeagueNotificationService;
 import com.example.slagalica.domain.service.match.KorakPoKorakService;
 import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
@@ -44,6 +46,7 @@ public class Match {
     private final UserProfileRepository userProfileRepository;
     private final RankingRepository rankingRepository;
     private final SessionManager sessionManager;
+    private final LeagueNotificationService leagueNotificationService;
 
     private OnMatchUpdatedListener onMatchUpdatedListener;
 
@@ -61,6 +64,7 @@ public class Match {
                  UserProfileRepository userProfileRepository,
                  RankingRepository rankingRepository,
                  SessionManager sessionManager,
+                 LeagueNotificationService leagueNotificationService,
                  Runnable onReadyCallback){
         this.player1Id = player1Id;
         this.player2Id = player2Id;
@@ -76,6 +80,7 @@ public class Match {
         this.userProfileRepository = userProfileRepository;
         this.rankingRepository = rankingRepository;
         this.sessionManager = sessionManager;
+        this.leagueNotificationService = leagueNotificationService;
         this.currentGameId = 1;
 
         MatchSessionData data = new MatchSessionData(
@@ -95,7 +100,7 @@ public class Match {
                     if (onReadyCallback != null) onReadyCallback.run();
                 })
                 .exceptionally(throwable -> {
-                    // handle error
+                    Log.e("Match", "Failed to create match / run onReadyCallback", throwable);
                     return null;
                 });
     }
@@ -124,8 +129,15 @@ public class Match {
     }
 
     public void start(){
+        // startForTesting(); // uncomment to instantly end the match with player 1 having 1 point (for testing win/loss stats)
         // startMojBroj(); // for fast testing!
         startKoZnaZna();
+    }
+
+    private void startForTesting(){
+        player1Score = 1;
+        player2Score = 0;
+        endMatch();
     }
 
     public void endMatch(){
@@ -136,6 +148,7 @@ public class Match {
         } else {
             completion = CompletableFuture.completedFuture(null);   //za ostale tipove se ne obradjuju nagrade
         }
+        // Note: Win/rate statistics are calculated in Moj Broj
         currentGameId = 0; // signal game over
         updateMatchSession();
 
@@ -165,68 +178,62 @@ public class Match {
     // Resolves rewards for classic match.
     // Add other methods for other scenarios,
     // for example tournament? or do that elsewhere
+    //
+    // Only ever reads/writes the logged-in user's own profile — a client isn't
+    // allowed to write the opponent's document, so each participant's own client
+    // is responsible for crediting/penalizing itself when the match ends.
     private CompletableFuture<Void> resolveClassicRewards(){
+        String myId = sessionManager.getCurrentUserId();
+        boolean iAmPlayer1 = Objects.equals(player1Id, myId);
+        boolean iAmPlayer2 = Objects.equals(player2Id, myId);
+        if (!iAmPlayer1 && !iAmPlayer2) {
+            return CompletableFuture.completedFuture(null);
+        }
         // player 1 is winner even if they have the same points >:D
         String winnerId = player1Score >= player2Score ? player1Id : player2Id;
-        CompletableFuture<UserProfile> player1Future = userProfileRepository.getProfile(player1Id);     //ucitavanje profila oba igraca
-        CompletableFuture<UserProfile> player2Future = userProfileRepository.getProfile(player2Id);
+        int myScore = iAmPlayer1 ? player1Score : player2Score;
+        boolean iWon = Objects.equals(myId, winnerId);
 
-        return CompletableFuture.allOf(player1Future, player2Future)
-                .thenCompose(ignored -> {
-                    UserProfile player1 = player1Future.join();
-                    UserProfile player2 = player2Future.join();
+        return userProfileRepository.getProfile(myId)
+                .thenAccept(me -> {
+                    if (me == null) return;
 
-                    if (player1 == null || player2 == null) {
-                        throw new IllegalStateException(
-                                "Profil jednog od igraca ne postoji."
-                        );
-                    }
-
-                    long oldPlayer1Stars = player1.getNumStars();       //cuvamo staro stanje za racunanje promene zvezda
-                    long oldPlayer2Stars = player2.getNumStars();
+                    long starsBefore = me.getNumStars();
+                    League oldLeague = League.fromDisplayName(me.getLeague());
 
                     // stars per 40 points
-                    int additionalStars = player1Score / 40;
-                    player1.setNumStars(player1.getNumStars() + additionalStars);
-                    additionalStars = player2Score / 40;
-                    player2.setNumStars(player2.getNumStars() + additionalStars);
+                    int additionalStars = myScore / 40;
+                    me.setNumStars(me.getNumStars() + additionalStars);
+                    me.setMonthlyStars(me.getMonthlyStars() + additionalStars);
 
                     // winner/loser stars
-                    if(Objects.equals(player1.getUserId(), winnerId)){
-                        player1.setNumStars(player1.getNumStars() + 10);
-                        long loserStars = player2.getNumStars() - 10;
-                        player2.setNumStars(Math.max(0, loserStars));
-                    }
-                    else{
-                        player2.setNumStars(player2.getNumStars() + 10);
-                        long loserStars = player1.getNumStars() - 10;
-                        player1.setNumStars(Math.max(0, loserStars));
+                    if (iWon) {
+                        me.setNumStars(me.getNumStars() + 10);
+                        me.setMonthlyStars(me.getMonthlyStars() + 10);
+                    } else {
+                        me.setNumStars(Math.max(0, me.getNumStars() - 10));
+                        me.setMonthlyStars(Math.max(0, me.getMonthlyStars() - 10));
                     }
 
-                    long player1Delta = player1.getNumStars() - oldPlayer1Stars;   //zvedze za ovu partiju
-                    long player2Delta = player2.getNumStars() - oldPlayer2Stars;
+                    Log.d("Match", "Reward: iWon=" + iWon + " myScore=" + myScore
+                            + " stars " + starsBefore + " -> " + me.getNumStars());
 
-                    //cuvanje oba profila
-                    CompletableFuture<Void> saveProfiles = CompletableFuture.allOf(userProfileRepository.saveProfile(player1), userProfileRepository.saveProfile(player2));
+                    // Player automatically enters/leaves a league the moment their
+                    // star total crosses a threshold, in either direction.
+                    League newLeague = League.fromStars(me.getNumStars());
+                    me.setLeague(newLeague.getDisplayName());
 
+                    userProfileRepository.saveProfile(me)
+                            .exceptionally(e -> { Log.e("Match", "Failed to save rewards", e); return null; });
+                    sessionManager.setCurrentProfile(me);
 
-                    return saveProfiles.thenCompose(saveIgnored -> {
-                        String myId = sessionManager.getCurrentUserId();
-                        if (Objects.equals(player1.getUserId(), myId)) {        //refresh profila
-                            sessionManager.setCurrentProfile(player1);
-                        } else if (Objects.equals(player2.getUserId(), myId)) {
-                            sessionManager.setCurrentProfile(player2);
-                        }
-
-                        return rankingRepository.recordClassicMatch(           // upis rezultata u nedeljnu i mesecnu rang listu.
-                                id,
-                                player1,
-                                player1Delta,
-                                player2,
-                                player2Delta,
-                                System.currentTimeMillis()
-                        );
-                    });
+                    if (newLeague != oldLeague) {
+                        leagueNotificationService.notifyChange(myId, newLeague, newLeague.ordinal() > oldLeague.ordinal());
+                    }
+                })
+                .exceptionally(throwable -> {
+                    Log.e("Match", "Error fetching profile", throwable);
+                    return null;
                 });
     }
 

@@ -58,4 +58,13 @@ dependencies {
     implementation platform(libs.firebase.bom)
     implementation libs.firebase.firestore
     implementation libs.firebase.auth
+
+    implementation libs.webkit
+
+    // Camera + QR scanning
+    implementation libs.camera.camera2
+    implementation libs.camera.lifecycle
+    implementation libs.camera.view
+    implementation libs.mlkit.barcode.scanning
+    implementation libs.zxing.core
 }

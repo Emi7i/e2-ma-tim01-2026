@@ -40,6 +40,42 @@
 
         </com.google.android.material.appbar.MaterialToolbar>
 
+        <include
+            android:id="@+id/matchRequestBanner"
+            layout="@layout/view_match_request_banner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/leagueChangeBanner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="12dp"
+            android:visibility="gone"
+            android:background="@color/green_light"
+            tools:visibility="visible">
+
+            <ImageView
+                android:id="@+id/leagueChangeBannerIcon"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginEnd="10dp"
+                android:src="@drawable/icon_stars"
+                tools:ignore="ContentDescription" />
+
+            <TextView
+                android:id="@+id/leagueChangeBannerText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                tools:text="Čestitamo! Napredovali ste u ligu: Student." />
+        </LinearLayout>
+
         <com.example.slagalica.presentation.views.GameHeaderView
             android:id="@+id/gameHeader"
             android:layout_width="match_parent"

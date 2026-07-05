@@ -168,6 +168,8 @@ public class MojBrojFragment extends Fragment {
                 int p1 = matchViewModel.getPlayer1Score().getValue() != null ? matchViewModel.getPlayer1Score().getValue() : 0;
                 int p2 = matchViewModel.getPlayer2Score().getValue() != null ? matchViewModel.getPlayer2Score().getValue() : 0;
                 gameViewModel.updateUserStatistics(p1, p2);
+                // Moj Broj is the last game - this is what actually ends the match
+                matchViewModel.getMatch().startNextGame();
             }
         });
     }

@@ -106,7 +106,7 @@ public class SpojniceViewModel extends ViewModel {
             }
             allSpojnice.postValue(loaded);
             isLoading.postValue(false);
-            startRound(1, loaded);
+            new Handler(Looper.getMainLooper()).post(() -> startRound(1, loaded));
         }).exceptionally(ex -> {
             Log.e("SpojniceViewModel", "Error loading Spojnice data", ex);
             isLoading.postValue(false);
@@ -117,16 +117,16 @@ public class SpojniceViewModel extends ViewModel {
     private void startRound(int round, List<Spojnice> dataList) {
         Log.d("Spojnice", "Round: " + round);
 
-        currentRound.postValue(round);
+        currentRound.setValue(round);
 
         Log.d("Spojnice", "Current round: " + currentRound.getValue());
 
         int startingPlayer = (round == 1) ? 1 : 2;
-        startingPlayerOfRound.postValue(startingPlayer);
-        
+        startingPlayerOfRound.setValue(startingPlayer);
+
         if (dataList != null && round <= dataList.size()) {
             Spojnice data = dataList.get(round - 1);
-            currentData.postValue(data);
+            currentData.setValue(data);
             updateSessionData(dataList);
             setupRoundData(data);
             startPlayerTurn(startingPlayer);
@@ -148,27 +148,27 @@ public class SpojniceViewModel extends ViewModel {
         Collections.shuffle(left);
         Collections.shuffle(right);
 
-        leftColumn.postValue(left);
-        rightColumn.postValue(right);
-        
-        currentLeftIndex.postValue(0);
-        player1Matches.postValue(new HashMap<>());
-        player2Matches.postValue(new HashMap<>());
-        missedMatches.postValue(new HashMap<>());
-        p1RoundScore.postValue(0);
-        p2RoundScore.postValue(0);
+        leftColumn.setValue(left);
+        rightColumn.setValue(right);
+
+        currentLeftIndex.setValue(0);
+        player1Matches.setValue(new HashMap<>());
+        player2Matches.setValue(new HashMap<>());
+        missedMatches.setValue(new HashMap<>());
+        p1RoundScore.setValue(0);
+        p2RoundScore.setValue(0);
         updateSessionData();
     }
 
     private void startPlayerTurn(int player) {
-        currentPlayerTurn.postValue(player);
-        waitingForNextPlayer.postValue(false);
-        
+        currentPlayerTurn.setValue(player);
+        waitingForNextPlayer.setValue(false);
+
         if (player != startingPlayerOfRound.getValue()) {
             // Second player's turn - jump to first unmatched
             findNextUnmatched(0);
         } else {
-            currentLeftIndex.postValue(0);
+            currentLeftIndex.setValue(0);
         }
 
         startTimer();

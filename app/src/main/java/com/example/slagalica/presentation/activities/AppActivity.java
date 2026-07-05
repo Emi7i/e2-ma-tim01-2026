@@ -5,7 +5,11 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+import android.os.CountDownTimer;
+import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.activity.EdgeToEdge;
@@ -23,9 +27,11 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.slagalica.R;
 import com.example.slagalica.databinding.ActivityAppBinding;
 import com.example.slagalica.domain.model.auth.SessionManager;
+import com.example.slagalica.domain.model.progression.LeagueChangeEvent;
 import com.example.slagalica.domain.model.ranking.RankingReward;
 import com.example.slagalica.domain.model.social.NotificationActionStatus;
 import com.example.slagalica.domain.model.social.NotificationItem;
+import com.example.slagalica.domain.service.progression.LeagueNotificationService;
 import com.example.slagalica.domain.model.social.NotificationTarget;
 import com.example.slagalica.domain.model.social.NotificationType;
 import com.example.slagalica.domain.service.social.NotificationsService;
@@ -39,12 +45,16 @@ import com.example.slagalica.presentation.fragments.match.KorakPoKorakFragment;
 import com.example.slagalica.presentation.fragments.match.MojBrojFragment;
 import com.example.slagalica.presentation.fragments.match.SkockoFragment;
 import com.example.slagalica.presentation.fragments.match.SpojniceFragment;
+import com.example.slagalica.presentation.fragments.common.RegionMapFragment;
 import com.example.slagalica.presentation.fragments.profile.ProfileFragment;
+import com.example.slagalica.presentation.fragments.social.FriendsFragment;
 import com.example.slagalica.presentation.fragments.ranking.RankingFragment;
 import com.example.slagalica.presentation.fragments.ranking.RankingRewardDialogFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationTargetPlaceholderFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationsFragment;
 import com.example.slagalica.presentation.notifications.AppNotificationHelper;
+import com.example.slagalica.domain.model.social.MatchRequest;
+import com.example.slagalica.presentation.viewmodels.MatchRequestViewModel;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 import com.example.slagalica.presentation.viewmodels.RankingViewModel;
 
@@ -58,11 +68,24 @@ import dagger.hilt.android.AndroidEntryPoint;
 public class AppActivity extends AppCompatActivity {
     ActivityAppBinding binding;
     MatchViewModel matchViewModel;
+    MatchRequestViewModel matchRequestViewModel;
+    private CountDownTimer bannerTimer;
+    private float bannerTouchStartX;
     private int lastNavigatedGameId = -1;
     private RankingViewModel rankingViewModel;
+    // Tracks which Match instance lastNavigatedGameId applies to, so a brand new
+    // match (which can also end at gameId 0, e.g. startForTesting()) isn't silently
+    // ignored by a guard value left over from the previous match.
+    private com.example.slagalica.domain.model.match.Match lastObservedMatch = null;
 
     @Inject
     SessionManager sessionManager;
+
+    @Inject
+    LeagueNotificationService leagueNotificationService;
+
+    private final Handler leagueBannerHandler = new Handler(Looper.getMainLooper());
+    private Runnable hideLeagueBannerRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,14 +113,18 @@ public class AppActivity extends AppCompatActivity {
             return insets;
         });
 
-        // Setup VM
+        // Setup VMs
         matchViewModel = new ViewModelProvider(this).get(MatchViewModel.class);
+        matchRequestViewModel = new ViewModelProvider(this).get(MatchRequestViewModel.class);
 
         rankingViewModel = new ViewModelProvider(this).get(RankingViewModel.class);
         observeRankingRewards();
         rankingViewModel.finalizeExpiredCyclesAndLoadReward(sessionManager.getCurrentUserId());
 
         observeViewModel();
+        observeMatchRequests();
+        matchRequestViewModel.startListeningForIncoming();
+        observeLeagueChanges();
 
         if (savedInstanceState == null) {
             FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
@@ -125,6 +152,7 @@ public class AppActivity extends AppCompatActivity {
         leftDrawer.findViewById(R.id.leave_match).setOnClickListener(v -> {
             showLeaveGameConfirmationDialog(() -> {
                 matchViewModel.setGameActive(false);
+                lastNavigatedGameId = -1;
                 FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
                 binding.main.closeDrawer(GravityCompat.START);
             });
@@ -134,6 +162,8 @@ public class AppActivity extends AppCompatActivity {
         leftDrawer.findViewById(R.id.home).setOnClickListener(v -> {
             if (matchViewModel.getIsGameActive().getValue() != null && matchViewModel.getIsGameActive().getValue()) {
                 showLeaveGameConfirmationDialog(() -> {
+                    matchViewModel.setGameActive(false);
+                    lastNavigatedGameId = -1;
                     FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
                     binding.main.closeDrawer(GravityCompat.START);
                 });
@@ -153,6 +183,12 @@ public class AppActivity extends AppCompatActivity {
             binding.main.closeDrawer(GravityCompat.START);
         });
 
+        // Friends button
+        leftDrawer.findViewById(R.id.friends).setOnClickListener(v -> {
+            FragmentTransition.to(new FriendsFragment(), this, true, R.id.appContainer);
+            binding.main.closeDrawer(GravityCompat.START);
+        });
+
         // Notifications button
         leftDrawer.findViewById(R.id.notifications).setOnClickListener(v -> {
             FragmentTransition.to(new NotificationsFragment(), this, true, R.id.appContainer);
@@ -160,6 +196,12 @@ public class AppActivity extends AppCompatActivity {
         });
         handleNotificationIntent(getIntent());
         requestNotificationPermission();
+
+        // Region map
+        leftDrawer.findViewById(R.id.region_map).setOnClickListener(v -> {
+            FragmentTransition.to(new RegionMapFragment(), this, true, R.id.appContainer);
+            binding.main.closeDrawer(GravityCompat.START);
+        });
 
         // Reset password
         leftDrawer.findViewById(R.id.reset_password).setOnClickListener(v -> {
@@ -221,6 +263,61 @@ public class AppActivity extends AppCompatActivity {
         );
     }
 
+    private void observeMatchRequests() {
+        matchRequestViewModel.getIncomingRequest().observe(this, request -> {
+            if (request != null) {
+                showMatchRequestBanner(request);
+            } else {
+                hideMatchRequestBanner();
+            }
+        });
+    }
+
+    private void showMatchRequestBanner(MatchRequest request) {
+        binding.matchRequestBanner.bannerSender.setText(
+                request.getSenderUsername() + " želi da igra sa vama");
+        binding.matchRequestBanner.getRoot().setVisibility(View.VISIBLE);
+
+        binding.matchRequestBanner.bannerAcceptButton.setOnClickListener(
+                v -> matchRequestViewModel.acceptIncoming());
+
+        binding.matchRequestBanner.getRoot().setOnTouchListener((v, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    bannerTouchStartX = event.getX();
+                    return true;
+                case MotionEvent.ACTION_UP:
+                    float dx = Math.abs(event.getX() - bannerTouchStartX);
+                    if (dx > 80) {
+                        matchRequestViewModel.rejectIncoming();
+                    }
+                    return true;
+            }
+            return false;
+        });
+
+        if (bannerTimer != null) bannerTimer.cancel();
+        binding.matchRequestBanner.bannerProgress.setProgress(100);
+        bannerTimer = new CountDownTimer(10_000, 100) {
+            @Override
+            public void onTick(long millisLeft) {
+                binding.matchRequestBanner.bannerProgress.setProgress((int) (millisLeft / 100));
+            }
+            @Override
+            public void onFinish() {
+                matchRequestViewModel.expireIncoming();
+            }
+        }.start();
+    }
+
+    private void hideMatchRequestBanner() {
+        if (bannerTimer != null) {
+            bannerTimer.cancel();
+            bannerTimer = null;
+        }
+        binding.matchRequestBanner.getRoot().setVisibility(View.GONE);
+    }
+
     private void showLeaveGameConfirmationDialog(Runnable onConfirm) {
         new AlertDialog.Builder(this)
                 .setTitle("Napusti igru")
@@ -237,6 +334,10 @@ public class AppActivity extends AppCompatActivity {
         matchViewModel.getCurrentGameId().observe(this, gameId -> {
             if (gameId == null) return;
             if (matchViewModel.getMatch() == null) return;
+            if (matchViewModel.getMatch() != lastObservedMatch) {
+                lastObservedMatch = matchViewModel.getMatch();
+                lastNavigatedGameId = -1;
+            }
             if (gameId == lastNavigatedGameId) return;
             Fragment fragment = null;
             switch (gameId) {
@@ -323,6 +424,57 @@ public class AppActivity extends AppCompatActivity {
                 binding.gameHeader.setActivePlayer(2);
             }
         });
+    }
+
+    // Spec 2.g: shown while the app is foregrounded (LeagueNotificationService
+    // routes to a system notification instead when it isn't). Auto-dismisses
+    // after 10s; tapping it dismisses early.
+    private void observeLeagueChanges() {
+        leagueNotificationService.getEvent().observe(this, this::showLeagueChangeBanner);
+    }
+
+    private void showLeagueChangeBanner(LeagueChangeEvent event) {
+        if (event == null) return;
+
+        binding.leagueChangeBannerText.setText(event.getMessage());
+        binding.leagueChangeBanner.setBackgroundColor(ContextCompat.getColor(this,
+                event.isPromoted() ? R.color.green_light : R.color.orange_light));
+        binding.leagueChangeBanner.setOnClickListener(v -> hideLeagueChangeBanner());
+        binding.leagueChangeBanner.setVisibility(View.VISIBLE);
+
+        if (hideLeagueBannerRunnable != null) {
+            leagueBannerHandler.removeCallbacks(hideLeagueBannerRunnable);
+        }
+        hideLeagueBannerRunnable = this::hideLeagueChangeBanner;
+        leagueBannerHandler.postDelayed(hideLeagueBannerRunnable, 10_000);
+    }
+
+    private void hideLeagueChangeBanner() {
+        binding.leagueChangeBanner.setVisibility(View.GONE);
+        if (hideLeagueBannerRunnable != null) {
+            leagueBannerHandler.removeCallbacks(hideLeagueBannerRunnable);
+            hideLeagueBannerRunnable = null;
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        leagueBannerHandler.removeCallbacksAndMessages(null);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        sessionManager.setUserOnline(true);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (!isChangingConfigurations()) {
+            sessionManager.setUserOnline(false);
+        }
     }
 
     public void setToolbarTitle(String title) {
