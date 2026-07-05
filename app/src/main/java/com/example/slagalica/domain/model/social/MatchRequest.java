@@ -3,7 +3,9 @@ package com.example.slagalica.domain.model.social;
 import com.google.firebase.firestore.DocumentId;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Data
 @NoArgsConstructor
@@ -24,4 +26,6 @@ public class MatchRequest {
     private String receiverUsername;
     private String status;
     private long   timestamp;
+    @Getter @Setter
+    private String matchId;
 }

@@ -9,7 +9,7 @@ public interface MatchRequestRepository {
     CompletableFuture<String> createRequest(MatchRequest request);
     CompletableFuture<Void> updateStatus(String requestId, String status);
     /** Atomically accepts the request only if its status is still PENDING. Returns true if accepted. */
-    CompletableFuture<Boolean> acceptIfPending(String requestId);
+    CompletableFuture<Boolean> acceptIfPending(String requestId, String matchId);
     ListenerRegistration listenForIncomingPending(String userId, RequestListener listener);
     ListenerRegistration listenForRequest(String requestId, RequestListener listener);
 

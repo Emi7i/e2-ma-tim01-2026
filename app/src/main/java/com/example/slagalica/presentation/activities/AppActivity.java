@@ -27,6 +27,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.slagalica.R;
 import com.example.slagalica.databinding.ActivityAppBinding;
 import com.example.slagalica.domain.model.auth.SessionManager;
+import com.example.slagalica.domain.model.match.games.MatchType;
 import com.example.slagalica.domain.model.progression.LeagueChangeEvent;
 import com.example.slagalica.domain.model.ranking.RankingReward;
 import com.example.slagalica.domain.model.social.NotificationActionStatus;
@@ -270,6 +271,10 @@ public class AppActivity extends AppCompatActivity {
             } else {
                 hideMatchRequestBanner();
             }
+        });
+        matchRequestViewModel.getMatchAccepted().observe(this, accepted -> {
+            if (accepted == null) return;
+            matchViewModel.startMatch(accepted.player1Id, accepted.player2Id, MatchType.FRIENDLY, accepted.matchId, null);
         });
     }
 

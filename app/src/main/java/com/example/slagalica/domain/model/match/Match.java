@@ -170,8 +170,8 @@ public class Match {
     }
 
     public void start(){
-         startForTesting(); // uncomment to instantly end the match with player 1 having 1 point (for testing win/loss stats)
-//         startMojBroj(); // for fast testing!
+//         startForTesting(); // uncomment to instantly end the match with player 1 having 1 point (for testing win/loss stats)
+         startMojBroj(); // for fast testing!
 //        startKoZnaZna();
     }
 

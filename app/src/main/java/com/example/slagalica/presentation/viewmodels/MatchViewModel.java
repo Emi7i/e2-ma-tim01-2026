@@ -88,15 +88,6 @@ public class MatchViewModel extends ViewModel {
                     player1Name.setValue(player1.getUsername());
                     player2Name.setValue(player2.getUsername());
 
-                    // why are there two of these what did i do
-
-                    if(matchType == MatchType.CLASSIC){
-                        deductToken(sessionManager.getCurrentUserId());
-                        if(Boolean.TRUE.equals(insufficientTokens.getValue())){
-                            return;
-                        }
-                    }
-
                     if (matchType == MatchType.CLASSIC) {
                         deductToken(sessionManager.getCurrentUserId())
                                 .thenAccept(success -> {

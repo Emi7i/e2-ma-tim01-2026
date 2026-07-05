@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.example.slagalica.domain.model.auth.SessionManager;
+import com.example.slagalica.domain.model.match.AcceptedMatch;
 import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.domain.model.social.MatchRequest;
 import com.example.slagalica.repository.impl.MatchRequestRepository;
@@ -22,6 +23,9 @@ public class MatchRequestViewModel extends ViewModel {
 
     private final MutableLiveData<MatchRequest> outgoingRequest = new MutableLiveData<>(null);
     private final MutableLiveData<MatchRequest> incomingRequest = new MutableLiveData<>(null);
+
+    private final MutableLiveData<AcceptedMatch> matchAccepted = new MutableLiveData<>(null);
+    public LiveData<AcceptedMatch> getMatchAccepted() { return matchAccepted; }
 
     private ListenerRegistration incomingListener;
     private ListenerRegistration outgoingListener;
@@ -52,7 +56,8 @@ public class MatchRequestViewModel extends ViewModel {
                 profile.getUsername(),
                 receiverUsername,
                 MatchRequest.STATUS_PENDING,
-                System.currentTimeMillis()
+                System.currentTimeMillis(),
+                null
         );
 
         matchRequestRepository.createRequest(request).thenAccept(id -> {
@@ -76,9 +81,15 @@ public class MatchRequestViewModel extends ViewModel {
     public void acceptIncoming() {
         MatchRequest current = incomingRequest.getValue();
         if (current == null) return;
+        String matchId = java.util.UUID.randomUUID().toString();
         // Use a transaction so that a concurrent cancel cannot be overwritten by an accept.
-        matchRequestRepository.acceptIfPending(current.getId())
-                .thenAccept(accepted -> incomingRequest.postValue(null))
+        matchRequestRepository.acceptIfPending(current.getId(), matchId)
+                .thenAccept(accepted -> {
+                    incomingRequest.postValue(null);
+                    if (Boolean.TRUE.equals(accepted)) {
+                        matchAccepted.postValue(new AcceptedMatch(current.getSenderId(), current.getReceiverId(), matchId));
+                    }
+                })
                 .exceptionally(e -> { incomingRequest.postValue(null); return null; });
     }
 
@@ -103,6 +114,9 @@ public class MatchRequestViewModel extends ViewModel {
                 if (outgoingListener != null) {
                     outgoingListener.remove();
                     outgoingListener = null;
+                }
+                if (request != null && MatchRequest.STATUS_ACCEPTED.equals(request.getStatus())) {
+                    matchAccepted.postValue(new AcceptedMatch(request.getSenderId(), request.getReceiverId(), request.getMatchId()));
                 }
                 outgoingRequest.postValue(null);
             }

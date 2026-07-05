@@ -41,13 +41,13 @@ public class FirestoreMatchRequestRepository implements MatchRequestRepository {
     }
 
     @Override
-    public CompletableFuture<Boolean> acceptIfPending(String requestId) {
+    public CompletableFuture<Boolean> acceptIfPending(String requestId, String matchId) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         DocumentReference ref = db.collection(COLLECTION).document(requestId);
         db.runTransaction(transaction -> {
             DocumentSnapshot doc = transaction.get(ref);
             if (MatchRequest.STATUS_PENDING.equals(doc.getString("status"))) {
-                transaction.update(ref, "status", MatchRequest.STATUS_ACCEPTED);
+                transaction.update(ref, "status", MatchRequest.STATUS_ACCEPTED, "matchId", matchId);
                 return true;
             }
             return false;
