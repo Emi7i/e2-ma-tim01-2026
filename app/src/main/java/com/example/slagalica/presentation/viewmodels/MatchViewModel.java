@@ -49,8 +49,7 @@ public class MatchViewModel extends ViewModel {
             UserProfileRepository userProfileRepository,
             MatchService matchService,
             SessionManager sessionManager,
-            LeagueNotificationService leagueNotificationService
-            SessionManager sessionManager,
+            LeagueNotificationService leagueNotificationService,
             RankingRepository rankingRepository
     ) {
         this.matchService = matchService;

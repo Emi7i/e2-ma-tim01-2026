@@ -187,24 +187,19 @@ public class Match {
         boolean iAmPlayer1 = Objects.equals(player1Id, myId);
         boolean iAmPlayer2 = Objects.equals(player2Id, myId);
         if (!iAmPlayer1 && !iAmPlayer2) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
         // player 1 is winner even if they have the same points >:D
         String winnerId = player1Score >= player2Score ? player1Id : player2Id;
-        int myScore = iAmPlayer1 ? player1Score : player2Score;     //ucitavanje profila oba igraca
+        int myScore = iAmPlayer1 ? player1Score : player2Score;
         boolean iWon = Objects.equals(myId, winnerId);
 
-
-        userProfileRepository.getProfile(myId)
+        return userProfileRepository.getProfile(myId)
                 .thenAccept(me -> {
                     if (me == null) return;
 
                     long starsBefore = me.getNumStars();
                     League oldLeague = League.fromDisplayName(me.getLeague());
-
-
-                    long oldPlayer1Stars = player1.getNumStars();       //cuvamo staro stanje za racunanje promene zvezda
-                    long oldPlayer2Stars = player2.getNumStars();
 
                     // stars per 40 points
                     int additionalStars = myScore / 40;
