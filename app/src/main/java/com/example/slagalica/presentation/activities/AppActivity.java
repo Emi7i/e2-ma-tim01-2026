@@ -28,6 +28,7 @@ import com.example.slagalica.domain.model.social.NotificationActionStatus;
 import com.example.slagalica.domain.model.social.NotificationItem;
 import com.example.slagalica.domain.model.social.NotificationTarget;
 import com.example.slagalica.domain.model.social.NotificationType;
+import com.example.slagalica.domain.model.tournament.TournamentResultUi;
 import com.example.slagalica.domain.service.social.NotificationsService;
 import com.example.slagalica.presentation.fragments.auth.LoginFragment;
 import com.example.slagalica.presentation.fragments.auth.ResetPasswordFragment;
@@ -44,9 +45,11 @@ import com.example.slagalica.presentation.fragments.ranking.RankingFragment;
 import com.example.slagalica.presentation.fragments.ranking.RankingRewardDialogFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationTargetPlaceholderFragment;
 import com.example.slagalica.presentation.fragments.social.NotificationsFragment;
+import com.example.slagalica.presentation.fragments.tournament.TournamentFragment;
 import com.example.slagalica.presentation.notifications.AppNotificationHelper;
 import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 import com.example.slagalica.presentation.viewmodels.RankingViewModel;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.Objects;
 
@@ -92,6 +95,7 @@ public class AppActivity extends AppCompatActivity {
 
         // Setup VM
         matchViewModel = new ViewModelProvider(this).get(MatchViewModel.class);
+        observeTournamentResult();
 
         rankingViewModel = new ViewModelProvider(this).get(RankingViewModel.class);
         observeRankingRewards();
@@ -161,6 +165,19 @@ public class AppActivity extends AppCompatActivity {
         handleNotificationIntent(getIntent());
         requestNotificationPermission();
 
+
+
+        // Tournament
+        leftDrawer.findViewById(R.id.tournament).setOnClickListener(v -> {
+            FragmentTransition.to(
+                    new TournamentFragment(),
+                    this,
+                    true,
+                    R.id.appContainer
+            );
+            binding.main.closeDrawer(GravityCompat.START);
+        });
+
         // Reset password
         leftDrawer.findViewById(R.id.reset_password).setOnClickListener(v -> {
             FragmentTransition.to(new ResetPasswordFragment(), this, true, R.id.appContainer);
@@ -174,6 +191,34 @@ public class AppActivity extends AppCompatActivity {
             finish();
             binding.main.closeDrawer(GravityCompat.START);
         });
+    }
+
+    private void observeTournamentResult() {
+        matchViewModel.getTournamentResult().observe(this, result -> {
+            if (result == null) {
+                return;
+            }
+
+            showTournamentResultDialog(result);
+        });
+    }
+
+    private void showTournamentResultDialog(TournamentResultUi result) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(result.getTitle())
+                .setMessage(result.getMessage())
+                .setPositiveButton("U redu", (dialog, which) -> {
+                    matchViewModel.clearTournamentResult();
+
+                    FragmentTransition.to(
+                            new TournamentFragment(),
+                            this,
+                            true,
+                            R.id.appContainer
+                    );
+                })
+                .setOnCancelListener(dialog -> matchViewModel.clearTournamentResult())
+                .show();
     }
 
     private void observeRankingRewards() {

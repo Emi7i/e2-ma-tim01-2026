@@ -10,10 +10,12 @@ import com.example.slagalica.domain.model.match.games.common.OnMatchUpdatedListe
 import com.example.slagalica.domain.model.match.games.korakpokorak.KorakPoKorak;
 import com.example.slagalica.domain.model.match.games.mojbroj.MojBroj;
 import com.example.slagalica.domain.model.profile.UserProfile;
+import com.example.slagalica.domain.model.tournament.TournamentRound;
 import com.example.slagalica.domain.service.match.KorakPoKorakService;
 import com.example.slagalica.domain.service.match.MatchService;
 import com.example.slagalica.domain.service.match.MojBrojService;
 import com.example.slagalica.repository.impl.RankingRepository;
+import com.example.slagalica.repository.impl.TournamentRepository;
 import com.example.slagalica.repository.impl.UserProfileRepository;
 
 import java.util.Objects;
@@ -44,8 +46,12 @@ public class Match {
     private final UserProfileRepository userProfileRepository;
     private final RankingRepository rankingRepository;
     private final SessionManager sessionManager;
+    private TournamentRepository tournamentRepository;
+    private String tournamentId;
+    private String tournamentMatchId;
 
     private OnMatchUpdatedListener onMatchUpdatedListener;
+    private Runnable onTournamentResultResolvedListener;
 
     public Match(
                  String player1Id,
@@ -100,6 +106,47 @@ public class Match {
                 });
     }
 
+    public Match(           //za turnir pravi novu mec sesiju
+            String existingMatchId,
+            String player1Id,
+            String player2Id,
+            int player1Score,
+            int player2Score,
+            String player1Name,
+            String player2Name,
+            String activePlayer,
+            int currentGameId,
+            MatchType matchType,
+            MatchService matchService,
+            KorakPoKorakService korakPoKorakService,
+            MojBrojService mojBrojService,
+            UserProfileRepository userProfileRepository,
+            RankingRepository rankingRepository,
+            SessionManager sessionManager,
+            Runnable onReadyCallback
+    ) {
+        this.id = existingMatchId;
+        this.player1Id = player1Id;
+        this.player2Id = player2Id;
+        this.player1Score = player1Score;
+        this.player2Score = player2Score;
+        this.player1Name = player1Name;
+        this.player2Name = player2Name;
+        this.activePlayer = activePlayer;
+        this.currentGameId = currentGameId;
+        this.matchType = matchType;
+        this.matchService = matchService;
+        this.korakPoKorakService = korakPoKorakService;
+        this.mojBrojService = mojBrojService;
+        this.userProfileRepository = userProfileRepository;
+        this.rankingRepository = rankingRepository;
+        this.sessionManager = sessionManager;
+
+        if (onReadyCallback != null) {
+            onReadyCallback.run();
+        }
+    }
+
     public void startNextGame(){
         switch(currentGameId){
             case 1:
@@ -128,11 +175,17 @@ public class Match {
         startKoZnaZna();
     }
 
+    private boolean isTournamentMatch() {
+        return matchType == MatchType.TOURNAMENT_SEMIFINAL || matchType == MatchType.TOURNAMENT_FINAL;
+    }
+
     public void endMatch(){
         CompletableFuture<Void> completion;
 
-        if(matchType == MatchType.CLASSIC){  // Za klasicnu partiju obracunavaju se zvezde i rang lista.
+        if(matchType == null || matchType == MatchType.CLASSIC){  // Za klasicnu partiju obracunavaju se zvezde i rang lista.
             completion = resolveClassicRewards();
+        }  else if (matchType == MatchType.TOURNAMENT_SEMIFINAL || matchType == MatchType.TOURNAMENT_FINAL) {
+            completion = resolveTournamentRewards();
         } else {
             completion = CompletableFuture.completedFuture(null);   //za ostale tipove se ne obradjuju nagrade
         }
@@ -146,6 +199,8 @@ public class Match {
                         "Failed to resolve match rewards",
                         throwable
                 );
+            } else if (isTournamentMatch() && onTournamentResultResolvedListener != null) {
+                onTournamentResultResolvedListener.run();
             }
 
             matchService.delete(id)
@@ -308,6 +363,10 @@ public class Match {
         this.onMatchUpdatedListener = listener;
     }
 
+    public void setOnTournamentResultResolvedListener(Runnable listener) {
+        this.onTournamentResultResolvedListener = listener;
+    }
+
     public void updateMatchSession(){
         MatchSessionData data = new MatchSessionData(
                 null,
@@ -319,6 +378,32 @@ public class Match {
                 activePlayer
         );
         this.matchService.update(id, data);
-        onMatchUpdatedListener.onMatchUpdated(this);
+        if (onMatchUpdatedListener != null) {
+            onMatchUpdatedListener.onMatchUpdated(this);
+        }
+    }
+
+    public void attachTournament(TournamentRepository tournamentRepository, String tournamentId, String tournamentMatchId) {
+        this.tournamentRepository = tournamentRepository;
+        this.tournamentId = tournamentId;
+        this.tournamentMatchId = tournamentMatchId;
+    }
+
+    private CompletableFuture<Void> resolveTournamentRewards() {
+        if (tournamentRepository == null || tournamentId == null || tournamentMatchId == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        TournamentRound round = matchType == MatchType.TOURNAMENT_FINAL ? TournamentRound.FINAL : TournamentRound.SEMIFINAL;
+
+        return tournamentRepository.recordTournamentMatchResult(
+                tournamentId,
+                tournamentMatchId,
+                round,
+                player1Id,
+                player2Id,
+                player1Score,
+                player2Score
+        );
     }
 }
