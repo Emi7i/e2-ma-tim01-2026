@@ -1,5 +1,7 @@
 package com.example.slagalica.repository.impl.firestore;
 
+import android.util.Log;
+
 import com.example.slagalica.domain.model.match.MatchmakingEntry;
 import com.example.slagalica.domain.model.match.games.common.OnMatchmakingUpdateListener;
 import com.example.slagalica.repository.impl.MatchmakingEntryRepository;
@@ -42,6 +44,7 @@ public class FirestoreMatchmakingEntryRepository implements MatchmakingEntryRepo
                 .set(entry)
                 .addOnSuccessListener(unused -> future.complete(matchId))
                 .addOnFailureListener(future::completeExceptionally);
+        Log.d("Matchmaking", "Added new entry!");
         return future;
     }
 
@@ -91,7 +94,11 @@ public class FirestoreMatchmakingEntryRepository implements MatchmakingEntryRepo
     public ListenerRegistration observeEntry(String userId, OnMatchmakingUpdateListener listener) {
         return db.collection(COLLECTION_QUEUE).document(userId)
                 .addSnapshotListener((snapshot, error) -> {
-                    if (error != null || snapshot == null || !snapshot.exists()) return;
+                    if (error != null || snapshot == null || !snapshot.exists()) {
+                        Log.d("Matchmaking", "Error adding snapshot listener");
+                        return;
+                    }
+                    Log.d("Matchmaking", "Observing matchmaking entry...");
                     MatchmakingEntry entry = snapshot.toObject(MatchmakingEntry.class);
                     if (entry != null && entry.getMatchedWith() != null) {
                         listener.onMatchFound(entry);

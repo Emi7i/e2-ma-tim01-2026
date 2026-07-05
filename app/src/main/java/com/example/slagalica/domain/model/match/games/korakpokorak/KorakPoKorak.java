@@ -1,5 +1,7 @@
 package com.example.slagalica.domain.model.match.games.korakpokorak;
 
+import android.util.Log;
+
 import com.example.slagalica.domain.model.auth.SessionManager;
 import com.example.slagalica.domain.model.match.games.common.AbstractGame;
 import com.example.slagalica.domain.model.match.games.common.GameConfig;
@@ -141,7 +143,9 @@ public class KorakPoKorak extends AbstractGame {
     }
 
     private boolean isMyTurn(){
-        return Objects.equals(getCurrentPlayer(), sessionManager.getCurrentUserId());
+        boolean myTurn = Objects.equals(getCurrentPlayer(), sessionManager.getCurrentUserId());
+        Log.d("KorakPoKorak", "My turn: " + myTurn);
+        return myTurn;
     }
 
     public void deleteSession(){

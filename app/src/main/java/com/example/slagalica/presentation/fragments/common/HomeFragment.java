@@ -7,6 +7,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -80,7 +81,12 @@ public class HomeFragment extends Fragment {
                                     .thenAccept(unused -> {
                                         matchmakingEntryRepository.delete(opponentEntry.getUserId());
                                         requireActivity().runOnUiThread(() ->
-                                                matchViewModel.startMatch(currentUserId, opponentEntry.getUserId(), MatchType.CLASSIC, matchId));
+                                                matchViewModel.startMatch(currentUserId, opponentEntry.getUserId(), MatchType.CLASSIC, matchId,
+                                                        () -> {
+                                                            // Runs only once the match document is confirmed written
+                                                            matchmakingEntryRepository.claim(opponentEntry.getUserId(), currentUserId)
+                                                                    .thenAccept(unused2 -> matchmakingEntryRepository.delete(opponentEntry.getUserId()));
+                                                        }));
                                     });
                         } else {
                             // Nobody waiting — join queue and listen for someone to claim us
@@ -88,12 +94,13 @@ public class HomeFragment extends Fragment {
                                     .thenAccept(unused -> requireActivity().runOnUiThread(() -> {
                                         matchmakingRegistration = matchmakingEntryRepository.observeEntry(currentUserId, entry ->
                                                 requireActivity().runOnUiThread(() -> {
+                                                    Log.d("Matchmaking", "Found it!");
                                                     matchmakingEntryRepository.delete(currentUserId);
                                                     if (matchmakingRegistration != null) {
                                                         matchmakingRegistration.remove();
                                                         matchmakingRegistration = null;
                                                     }
-                                                    matchViewModel.startMatch(entry.getMatchedWith(), currentUserId, MatchType.CLASSIC, entry.getMatchId());
+                                                    matchViewModel.startMatch(entry.getMatchedWith(), currentUserId, MatchType.CLASSIC, entry.getMatchId(), null);
                                                 })
                                         );
                                     }));

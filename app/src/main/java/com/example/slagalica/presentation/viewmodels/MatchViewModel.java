@@ -57,7 +57,7 @@ public class MatchViewModel extends ViewModel {
         this.matchRepository = matchRepository;
     }
 
-    public void startMatch(String player1Id, String player2Id, MatchType matchType, String matchId) {
+    public void startMatch(String player1Id, String player2Id, MatchType matchType, String matchId, Runnable onMatchCreated) {
         Log.d("Match", "Starting match...");
         CompletableFuture<UserProfile> player1Future = userProfileRepository.getProfile(player1Id);
         CompletableFuture<UserProfile> player2Future = userProfileRepository.getProfile(player2Id);
@@ -77,6 +77,9 @@ public class MatchViewModel extends ViewModel {
                         return;
                     }
 
+                    player1Name.setValue(player1.getUsername());
+                    player2Name.setValue(player2.getUsername());
+
                     // why are there two of these what did i do
 
                     if(matchType == MatchType.CLASSIC){
@@ -89,11 +92,11 @@ public class MatchViewModel extends ViewModel {
                     if (matchType == MatchType.CLASSIC) {
                         deductToken(sessionManager.getCurrentUserId())
                                 .thenAccept(success -> {
-                                    if (success) createMatch(player1, player2, matchType, matchId);
+                                    if (success) createMatch(player1, player2, matchType, matchId, onMatchCreated);
                                 });
                     } else {
                         // other logic for other types if needed
-                        createMatch(player1, player2, matchType, matchId);
+                        createMatch(player1, player2, matchType, matchId, onMatchCreated);
                     }
                 })
                 .exceptionally(throwable -> {
@@ -184,7 +187,7 @@ public class MatchViewModel extends ViewModel {
                 });
     }
 
-    private void createMatch(UserProfile player1, UserProfile player2, MatchType matchType, String matchId){
+    private void createMatch(UserProfile player1, UserProfile player2, MatchType matchType, String matchId, Runnable onMatchCreated){
         MatchSessionData data = new MatchSessionData();
         data.player1Id = player1.getUserId();
         data.player2Id = player2.getUserId();
@@ -194,6 +197,7 @@ public class MatchViewModel extends ViewModel {
         matchRepository.exists(matchId)
                 .thenAccept(exists -> {
                     if (!exists) {
+                        Log.d("Match", "No existing match, making a new one");
                         match = new Match(
                                 matchId,
                                 player1.getUserId(),
@@ -212,9 +216,11 @@ public class MatchViewModel extends ViewModel {
                                     isGameActive.postValue(true);
                                     match.setOnMatchUpdatedListener(this::onMatchUpdated);
                                     match.start();
+                                    if (onMatchCreated != null) onMatchCreated.run();
                                 }
                         );
                     } else {
+                        Log.d("Match", "A match exists, fetching it");
                         matchRepository.get(matchId)
                                 .thenAccept(existingData -> {
                                     match = new Match(

@@ -247,8 +247,12 @@ public class Match {
         KorakPoKorak game = new KorakPoKorak(session, korakPoKorakService, sessionManager);
         game.setOnActivePlayerChangedListener(this::onActivePlayerChanged);
         game.setOnPointsChangedListener(this::onPointsChanged);
-        game.setOnGameEndedListener(this::onGameEnded);
-        game.getGameService().observeSessionData(id, game::onRemoteSessionUpdated);
+        game.setOnGameEndedListener(() -> {
+            if (currentGame == game) { // ignore stale callbacks from a superseded game instance
+                startNextGame();
+            }
+        });
+//        game.getGameService().observeSessionData(id, game::onRemoteSessionUpdated);
         currentGameId = game.getId();
         currentGame = game;
         updateMatchSession();
@@ -259,7 +263,11 @@ public class Match {
         MojBroj game = new MojBroj(session, mojBrojService);
         game.setOnActivePlayerChangedListener(this::onActivePlayerChanged);
         game.setOnPointsChangedListener(this::onPointsChanged);
-        game.setOnGameEndedListener(this::onGameEnded);
+        game.setOnGameEndedListener(() -> {
+            if (currentGame == game) { // ignore stale callbacks from a superseded game instance
+                startNextGame();
+            }
+        });
         currentGameId = game.getId();
         currentGame = game;
         updateMatchSession();
@@ -305,7 +313,7 @@ public class Match {
         if (onMatchUpdatedListener != null) {
             onMatchUpdatedListener.onMatchUpdated(this); // always update local UI/VM
         }
-        if(!isMyTurn()) return;
+//        if(!isMyTurn()) return; // uhhh
         MatchSessionData data = new MatchSessionData(
                 null,
                 player1Id,
@@ -330,7 +338,7 @@ public class Match {
             onMatchUpdatedListener.onMatchUpdated(this);
         }
 
-        if (gameChanged && !isMyTurn()) {
+        if (gameChanged && (currentGame == null || currentGame.getId() != this.currentGameId)) {
             attachLocalGameForCurrentId();
         }
 
@@ -376,7 +384,9 @@ public class Match {
         }
     }
 
-    private boolean isMyTurn() {
-        return Objects.equals(activePlayer, sessionManager.getCurrentUserId());
+    private boolean isMyTurn(){
+        boolean myTurn = Objects.equals(activePlayer, sessionManager.getCurrentUserId());
+        Log.d("Match", "My turn: " + myTurn);
+        return myTurn;
     }
 }

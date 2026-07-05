@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.slagalica.domain.model.auth.SessionManager;
 import com.example.slagalica.domain.model.match.games.korakpokorak.KorakPoKorak;
+import com.example.slagalica.domain.model.match.games.korakpokorak.KorakPoKorakSessionData;
 import com.example.slagalica.domain.model.progression.UserStatistics;
 import com.example.slagalica.repository.impl.UserStatisticsRepository;
 
@@ -67,12 +68,33 @@ public class KorakPoKorakViewModel extends ViewModel {
         if (this.game == game) return;
         this.game = game;
         roundsPlayed = 0;
-        game.startNewRound(() -> {
-            String currentHint = game.getHints().get(0);
-            latestHint.postValue(currentHint);
-            roundsPlayed++;
-        });
+        game.getGameService().observeSessionData(game.getMatchId(), this::onRemoteSessionUpdate);
+
+        if (isMyTurn()) {
+            game.startNewRound(() -> {
+                String currentHint = game.getHints().get(0);
+                latestHint.postValue(currentHint);
+                roundsPlayed++;
+            });
+        }
         startTimer();
+    }
+
+    private void onRemoteSessionUpdate(KorakPoKorakSessionData data) {
+        game.onRemoteSessionUpdated(data); // updates game's internal fields (only applies if !isMyTurn, per its own guard)
+
+        if (!isMyTurn()) {
+            // mirror into UI-facing LiveData
+            if (game.getHints() != null && game.getCurrentHint() - 1 < game.getHints().size()) {
+                latestHint.postValue(game.getHints().get(game.getCurrentHint() - 1));
+            }
+            if (game.isStealOpportunity()) {
+                stealWindowOpen.postValue(true);
+            }
+            if (game.hasEnded()) {
+                gameOver.postValue(true);
+            }
+        }
     }
 
     private boolean isMyTurn() {

@@ -222,13 +222,11 @@ public class AppActivity extends AppCompatActivity {
         });
 
         matchViewModel.getPlayer1Name().observe(this, name -> {
-            if (matchViewModel.getMatch() == null) return;
             if (name == null) return;
             binding.gameHeader.setPlayerNames(name, matchViewModel.getPlayer2Name().getValue());
         });
 
         matchViewModel.getPlayer2Name().observe(this, name -> {
-            if (matchViewModel.getMatch() == null) return;
             if (name == null) return;
             binding.gameHeader.setPlayerNames(matchViewModel.getPlayer1Name().getValue(), name);
         });
