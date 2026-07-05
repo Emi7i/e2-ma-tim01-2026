@@ -12,6 +12,7 @@ import com.example.slagalica.domain.model.tournament.TournamentSession;
 import com.example.slagalica.repository.impl.TournamentRepository;
 
 import javax.inject.Inject;
+import java.util.concurrent.CompletableFuture;
 
 import dagger.hilt.android.lifecycle.HiltViewModel;
 
@@ -69,12 +70,29 @@ public class TournamentViewModel extends ViewModel {
         }
 
         loading.setValue(true);
+
         tournamentRepository.getActiveTournamentForUser(userId)
+                .thenCompose(activeTournament -> {
+                    if (activeTournament == null) {
+                        return CompletableFuture.completedFuture(null);
+                    }
+
+                    return tournamentRepository
+                            .advanceTournamentIfNeeded(activeTournament.getTournamentId())
+                            .thenCompose(ignored ->
+                                    tournamentRepository.getActiveTournamentForUser(userId)
+                            );
+                })
                 .thenAccept(activeTournament -> {
                     tournament.postValue(activeTournament);
+
                     if (activeTournament != null) {
+                        waitingInQueue.postValue(false);
                         loadNextMatch(activeTournament.getTournamentId());
+                    } else {
+                        nextMatch.postValue(null);
                     }
+
                     loading.postValue(false);
                 })
                 .exceptionally(throwable -> {

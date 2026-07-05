@@ -39,4 +39,12 @@ public interface TournamentRepository {
     CompletableFuture<Void> cancelWaitingQueue(
             String userId
     );
+
+    CompletableFuture<TournamentMatch> startTournamentMatch(        //ako mAtchSession postoji vrati postojeci match, ako ne -> vrati matchSession i taj id
+            String tournamentId,
+            String tournamentMatchId
+    );
+    CompletableFuture<Void> advanceTournamentIfNeeded(
+            String tournamentId
+    );
 }

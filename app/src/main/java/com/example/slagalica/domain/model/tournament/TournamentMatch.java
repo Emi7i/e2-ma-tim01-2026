@@ -2,7 +2,7 @@ package com.example.slagalica.domain.model.tournament;
 
 public class TournamentMatch {
 
-    private String matchId;
+    private String matchId;     //id turnirskog meca
     private String tournamentId;
     private String round;
     private int matchIndex;
@@ -18,6 +18,7 @@ public class TournamentMatch {
     private long createdAtMillis;
     private long startedAtMillis;
     private long finishedAtMillis;
+    private String matchSessionId;   //id pravog meca
 
     public TournamentMatch() {
     }
@@ -92,4 +93,6 @@ public class TournamentMatch {
     public void setStartedAtMillis(long startedAtMillis) { this.startedAtMillis = startedAtMillis; }
     public long getFinishedAtMillis() { return finishedAtMillis; }
     public void setFinishedAtMillis(long finishedAtMillis) { this.finishedAtMillis = finishedAtMillis; }
+    public String getMatchSessionId() { return matchSessionId;}
+    public void setMatchSessionId(String matchSessionId) { this.matchSessionId = matchSessionId;}
 }

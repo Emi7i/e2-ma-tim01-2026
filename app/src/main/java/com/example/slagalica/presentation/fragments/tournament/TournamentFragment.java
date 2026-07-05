@@ -22,6 +22,7 @@ import com.example.slagalica.domain.model.tournament.TournamentSession;
 import com.example.slagalica.domain.model.tournament.TournamentStatus;
 import com.example.slagalica.presentation.activities.AppActivity;
 import com.example.slagalica.presentation.adapters.TournamentPlayerAdapter;
+import com.example.slagalica.presentation.viewmodels.MatchViewModel;
 import com.example.slagalica.presentation.viewmodels.TournamentViewModel;
 
 import dagger.hilt.android.AndroidEntryPoint;
@@ -33,6 +34,9 @@ public class TournamentFragment extends Fragment {
     private TournamentViewModel viewModel;
     private TournamentPlayerAdapter adapter;
     private boolean waitingInQueue = false;
+    private TournamentSession currentTournament;
+    private TournamentMatch currentNextMatch;
+    private MatchViewModel matchViewModel;
 
     public TournamentFragment() {
     }
@@ -44,6 +48,7 @@ public class TournamentFragment extends Fragment {
             Bundle savedInstanceState
     ) {
         binding = FragmentTournamentBinding.inflate(inflater, container, false);
+        matchViewModel = new ViewModelProvider(requireActivity()).get(MatchViewModel.class);
         return binding.getRoot();
     }
 
@@ -69,15 +74,18 @@ public class TournamentFragment extends Fragment {
     }
 
     private void setupListeners() {
-        binding.joinTournamentButton.setOnClickListener(v -> viewModel.joinTournament());
-        binding.demoTournamentButton.setOnClickListener(v -> viewModel.createDemoTournament());
+        binding.joinTournamentButton.setOnClickListener(v -> {
+            if (currentTournament != null && currentNextMatch != null && isPlayable(currentNextMatch)) {
+                matchViewModel.startExistingTournamentMatch(currentTournament.getTournamentId(), currentNextMatch);
+            } else {
+                viewModel.joinTournament();
+            }
+        });
+        //binding.demoTournamentButton.setOnClickListener(v -> viewModel.createDemoTournament());
         binding.cancelQueueButton.setOnClickListener(v -> viewModel.cancelQueue());
         binding.refreshButton.setOnClickListener(v -> viewModel.loadActiveTournament());
 
-        binding.simulateWinButton.setOnClickListener(v -> {
-            playResultAnimation(true);
-            viewModel.simulateWinCurrentMatch();
-        });
+        //binding.simulateWinButton.setOnClickListener(v -> {playResultAnimation(true);viewModel.simulateWinCurrentMatch();});
     }
 
     private void observeViewModel() {
@@ -123,6 +131,7 @@ public class TournamentFragment extends Fragment {
     }
 
     private void renderTournament(TournamentSession tournament) {
+        currentTournament = tournament;
         if (tournament == null) {
             if (!waitingInQueue) {
                 binding.statusText.setText("Nema aktivnog turnira.");
@@ -162,8 +171,16 @@ public class TournamentFragment extends Fragment {
     }
 
     private void renderNextMatch(TournamentMatch match) {
+        currentNextMatch = match;
+
         if (match == null) {
             binding.nextMatchText.setText("Trenutno nema turnirske partije za vas.");
+
+            if (currentTournament != null) {
+                binding.joinTournamentButton.setText("Čeka se sledeća runda");
+                binding.joinTournamentButton.setEnabled(false);
+            }
+
             binding.simulateWinButton.setVisibility(View.GONE);
             return;
         }
@@ -176,9 +193,16 @@ public class TournamentFragment extends Fragment {
                         + safe(match.getPlayer2Username())
         );
 
-        boolean playable = match.getStatusEnum() == TournamentMatchStatus.WAITING
-                || match.getStatusEnum() == TournamentMatchStatus.IN_PROGRESS;
-        binding.simulateWinButton.setVisibility(playable ? View.VISIBLE : View.GONE);
+        if (isPlayable(match)) {
+            binding.joinTournamentButton.setText("Igraj turnirsku partiju");
+            binding.joinTournamentButton.setEnabled(true);
+        } else {
+            binding.joinTournamentButton.setText("Turnirska partija završena");
+            binding.joinTournamentButton.setEnabled(false);
+        }
+
+        // za testiranje bez 4 uredjaja
+        binding.simulateWinButton.setVisibility(View.GONE);
     }
 
     private String statusLabel(TournamentStatus status) {
@@ -275,5 +299,10 @@ public class TournamentFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+    }
+
+    private boolean isPlayable(TournamentMatch match) {
+        return match.getStatusEnum() == TournamentMatchStatus.WAITING
+                || match.getStatusEnum() == TournamentMatchStatus.IN_PROGRESS;
     }
 }

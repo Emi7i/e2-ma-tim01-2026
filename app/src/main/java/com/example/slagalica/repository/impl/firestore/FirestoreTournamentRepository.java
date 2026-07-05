@@ -20,6 +20,7 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,6 +41,7 @@ public class FirestoreTournamentRepository implements TournamentRepository {
     private static final String COLLECTION_TOURNAMENTS = "tournaments";
     private static final String SUBCOLLECTION_PARTICIPANTS = "participants";
     private static final String SUBCOLLECTION_MATCHES = "matches";
+    private static final String COLLECTION_MATCH_SESSIONS = "matchSessions";
 
     private static final int TOURNAMENT_PRICE = 3;
     private static final int REQUIRED_PLAYERS = 4;
@@ -408,7 +410,7 @@ public class FirestoreTournamentRepository implements TournamentRepository {
             }
 
             return null;
-        })).thenCompose(ignored -> maybeCreateFinalMatch(tournamentId));
+        })).thenCompose(ignored -> advanceTournamentIfNeeded(tournamentId));
     }
 
     @Override
@@ -538,6 +540,82 @@ public class FirestoreTournamentRepository implements TournamentRepository {
         })).thenCompose(ignored -> getTournamentById(tournamentId));
     }
 
+    @Override
+    public CompletableFuture<Void> advanceTournamentIfNeeded(String tournamentId) {
+        if (tournamentId == null) {
+            return completed(null);
+        }
+
+        return syncFinishedMatchesWithParticipants(tournamentId)
+                .thenCompose(ignored -> maybeCreateFinalMatch(tournamentId))
+                .thenCompose(ignored -> syncFinishedMatchesWithParticipants(tournamentId));
+    }
+    private CompletableFuture<Void> syncFinishedMatchesWithParticipants(String tournamentId) {
+        return getTournamentById(tournamentId).thenCompose(session -> {
+            if (session == null) {
+                return completed(null);
+            }
+
+            long now = System.currentTimeMillis();
+
+            DocumentReference tournamentRef = db
+                    .collection(COLLECTION_TOURNAMENTS)
+                    .document(tournamentId);
+
+            WriteBatch batch = db.batch();
+            boolean[] hasUpdates = {false};
+
+            for (TournamentMatch match : session.getMatches()) {
+                if (match.getStatusEnum() != TournamentMatchStatus.FINISHED) {
+                    continue;
+                }
+
+                String loserId = match.getLoserId();
+                String winnerId = match.getWinnerId();
+
+                if (loserId != null && !loserId.trim().isEmpty()) {
+                    batch.set(
+                            tournamentRef
+                                    .collection(SUBCOLLECTION_PARTICIPANTS)
+                                    .document(loserId),
+                            mapOf("eliminated", true),
+                            SetOptions.merge()
+                    );
+
+                    hasUpdates[0] = true;
+                }
+
+                if (match.getRoundEnum() == TournamentRound.FINAL
+                        && winnerId != null
+                        && !winnerId.trim().isEmpty()) {
+
+                    batch.set(
+                            tournamentRef
+                                    .collection(SUBCOLLECTION_PARTICIPANTS)
+                                    .document(winnerId),
+                            mapOf("winner", true),
+                            SetOptions.merge()
+                    );
+
+                    Map<String, Object> tournamentUpdate = new HashMap<>();
+                    tournamentUpdate.put("status", TournamentStatus.FINISHED.name());
+                    tournamentUpdate.put("winnerId", winnerId);
+                    tournamentUpdate.put("updatedAtMillis", now);
+
+                    batch.update(tournamentRef, tournamentUpdate);
+
+                    hasUpdates[0] = true;
+                }
+            }
+
+            if (!hasUpdates[0]) {
+                return completed(null);
+            }
+
+            return toFuture(batch.commit());
+        });
+    }
+
     private CompletableFuture<Void> maybeCreateFinalMatch(String tournamentId) {
         return getTournamentById(tournamentId).thenCompose(session -> {
             if (session == null || session.getStatusEnum() == TournamentStatus.FINISHED) {
@@ -565,6 +643,23 @@ public class FirestoreTournamentRepository implements TournamentRepository {
 
             for (TournamentMatch match : session.getMatches()) {
                 if (match.getRoundEnum() == TournamentRound.FINAL) {
+                    if (session.getStatusEnum() == TournamentStatus.SEMIFINALS_READY
+                            || session.getStatusEnum() == TournamentStatus.SEMIFINALS_IN_PROGRESS) {
+
+                        DocumentReference tournamentRef = db
+                                .collection(COLLECTION_TOURNAMENTS)
+                                .document(tournamentId);
+
+                        return toFuture(
+                                tournamentRef.update(
+                                        "status",
+                                        TournamentStatus.FINAL_READY.name(),
+                                        "updatedAtMillis",
+                                        System.currentTimeMillis()
+                                )
+                        );
+                    }
+
                     return completed(null);
                 }
             }
@@ -698,6 +793,105 @@ public class FirestoreTournamentRepository implements TournamentRepository {
         );
     }
 
+    @Override
+    public CompletableFuture<TournamentMatch> startTournamentMatch(String tournamentId, String tournamentMatchId) {
+        if (tournamentId == null || tournamentMatchId == null) {
+            return failedFuture(new IllegalArgumentException("Turnirska partija nije pronađena."));
+        }
+
+        long now = System.currentTimeMillis();
+        DocumentReference tournamentRef = db.collection(COLLECTION_TOURNAMENTS).document(tournamentId);
+        DocumentReference tournamentMatchRef = tournamentRef.collection(SUBCOLLECTION_MATCHES).document(tournamentMatchId);
+        DocumentReference newMatchSessionRef = db.collection(COLLECTION_MATCH_SESSIONS).document();
+
+        return toFuture(db.runTransaction(transaction -> {
+            DocumentSnapshot matchSnapshot = transaction.get(tournamentMatchRef);
+
+            if (!matchSnapshot.exists()) {
+                throw new IllegalStateException("Turnirski meč ne postoji.");
+            }
+
+            String status = matchSnapshot.getString("status");
+            if (TournamentMatchStatus.FINISHED.name().equals(status)) {
+                throw new IllegalStateException("Turnirski meč je već završen.");
+            }
+
+            String existingMatchSessionId = matchSnapshot.getString("matchSessionId");
+
+            if (existingMatchSessionId != null && !existingMatchSessionId.trim().isEmpty()) {
+                return null;
+            }
+
+            String player1Id = matchSnapshot.getString("player1Id");
+            String player2Id = matchSnapshot.getString("player2Id");
+            String round = matchSnapshot.getString("round");
+
+            Map<String, Object> matchSessionData = new HashMap<>();
+            matchSessionData.put("player1Id", player1Id);
+            matchSessionData.put("player2Id", player2Id);
+            matchSessionData.put("player1Score", 0);
+            matchSessionData.put("player2Score", 0);
+            matchSessionData.put("currentGameId", 1);
+            matchSessionData.put("activePlayer", player1Id);
+
+            transaction.set(newMatchSessionRef, matchSessionData);
+
+            Map<String, Object> tournamentMatchUpdate = new HashMap<>();
+            tournamentMatchUpdate.put("matchSessionId", newMatchSessionRef.getId());
+            tournamentMatchUpdate.put("status", TournamentMatchStatus.IN_PROGRESS.name());
+            tournamentMatchUpdate.put("startedAtMillis", now);
+
+            transaction.update(tournamentMatchRef, tournamentMatchUpdate);
+
+            if (TournamentRound.FINAL.name().equals(round)) {
+                transaction.update(
+                        tournamentRef,
+                        "status",
+                        TournamentStatus.FINAL_IN_PROGRESS.name(),
+                        "updatedAtMillis",
+                        now
+                );
+            } else {
+                transaction.update(
+                        tournamentRef,
+                        "status",
+                        TournamentStatus.SEMIFINALS_IN_PROGRESS.name(),
+                        "updatedAtMillis",
+                        now
+                );
+            }
+
+            return null;
+        })).thenCompose(ignored -> getTournamentMatchById(tournamentId, tournamentMatchId));
+    }
+
+    private CompletableFuture<TournamentMatch> getTournamentMatchById(String tournamentId, String tournamentMatchId) {
+        CompletableFuture<TournamentMatch> future = new CompletableFuture<>();
+
+        db.collection(COLLECTION_TOURNAMENTS)
+                .document(tournamentId)
+                .collection(SUBCOLLECTION_MATCHES)
+                .document(tournamentMatchId)
+                .get()
+                .addOnSuccessListener(document -> {
+                    if (!document.exists()) {
+                        future.complete(null);
+                        return;
+                    }
+
+                    TournamentMatch match = document.toObject(TournamentMatch.class);
+
+                    if (match != null) {
+                        match.setMatchId(document.getId());
+                    }
+
+                    future.complete(match);
+                })
+                .addOnFailureListener(future::completeExceptionally);
+
+        return future;
+    }
+
     private TournamentParticipant demoParticipant(
             String userId,
             String username,
@@ -743,6 +937,7 @@ public class FirestoreTournamentRepository implements TournamentRepository {
         data.put("player2Username", match.getPlayer2Username());
         data.put("winnerId", match.getWinnerId());
         data.put("loserId", match.getLoserId());
+        data.put("matchSessionId", match.getMatchSessionId());
         data.put("player1Score", match.getPlayer1Score());
         data.put("player2Score", match.getPlayer2Score());
         data.put("status", match.getStatus());

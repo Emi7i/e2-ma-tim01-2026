@@ -84,7 +84,7 @@ public class TournamentPlayerAdapter extends RecyclerView.Adapter<TournamentPlay
             if (participant.isEliminated()) {
                 return "Eliminisan";
             }
-            return "Aktivan";
+            return "U turniru";
         }
 
         private int resolveLeagueBadge(String league) {
