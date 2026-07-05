@@ -47,6 +47,8 @@ import com.example.slagalica.presentation.fragments.match.SkockoFragment;
 import com.example.slagalica.presentation.fragments.match.SpojniceFragment;
 import com.example.slagalica.presentation.fragments.common.RegionMapFragment;
 import com.example.slagalica.presentation.fragments.profile.ProfileFragment;
+import com.example.slagalica.presentation.fragments.social.ChatFragment;
+import com.example.slagalica.domain.service.social.ChatNotificationService;
 import com.example.slagalica.presentation.fragments.social.FriendsFragment;
 import com.example.slagalica.presentation.fragments.ranking.RankingFragment;
 import com.example.slagalica.presentation.fragments.ranking.RankingRewardDialogFragment;
@@ -84,6 +86,9 @@ public class AppActivity extends AppCompatActivity {
     @Inject
     LeagueNotificationService leagueNotificationService;
 
+    @Inject
+    ChatNotificationService chatNotificationService;
+
     private final Handler leagueBannerHandler = new Handler(Looper.getMainLooper());
     private Runnable hideLeagueBannerRunnable;
 
@@ -95,11 +100,12 @@ public class AppActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
         ViewCompat.setOnApplyWindowInsetsListener(binding.mainContent, (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
             v.setPadding(
                     systemBars.left,
                     systemBars.top,
                     systemBars.right,
-                    systemBars.bottom);
+                    Math.max(systemBars.bottom, ime.bottom));
             return insets;
         });
         // Fix drawer padding
@@ -125,6 +131,7 @@ public class AppActivity extends AppCompatActivity {
         observeMatchRequests();
         matchRequestViewModel.startListeningForIncoming();
         observeLeagueChanges();
+        observeChatNotifications();
 
         if (savedInstanceState == null) {
             FragmentTransition.to(new HomeFragment(), this, false, R.id.appContainer);
@@ -186,6 +193,12 @@ public class AppActivity extends AppCompatActivity {
         // Friends button
         leftDrawer.findViewById(R.id.friends).setOnClickListener(v -> {
             FragmentTransition.to(new FriendsFragment(), this, true, R.id.appContainer);
+            binding.main.closeDrawer(GravityCompat.START);
+        });
+
+        // Chat button
+        leftDrawer.findViewById(R.id.chat).setOnClickListener(v -> {
+            FragmentTransition.to(new ChatFragment(), this, true, R.id.appContainer);
             binding.main.closeDrawer(GravityCompat.START);
         });
 
@@ -457,6 +470,20 @@ public class AppActivity extends AppCompatActivity {
         }
     }
 
+    // Spec 8: region chat needs to listen for the whole session, not just while
+    // ChatFragment is on screen (that's how a system notification can still fire for a
+    // message that arrives while the user is elsewhere in the app). The profile loads
+    // asynchronously, so this starts the listener once the region becomes available
+    // rather than once in onCreate; startListening() itself is a no-op if already
+    // listening to that region.
+    private void observeChatNotifications() {
+        sessionManager.getCurrentProfile().observe(this, profile -> {
+            if (profile != null && profile.getRegion() != null) {
+                chatNotificationService.startListening();
+            }
+        });
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -499,6 +526,16 @@ public class AppActivity extends AppCompatActivity {
         if (NotificationTarget.REWARD.name().equals(target) || NotificationTarget.RANKING.name().equals(target) || notificationId.startsWith("ranking_reward_")) {
             FragmentTransition.to(
                     new RankingFragment(),
+                    this,
+                    true,
+                    R.id.appContainer
+            );
+            return;
+        }
+
+        if (NotificationTarget.CHAT.name().equals(target)) {
+            FragmentTransition.to(
+                    new ChatFragment(),
                     this,
                     true,
                     R.id.appContainer

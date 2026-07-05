@@ -1,7 +1,9 @@
 package com.example.slagalica.di;
 
+import com.example.slagalica.repository.impl.ChatRepository;
 import com.example.slagalica.repository.impl.FriendsRepository;
 import com.example.slagalica.repository.impl.MatchRequestRepository;
+import com.example.slagalica.repository.impl.firestore.FirestoreChatRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreFriendsRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreMatchRequestRepository;
 import com.example.slagalica.repository.impl.AsocijacijeContentRepository;
@@ -132,5 +134,11 @@ public abstract class RepositoryModule {
     @Singleton
     public abstract RankingRepository bindRankingRepository(
             FirestoreRankingRepository impl
+    );
+
+    @Binds
+    @Singleton
+    public abstract ChatRepository bindChatRepository(
+            FirestoreChatRepository impl
     );
 }
