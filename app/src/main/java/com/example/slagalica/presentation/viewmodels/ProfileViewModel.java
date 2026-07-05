@@ -19,6 +19,7 @@ public class ProfileViewModel extends ViewModel {
     private final MutableLiveData<UserProfile> userProfile = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
     private final MutableLiveData<String> error = new MutableLiveData<>();
+    private final MutableLiveData<Long> rank = new MutableLiveData<>();
     private final SessionManager sessionManager;
     // Mocked User ID
     private static final String MOCK_USER_ID = "test_user_123";
@@ -83,8 +84,18 @@ public class ProfileViewModel extends ViewModel {
         }
     }
 
+    public void loadRank(long numStars) {
+        userProfileRepository.getPlayerRank(numStars)
+                .thenAccept(r -> rank.postValue(r))
+                .exceptionally(e -> null);
+    }
+
     public LiveData<UserProfile> getUserProfile() {
         return sessionManager.getCurrentProfile();
+    }
+
+    public LiveData<Long> getRank() {
+        return rank;
     }
 
     public LiveData<Boolean> getIsLoading() {

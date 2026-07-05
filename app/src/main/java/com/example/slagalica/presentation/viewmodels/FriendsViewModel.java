@@ -65,6 +65,19 @@ public class FriendsViewModel extends ViewModel {
                                 return profiles;
                             });
                 })
+                .thenCompose(profiles -> {
+                    if (profiles.isEmpty()) return CompletableFuture.completedFuture(profiles);
+                    List<CompletableFuture<Void>> rankFutures = new ArrayList<>();
+                    for (UserProfile profile : profiles) {
+                        rankFutures.add(
+                            userProfileRepository.getPlayerRank(profile.getNumStars())
+                                .thenAccept(r -> profile.setRank(r))
+                                .exceptionally(e -> null)
+                        );
+                    }
+                    return CompletableFuture.allOf(rankFutures.toArray(new CompletableFuture[0]))
+                            .thenApply(v -> profiles);
+                })
                 .thenAccept(profiles -> {
                     friends.postValue(profiles);
                     isLoading.postValue(false);

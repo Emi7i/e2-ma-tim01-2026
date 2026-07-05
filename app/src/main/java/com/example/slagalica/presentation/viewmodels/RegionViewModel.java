@@ -104,24 +104,27 @@ public class RegionViewModel extends ViewModel {
             RegionStats rs = map.get(doc.getRegionKey());
             if (rs == null) continue;
             rs.setTotalPlayers(doc.getRegisteredPlayers());
-            rs.setActivePlayers(doc.getActivePlayers());
             rs.setFirstPlaces(doc.getFirstPlaces());
             rs.setSecondPlaces(doc.getSecondPlaces());
             rs.setThirdPlaces(doc.getThirdPlaces());
         }
 
-        // totalMonthlyStars isn't tracked as a Firestore counter anywhere — compute it
-        // live by summing each region's users' current-cycle stars. monthlyStars
-        // resets to 0 at cycle end (see RegionCycleService); numStars is the
-        // separate lifetime total shown on the profile screen.
+        // activePlayers and totalMonthlyStars are computed live from the profile list
+        // rather than from stored counters. Counters drift (app kills, multi-device),
+        // but the profile.active flag is the authoritative per-user online state.
         Map<String, Long> starsByRegion = new HashMap<>();
+        Map<String, Long> activeByRegion = new HashMap<>();
         for (UserProfile profile : profiles) {
             String region = profile.getRegion();
             if (region == null || !map.containsKey(region)) continue;
             starsByRegion.merge(region, profile.getMonthlyStars(), Long::sum);
+            if (profile.isActive()) activeByRegion.merge(region, 1L, Long::sum);
         }
         for (Map.Entry<String, Long> entry : starsByRegion.entrySet()) {
             map.get(entry.getKey()).setTotalMonthlyStars(entry.getValue());
+        }
+        for (Map.Entry<String, Long> entry : activeByRegion.entrySet()) {
+            map.get(entry.getKey()).setActivePlayers(entry.getValue());
         }
 
         List<RegionStats> sorted = new ArrayList<>(map.values());

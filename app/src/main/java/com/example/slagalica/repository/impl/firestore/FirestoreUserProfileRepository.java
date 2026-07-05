@@ -2,6 +2,7 @@ package com.example.slagalica.repository.impl.firestore;
 
 import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.repository.impl.UserProfileRepository;
+import com.google.firebase.firestore.AggregateSource;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
 import java.util.List;
@@ -77,6 +78,18 @@ public class FirestoreUserProfileRepository implements UserProfileRepository {
                         future.complete(null);
                     }
                 })
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<Long> getPlayerRank(long numStars) {
+        CompletableFuture<Long> future = new CompletableFuture<>();
+        db.collection(COLLECTION_USERS)
+                .whereGreaterThan("numStars", numStars)
+                .count()
+                .get(AggregateSource.SERVER)
+                .addOnSuccessListener(snapshot -> future.complete(snapshot.getCount() + 1))
                 .addOnFailureListener(future::completeExceptionally);
         return future;
     }

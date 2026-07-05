@@ -12,4 +12,5 @@ public interface UserProfileRepository {
     CompletableFuture<Void> deleteProfile(String userId);
     CompletableFuture<UserProfile> findByUsername(String username);
     CompletableFuture<List<UserProfile>> getAllProfiles();
+    CompletableFuture<Long> getPlayerRank(long numStars);
 }

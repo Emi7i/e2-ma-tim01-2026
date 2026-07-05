@@ -60,7 +60,7 @@ public class ProfileFragment extends Fragment {
                 binding.starsText.setText(String.format("Zvezdice: %d", profile.getNumStars()));
                 binding.leagueText.setText(String.format("Liga: %s", profile.getLeague()));
                 binding.regionText.setText(String.format("Region: %s", profile.getRegion()));
-                binding.rankText.setText(String.format("Rank: %d", profile.getRank()));
+                viewModel.loadRank(profile.getNumStars());
 
                 updateLeagueVisuals(profile);
                 updateQrCode(profile);
@@ -73,6 +73,10 @@ public class ProfileFragment extends Fragment {
                             .into(binding.profileAvatar);
                 }
             }
+        });
+
+        viewModel.getRank().observe(getViewLifecycleOwner(), r -> {
+            if (r != null) binding.rankText.setText(String.format("Rank: %d", r));
         });
 
         viewModel.getIsLoading().observe(getViewLifecycleOwner(), isLoading -> {
@@ -143,7 +147,7 @@ public class ProfileFragment extends Fragment {
     }
 
     // Returns 0 (no valid resource id) if tier doesn't match a known gold/silver/bronze value.
-    static int tierBorderFor(String tier) {
+    public static int tierBorderFor(String tier) {
         if ("gold".equals(tier))   return R.drawable.league_border_gold;
         if ("silver".equals(tier)) return R.drawable.league_border_silver;
         if ("bronze".equals(tier)) return R.drawable.league_border_bronze;

@@ -111,11 +111,15 @@ public class FriendProfileFragment extends Fragment {
     private void loadProfile(String userId) {
         binding.loadingIndicator.setVisibility(View.VISIBLE);
         userProfileRepository.getProfile(userId)
+                .thenCompose(profile -> {
+                    if (profile == null) return java.util.concurrent.CompletableFuture.completedFuture(null);
+                    return userProfileRepository.getPlayerRank(profile.getNumStars())
+                            .thenApply(r -> { profile.setRank(r); return profile; })
+                            .exceptionally(e -> profile);
+                })
                 .thenAccept(profile -> requireActivity().runOnUiThread(() -> {
                     binding.loadingIndicator.setVisibility(View.GONE);
-                    if (profile != null) {
-                        displayProfile(profile);
-                    }
+                    if (profile != null) displayProfile(profile);
                 }))
                 .exceptionally(e -> {
                     requireActivity().runOnUiThread(() ->
