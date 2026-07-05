@@ -129,9 +129,9 @@ public class Match {
     }
 
     public void start(){
-        // startForTesting(); // uncomment to instantly end the match with player 1 having 1 point (for testing win/loss stats)
+        startForTesting(); // uncomment to instantly end the match with player 1 having 1 point (for testing win/loss stats)
         // startMojBroj(); // for fast testing!
-        startKoZnaZna();
+        //startKoZnaZna();
     }
 
     private void startForTesting(){
@@ -189,22 +189,30 @@ public class Match {
         if (!iAmPlayer1 && !iAmPlayer2) {
             return CompletableFuture.completedFuture(null);
         }
+
+        String opponentId = iAmPlayer1 ? player2Id : player1Id;
         // player 1 is winner even if they have the same points >:D
         String winnerId = player1Score >= player2Score ? player1Id : player2Id;
         int myScore = iAmPlayer1 ? player1Score : player2Score;
+        int opponentScore = iAmPlayer1 ? player2Score : player1Score;
         boolean iWon = Objects.equals(myId, winnerId);
 
-        return userProfileRepository.getProfile(myId)
-                .thenAccept(me -> {
+        CompletableFuture<UserProfile> myFuture = userProfileRepository.getProfile(myId);
+        CompletableFuture<UserProfile> opponentFuture = userProfileRepository.getProfile(opponentId);
+
+        return CompletableFuture.allOf(myFuture, opponentFuture)
+                .thenAccept(ignored -> {
+                    UserProfile me = myFuture.join();
+                    UserProfile opponent = opponentFuture.join();
                     if (me == null) return;
 
                     long starsBefore = me.getNumStars();
                     League oldLeague = League.fromDisplayName(me.getLeague());
 
                     // stars per 40 points
-                    int additionalStars = myScore / 40;
-                    me.setNumStars(me.getNumStars() + additionalStars);
-                    me.setMonthlyStars(me.getMonthlyStars() + additionalStars);
+                    int myAdditionalStars = myScore / 40;
+                    me.setNumStars(me.getNumStars() + myAdditionalStars);
+                    me.setMonthlyStars(me.getMonthlyStars() + myAdditionalStars);
 
                     // winner/loser stars
                     if (iWon) {
@@ -214,6 +222,8 @@ public class Match {
                         me.setNumStars(Math.max(0, me.getNumStars() - 10));
                         me.setMonthlyStars(Math.max(0, me.getMonthlyStars() - 10));
                     }
+
+                    long myDelta = me.getNumStars() - starsBefore;
 
                     Log.d("Match", "Reward: iWon=" + iWon + " myScore=" + myScore
                             + " stars " + starsBefore + " -> " + me.getNumStars());
@@ -230,6 +240,39 @@ public class Match {
                     if (newLeague != oldLeague) {
                         leagueNotificationService.notifyChange(myId, newLeague, newLeague.ordinal() > oldLeague.ordinal());
                     }
+
+                    // Compute opponent's star delta using the same formula.
+                    // Opponent's profile may be null if the fetch failed — fall back to a
+                    // minimal stub so ranking still gets recorded.
+                    boolean opponentWon = !iWon;
+                    int opponentAdditionalStars = opponentScore / 40;
+                    long opponentStarsBefore = opponent != null ? opponent.getNumStars() : 0L;
+                    long opponentStarsAfter = opponentStarsBefore + opponentAdditionalStars;
+                    if (opponentWon) {
+                        opponentStarsAfter += 10;
+                    } else {
+                        opponentStarsAfter = Math.max(0, opponentStarsAfter - 10);
+                    }
+                    long opponentDelta = opponentStarsAfter - opponentStarsBefore;
+
+                    if (opponent == null) {
+                        opponent = new UserProfile();
+                        opponent.setUserId(opponentId);
+                        opponent.setUsername(iAmPlayer1 ? player2Name : player1Name);
+                        opponent.setLeague("");
+                    }
+
+                    UserProfile p1 = iAmPlayer1 ? me : opponent;
+                    UserProfile p2 = iAmPlayer1 ? opponent : me;
+                    long p1Delta = iAmPlayer1 ? myDelta : opponentDelta;
+                    long p2Delta = iAmPlayer1 ? opponentDelta : myDelta;
+
+                    rankingRepository.recordClassicMatch(
+                                    id, p1, p1Delta, p2, p2Delta, System.currentTimeMillis())
+                            .exceptionally(e -> {
+                                Log.e("Match", "Failed to record ranking entry", e);
+                                return null;
+                            });
                 })
                 .exceptionally(throwable -> {
                     Log.e("Match", "Error fetching profile", throwable);

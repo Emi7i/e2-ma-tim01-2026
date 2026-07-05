@@ -1,10 +1,16 @@
 package com.example.slagalica.repository.impl.firestore;
 
+import android.util.Log;
+
+import com.example.slagalica.domain.model.auth.SessionManager;
 import com.example.slagalica.domain.model.profile.UserProfile;
+import com.example.slagalica.domain.model.progression.League;
 import com.example.slagalica.domain.model.ranking.RankingCycle;
 import com.example.slagalica.domain.model.ranking.RankingCycleType;
 import com.example.slagalica.domain.model.ranking.RankingEntry;
 import com.example.slagalica.domain.model.ranking.RankingReward;
+import com.example.slagalica.domain.service.progression.LeagueNotificationService;
+import com.example.slagalica.domain.service.progression.LeagueService;
 import com.example.slagalica.domain.service.ranking.RankingCycleUtils;
 import com.example.slagalica.domain.service.ranking.RankingRewardPolicy;
 import com.example.slagalica.repository.impl.RankingRepository;
@@ -36,11 +42,24 @@ public class FirestoreRankingRepository implements RankingRepository {
     private static final String COLLECTION_PROFILES = "profiles";
     private static final String COLLECTION_NOTIFICATIONS = "notifications";
 
+    private static final String TAG = "RANK";
+
     private final FirebaseFirestore db;
+    private final LeagueService leagueService;
+    private final LeagueNotificationService leagueNotificationService;
+    private final SessionManager sessionManager;
 
     @Inject
-    public FirestoreRankingRepository(FirebaseFirestore db) {
+    public FirestoreRankingRepository(
+            FirebaseFirestore db,
+            LeagueService leagueService,
+            LeagueNotificationService leagueNotificationService,
+            SessionManager sessionManager
+    ) {
         this.db = db;
+        this.leagueService = leagueService;
+        this.leagueNotificationService = leagueNotificationService;
+        this.sessionManager = sessionManager;
     }
 
     @Override
@@ -243,18 +262,21 @@ public class FirestoreRankingRepository implements RankingRepository {
     public CompletableFuture<Void> finalizeExpiredCycles(long nowMillis) {
         return getUndistributedExpiredCycles(nowMillis)
                 .thenCompose(cycles -> {
+                    Log.i(TAG, "finalizeExpiredCycles: found " + cycles.size() + " expired undistributed cycle(s)");
+                    for (RankingCycle c : cycles) {
+                        Log.i(TAG, "  -> " + c.getCycleId() + " (type=" + c.getType() + ", rewardsDistributed=" + c.isRewardsDistributed() + ")");
+                    }
+
                     CompletableFuture<Void> chain =
                             CompletableFuture.completedFuture(null);
 
                     for (RankingCycle cycle : cycles) {
                         chain = chain.thenCompose(ignored ->
                                 getLeaderboard(cycle.getCycleId())
-                                        .thenCompose(entries ->
-                                                distributeCycleRewards(
-                                                        cycle,
-                                                        entries
-                                                )
-                                        )
+                                        .thenCompose(entries -> {
+                                            Log.i(TAG, "  leaderboard for " + cycle.getCycleId() + ": " + entries.size() + " entries");
+                                            return distributeCycleRewards(cycle, entries);
+                                        })
                         );
                     }
 
@@ -410,7 +432,101 @@ public class FirestoreRankingRepository implements RankingRepository {
             return null;
         });
 
-        return toFuture(task);
+        CompletableFuture<Void> base = toFuture(task);
+        if (cycle.getCycleType() == RankingCycleType.MONTHLY) {
+            return base.thenCompose(ignored ->
+                    applyMonthlyNonPlacementPenalties(cycle, sortedEntries));
+        }
+        return base;
+    }
+
+    private CompletableFuture<Void> applyMonthlyNonPlacementPenalties(
+            RankingCycle cycle,
+            List<RankingEntry> sortedEntries
+    ) {
+        List<RankingEntry> nonPlaced = sortedEntries.size() > 3
+                ? sortedEntries.subList(3, sortedEntries.size())
+                : new ArrayList<>();
+
+        Log.i(TAG, "applyMonthlyNonPlacementPenalties: " + sortedEntries.size()
+                + " total entries, " + nonPlaced.size() + " will be penalized");
+
+        CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
+        for (int i = 0; i < nonPlaced.size(); i++) {
+            RankingEntry entry = nonPlaced.get(i);
+            int rank = i + 4; // positions 4, 5, 6, ...
+            chain = chain.thenCompose(ignored ->
+                    applyPenaltyToUser(cycle.getCycleId(), entry, rank));
+        }
+        return chain;
+    }
+
+    private CompletableFuture<Void> applyPenaltyToUser(
+            String cycleId,
+            RankingEntry entry,
+            int rank
+    ) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+
+        db.collection(COLLECTION_PROFILES)
+                .document(entry.getUserId())
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (!snapshot.exists()) {
+                        future.complete(null);
+                        return;
+                    }
+
+                    UserProfile profile = snapshot.toObject(UserProfile.class);
+                    if (profile == null) {
+                        future.complete(null);
+                        return;
+                    }
+
+                    long starsBefore = profile.getNumStars();
+                    String leagueBefore = profile.getLeague();
+                    leagueService.applyNonPlacementPenalty(profile);
+                    long starsAfter = profile.getNumStars();
+                    String leagueAfter = profile.getLeague();
+                    long lost = starsBefore - starsAfter;
+                    boolean leagueDropped = !leagueBefore.equals(leagueAfter);
+
+                    Log.i(TAG, entry.getUsername()
+                            + ", rank " + rank
+                            + ", " + starsBefore + " -> " + starsAfter
+                            + ", " + leagueAfter);
+
+                    Map<String, Object> updates = new HashMap<>();
+                    updates.put("numStars", starsAfter);
+                    updates.put("league", leagueAfter);
+
+                    if (leagueDropped) {
+                        League newLeague = League.fromStars(starsAfter);
+                        String userId = entry.getUserId();
+                        if (userId.equals(sessionManager.getCurrentUserId())) {
+                            // Current user: LeagueNotificationService handles in-app
+                            // banner vs system notification automatically.
+                            leagueNotificationService.notifyChange(userId, newLeague, false);
+                        } else {
+                            // Other user on a different device: persist to Firestore so
+                            // they see the notification in their inbox when they open the app.
+                            String notifId = "league_demotion_" + cycleId + "_" + userId;
+                            db.collection(COLLECTION_NOTIFICATIONS)
+                                    .document(notifId)
+                                    .set(leagueDemotionNotificationToMap(
+                                            notifId, userId, newLeague, System.currentTimeMillis()));
+                        }
+                    }
+
+                    db.collection(COLLECTION_PROFILES)
+                            .document(entry.getUserId())
+                            .update(updates)
+                            .addOnSuccessListener(unused -> future.complete(null))
+                            .addOnFailureListener(future::completeExceptionally);
+                })
+                .addOnFailureListener(future::completeExceptionally);
+
+        return future;
     }
 
     private void upsertEntry(
@@ -506,6 +622,28 @@ public class FirestoreRankingRepository implements RankingRepository {
         data.put("hasOpenAction", true);
         data.put("hasDecisionAction", false);
         data.put("target", "REWARD");
+        data.put("actionStatus", "NONE");
+        return data;
+    }
+
+    private Map<String, Object> leagueDemotionNotificationToMap(
+            String notificationId,
+            String userId,
+            League newLeague,
+            long timestampMillis
+    ) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("notificationId", notificationId);
+        data.put("userId", userId);
+        data.put("type", "LEAGUE");
+        data.put("title", "Pad u ligu");
+        data.put("message", "Nažalost, pali ste u ligu: " + newLeague.getDisplayName() + ".");
+        data.put("sender", "Sistem");
+        data.put("timestampMillis", timestampMillis);
+        data.put("read", false);
+        data.put("hasOpenAction", true);
+        data.put("hasDecisionAction", false);
+        data.put("target", "LEAGUE");
         data.put("actionStatus", "NONE");
         return data;
     }
