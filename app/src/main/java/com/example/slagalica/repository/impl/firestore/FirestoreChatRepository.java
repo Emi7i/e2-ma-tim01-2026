@@ -54,6 +54,10 @@ public class FirestoreChatRepository implements ChatRepository {
                     }
                     if (snapshot == null) return;
 
+                    Log.d(TAG, "Chat snapshot for region '" + region + "': " + snapshot.size()
+                            + " docs, fromCache=" + snapshot.getMetadata().isFromCache()
+                            + ", hasPendingWrites=" + snapshot.getMetadata().hasPendingWrites());
+
                     List<ChatMessage> all = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : snapshot) {
                         all.add(doc.toObject(ChatMessage.class));
