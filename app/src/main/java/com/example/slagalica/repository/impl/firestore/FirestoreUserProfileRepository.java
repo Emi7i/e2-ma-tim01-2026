@@ -2,7 +2,11 @@ package com.example.slagalica.repository.impl.firestore;
 
 import com.example.slagalica.domain.model.profile.UserProfile;
 import com.example.slagalica.repository.impl.UserProfileRepository;
+import com.google.firebase.firestore.AggregateSource;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import javax.inject.Inject;
 
@@ -41,6 +45,26 @@ public class FirestoreUserProfileRepository implements UserProfileRepository {
     }
 
     @Override
+    public CompletableFuture<Void> updateFields(String userId, Map<String, Object> fields) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        db.collection(COLLECTION_USERS).document(userId)
+                .set(fields, SetOptions.merge())
+                .addOnSuccessListener(aVoid -> future.complete(null))
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<Void> deleteProfile(String userId) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        db.collection(COLLECTION_USERS).document(userId)
+                .delete()
+                .addOnSuccessListener(aVoid -> future.complete(null))
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
+    }
+
+    @Override
     public CompletableFuture<UserProfile> findByUsername(String username) {
         CompletableFuture<UserProfile> future = new CompletableFuture<>();
         db.collection(COLLECTION_USERS)
@@ -54,6 +78,29 @@ public class FirestoreUserProfileRepository implements UserProfileRepository {
                         future.complete(null);
                     }
                 })
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<Long> getPlayerRank(long numStars) {
+        CompletableFuture<Long> future = new CompletableFuture<>();
+        db.collection(COLLECTION_USERS)
+                .whereGreaterThan("numStars", numStars)
+                .count()
+                .get(AggregateSource.SERVER)
+                .addOnSuccessListener(snapshot -> future.complete(snapshot.getCount() + 1))
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<List<UserProfile>> getAllProfiles() {
+        CompletableFuture<List<UserProfile>> future = new CompletableFuture<>();
+        db.collection(COLLECTION_USERS)
+                .get()
+                .addOnSuccessListener(querySnapshot ->
+                        future.complete(querySnapshot.toObjects(UserProfile.class)))
                 .addOnFailureListener(future::completeExceptionally);
         return future;
     }

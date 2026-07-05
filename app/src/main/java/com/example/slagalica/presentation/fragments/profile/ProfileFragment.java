@@ -12,8 +12,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import android.graphics.Bitmap;
+import android.util.TypedValue;
+
 import com.bumptech.glide.Glide;
 import com.example.slagalica.R;
+import com.example.slagalica.util.QrCodeGenerator;
 import com.example.slagalica.databinding.FragmentProfileBinding;
 import com.example.slagalica.presentation.fragments.common.FragmentTransition;
 import com.example.slagalica.presentation.viewmodels.ProfileViewModel;
@@ -56,9 +60,10 @@ public class ProfileFragment extends Fragment {
                 binding.starsText.setText(String.format("Zvezdice: %d", profile.getNumStars()));
                 binding.leagueText.setText(String.format("Liga: %s", profile.getLeague()));
                 binding.regionText.setText(String.format("Region: %s", profile.getRegion()));
-                binding.rankText.setText(String.format("Rank: %d", profile.getRank()));
+                viewModel.loadRank(profile.getNumStars());
 
                 updateLeagueVisuals(profile);
+                updateQrCode(profile);
 
                 if (profile.getAvatar() != null && !profile.getAvatar().isEmpty()) {
                     Glide.with(this)
@@ -68,6 +73,10 @@ public class ProfileFragment extends Fragment {
                             .into(binding.profileAvatar);
                 }
             }
+        });
+
+        viewModel.getRank().observe(getViewLifecycleOwner(), r -> {
+            if (r != null) binding.rankText.setText(String.format("Rank: %d", r));
         });
 
         viewModel.getIsLoading().observe(getViewLifecycleOwner(), isLoading -> {
@@ -82,19 +91,21 @@ public class ProfileFragment extends Fragment {
     }
 
     private void updateLeagueVisuals(com.example.slagalica.domain.model.profile.UserProfile profile) {
-        String league = profile.getLeague().toLowerCase();
-        
-        // 1. Set League Border
-        int borderResId = getResources().getIdentifier("league_border_" + league, "drawable", requireContext().getPackageName());
+        // 1. Avatar border reflects region rank — gold/silver/bronze if the
+        // player's region placed top 3 last cycle, a plain edge ring otherwise.
+        // Leagues are a separate concept (badge/text below) and don't affect it.
+        int borderResId = tierBorderFor(profile.getRegionRankTier());
         if (borderResId != 0) {
+            binding.leagueBorder.setVisibility(View.VISIBLE);
             binding.leagueBorder.setImageResource(borderResId);
+            binding.defaultAvatarBorder.setVisibility(View.GONE);
         } else {
-            // Default border or shape if image not found
-            binding.leagueBorder.setImageResource(R.drawable.circular_profile_background);
+            binding.leagueBorder.setVisibility(View.GONE);
+            binding.defaultAvatarBorder.setVisibility(View.VISIBLE);
         }
 
         // 2. Set League Badge/Icon
-        int badgeResId = getResources().getIdentifier("league_badge_" + league, "drawable", requireContext().getPackageName());
+        int badgeResId = getLeagueBadgeResId(profile.getLeague());
         if (badgeResId != 0) {
             binding.leagueIcon.setImageResource(badgeResId);
         }
@@ -103,6 +114,44 @@ public class ProfileFragment extends Fragment {
         binding.starsIcon.setImageResource(R.drawable.icon_stars);
         binding.rankIcon.setImageResource(R.drawable.icon_rank);
         binding.regionIcon.setImageResource(R.drawable.icon_region);
+    }
+
+    private void updateQrCode(com.example.slagalica.domain.model.profile.UserProfile profile) {
+        String content = profile.getQrCode() != null ? profile.getQrCode() : profile.getUserId();
+        if (content == null || content.isEmpty()) return;
+        int sizePx = (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, 160, getResources().getDisplayMetrics());
+        Bitmap qr = QrCodeGenerator.generate(content, sizePx);
+        if (qr != null) {
+            binding.qrCodeImage.setImageBitmap(qr);
+        }
+    }
+
+    private int getLeagueBadgeResId(String league) {
+        switch (com.example.slagalica.domain.model.progression.League.fromDisplayName(league)) {
+            case POCETNIK:
+                return R.drawable.starter_league;
+            case STUDENT:
+                return R.drawable.student_league;
+            case PRAKTIKANT:
+                return R.drawable.praktikant_league;
+            case ZAPOSLENI:
+                return R.drawable.zaposleni_league;
+            case INZENJER:
+                return R.drawable.inzenjer_league;
+            case DIPLOMIRANI_INZENJER:
+                return R.drawable.dipl_league;
+            default:
+                return 0;
+        }
+    }
+
+    // Returns 0 (no valid resource id) if tier doesn't match a known gold/silver/bronze value.
+    public static int tierBorderFor(String tier) {
+        if ("gold".equals(tier))   return R.drawable.league_border_gold;
+        if ("silver".equals(tier)) return R.drawable.league_border_silver;
+        if ("bronze".equals(tier)) return R.drawable.league_border_bronze;
+        return 0;
     }
 
     private void setupClickListeners() {
@@ -119,6 +168,10 @@ public class ProfileFragment extends Fragment {
             // Close profile drawer
             androidx.drawerlayout.widget.DrawerLayout drawerLayout = requireActivity().findViewById(R.id.main);
             drawerLayout.closeDrawer(GravityCompat.END);
+        });
+
+        binding.shopButton.setOnClickListener(v -> {
+            viewModel.addToken();
         });
     }
 

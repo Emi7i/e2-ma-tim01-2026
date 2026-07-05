@@ -3,6 +3,7 @@ package com.example.slagalica.repository.impl.firestore;
 import com.example.slagalica.domain.model.progression.UserStatistics;
 import com.example.slagalica.repository.impl.UserStatisticsRepository;
 import com.google.firebase.firestore.FirebaseFirestore;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import javax.inject.Inject;
 
@@ -40,6 +41,16 @@ public class FirestoreUserStatisticsRepository implements UserStatisticsReposito
         CompletableFuture<Void> future = new CompletableFuture<>();
         db.collection(COLLECTION_STATS).document(statistics.getUserId()).set(statistics)
                 .addOnSuccessListener(aVoid -> future.complete(null))
+                .addOnFailureListener(future::completeExceptionally);
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<List<UserStatistics>> getAllStatistics() {
+        CompletableFuture<List<UserStatistics>> future = new CompletableFuture<>();
+        db.collection(COLLECTION_STATS)
+                .get()
+                .addOnSuccessListener(snapshot -> future.complete(snapshot.toObjects(UserStatistics.class)))
                 .addOnFailureListener(future::completeExceptionally);
         return future;
     }

@@ -85,17 +85,6 @@ public class HomeFragment extends Fragment {
                                                         .thenAccept(unused ->  {});
                                             }));
                             return null;
-//                            return matchmakingEntryRepository.claim(opponentEntry.getUserId(), currentUserId)
-//                                    .thenAccept(unused -> {
-//                                        matchmakingEntryRepository.delete(opponentEntry.getUserId());
-//                                        requireActivity().runOnUiThread(() ->
-//                                                matchViewModel.startMatch(currentUserId, opponentEntry.getUserId(), MatchType.CLASSIC, matchId,
-//                                                        () -> {
-//                                                            // Runs only once the match document is confirmed written
-//                                                            matchmakingEntryRepository.claim(opponentEntry.getUserId(), currentUserId)
-//                                                                    .thenAccept(unused2 -> matchmakingEntryRepository.delete(opponentEntry.getUserId()));
-//                                                        }));
-//                                    });
                         } else {
                             // Nobody waiting — join queue and listen for someone to claim us
                             return matchmakingEntryRepository.add(currentUserId)

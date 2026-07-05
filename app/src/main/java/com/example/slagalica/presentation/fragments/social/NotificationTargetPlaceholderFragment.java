@@ -11,6 +11,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.slagalica.databinding.FragmentNotificationTargetPlaceholderBinding;
+import com.example.slagalica.domain.model.auth.SessionManager;
 import com.example.slagalica.domain.model.social.NotificationActionStatus;
 import com.example.slagalica.domain.model.social.NotificationDocument;
 import com.example.slagalica.domain.model.social.NotificationItem;
@@ -28,7 +29,8 @@ import dagger.hilt.android.AndroidEntryPoint;
 public class NotificationTargetPlaceholderFragment extends Fragment {
 
     private static final String ARG_NOTIFICATION_ID = "arg_notification_id";
-    private static final String TEST_USER_ID = "test_user_123";
+    @Inject
+    SessionManager sessionManager;
 
     private FragmentNotificationTargetPlaceholderBinding binding;
 
@@ -77,7 +79,7 @@ public class NotificationTargetPlaceholderFragment extends Fragment {
     }
 
     private void loadNotificationFromFirestore(String notificationId) {
-        notificationsRepository.getNotificationsForUser(TEST_USER_ID)
+        notificationsRepository.getNotificationsForUser(sessionManager.getCurrentUserId())
                 .thenAccept(documents -> requireActivity().runOnUiThread(() -> {
                     notificationItem = findNotificationById(documents, notificationId);
 
@@ -153,7 +155,7 @@ public class NotificationTargetPlaceholderFragment extends Fragment {
     }
 
     private void updateNotificationInFirestore(NotificationItem item) {
-        NotificationDocument document = notificationsMapper.toDocument(item, TEST_USER_ID);
+        NotificationDocument document = notificationsMapper.toDocument(item, sessionManager.getCurrentUserId());
 
         notificationsRepository.updateNotification(document)
                 .exceptionally(e -> {

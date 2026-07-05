@@ -100,6 +100,14 @@
                         android:layout_height="match_parent"
                         android:scaleType="fitCenter" />
 
+                    <ImageView
+                        android:id="@+id/defaultAvatarBorder"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="fitXY"
+                        android:visibility="gone"
+                        android:src="@drawable/default_avatar_border" />
+
                 </FrameLayout>
 
                 <TextView
@@ -243,10 +251,11 @@
                 android:padding="24dp"
                 android:layout_marginBottom="32dp">
 
-                <View
-                    android:layout_width="96dp"
-                    android:layout_height="96dp"
-                    android:background="@color/gray_light" />
+                <ImageView
+                    android:id="@+id/qrCodeImage"
+                    android:layout_width="160dp"
+                    android:layout_height="160dp"
+                    android:contentDescription="QR kod" />
 
                 <TextView
                     android:layout_width="wrap_content"

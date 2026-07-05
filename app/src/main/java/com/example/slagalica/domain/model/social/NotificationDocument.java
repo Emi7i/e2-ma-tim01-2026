@@ -1,10 +1,7 @@
 package com.example.slagalica.domain.model.social;
 
-import com.google.firebase.firestore.DocumentId;
-
 public class NotificationDocument {
 
-    @DocumentId
     private String notificationId;
 
     private String userId;
