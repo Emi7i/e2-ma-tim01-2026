@@ -125,7 +125,8 @@ public class Match {
 
         Log.d("Match", "Joined existing match: " + matchId);
         matchService.observe(matchId, this::handleRemoteMatchEvent);
-        if (onReadyCallback != null) onReadyCallback.run();
+        if (onReadyCallback != null)
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(onReadyCallback);
     }
 
     public void startNextGame(){
