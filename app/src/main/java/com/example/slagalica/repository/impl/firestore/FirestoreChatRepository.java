@@ -1,5 +1,7 @@
 package com.example.slagalica.repository.impl.firestore;
 
+import android.util.Log;
+
 import com.example.slagalica.domain.model.social.ChatMessage;
 import com.example.slagalica.repository.impl.ChatRepository;
 import com.google.firebase.firestore.DocumentChange;
@@ -16,6 +18,7 @@ import javax.inject.Inject;
 public class FirestoreChatRepository implements ChatRepository {
 
     private static final String COLLECTION_CHAT_MESSAGES = "chat_messages";
+    private static final String TAG = "FirestoreChatRepo";
 
     private final FirebaseFirestore db;
 
@@ -31,7 +34,10 @@ public class FirestoreChatRepository implements ChatRepository {
         db.collection(COLLECTION_CHAT_MESSAGES)
                 .add(message)
                 .addOnSuccessListener(ref -> future.complete(null))
-                .addOnFailureListener(future::completeExceptionally);
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to send chat message for region '" + message.getRegion() + "'", e);
+                    future.completeExceptionally(e);
+                });
 
         return future;
     }
@@ -43,6 +49,9 @@ public class FirestoreChatRepository implements ChatRepository {
         return db.collection(COLLECTION_CHAT_MESSAGES)
                 .whereEqualTo("region", region)
                 .addSnapshotListener((snapshot, error) -> {
+                    if (error != null) {
+                        Log.e(TAG, "Chat listener for region '" + region + "' failed", error);
+                    }
                     if (snapshot == null) return;
 
                     List<ChatMessage> all = new ArrayList<>();

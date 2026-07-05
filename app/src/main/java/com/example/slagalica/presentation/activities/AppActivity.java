@@ -100,11 +100,12 @@ public class AppActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
         ViewCompat.setOnApplyWindowInsetsListener(binding.mainContent, (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
             v.setPadding(
                     systemBars.left,
                     systemBars.top,
                     systemBars.right,
-                    systemBars.bottom);
+                    Math.max(systemBars.bottom, ime.bottom));
             return insets;
         });
         // Fix drawer padding
