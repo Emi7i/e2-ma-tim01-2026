@@ -12,16 +12,29 @@ import javax.inject.Singleton;
 @InstallIn(SingletonComponent.class)
 public class FirebaseModule {
 
+    // Set this to your dev machine's IP when testing on a real device on the
+    // same network, or "10.0.2.2" when testing on the Android Studio emulator.
+    private static final String EMULATOR_HOST = "10.0.2.2";
+    private static final int EMULATOR_PORT = 8080;
+    private static final boolean USE_FIRESTORE_EMULATOR = true; // flip to false to go back to production
+
     @Provides
     @Singleton
     public FirebaseFirestore provideFirestore() {
-        return FirebaseFirestore.getInstance();
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        if (USE_FIRESTORE_EMULATOR) {
+            db.useEmulator(EMULATOR_HOST, EMULATOR_PORT);
+        }
+        return db;
     }
 
     @Provides
     @Singleton
     public FirebaseAuth provideFirebaseAuth() {
-        return FirebaseAuth.getInstance();
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+        if (USE_FIRESTORE_EMULATOR) {
+            auth.useEmulator(EMULATOR_HOST, 9099); // 9099 is the Auth emulator's default port
+        }
+        return auth;
     }
-
 }

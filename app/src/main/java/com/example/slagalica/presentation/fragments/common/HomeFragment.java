@@ -66,7 +66,8 @@ public class HomeFragment extends Fragment {
         binding.start.setOnClickListener(v -> {
             // TODO: match only with people in the matchmaking entry queue
             String player1Id = sessionManager.getCurrentUserId();
-            String player2Id = "rAvFq0wuLHQvUwbD0FK0olNLocG3"; // player 2 always skocko for now :)))
+            String player2Id = "LJTGMdIHSWGda4cWNGfzxpM4McF5";
+//            String player2Id = "rAvFq0wuLHQvUwbD0FK0olNLocG3"; // player 2 always skocko for now :)))
             matchViewModel.startMatch(player1Id, player2Id, MatchType.CLASSIC);
         });
     }
