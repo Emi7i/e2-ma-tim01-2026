@@ -27,6 +27,7 @@
     <string name="left_drawer_friends">Prijatelji</string>
     <string name="left_drawer_chat">Čet</string>
     <string name="left_drawer_rank_list">Rank lista</string>
+    <string name="left_drawer_tournament">Turnir</string>
     <string name="left_drawer_notifications">Notifikacije</string>
     <string name="left_drawer_leave_match">Izadji iz partije</string>
     <string name="next">Dalje</string>

@@ -18,6 +18,7 @@ import com.example.slagalica.repository.impl.SkockoContentRepository;
 import com.example.slagalica.repository.impl.SpojniceRepository;
 import com.example.slagalica.repository.impl.SpojniceSessionRepository;
 import com.example.slagalica.repository.impl.TermRepository;
+import com.example.slagalica.repository.impl.TournamentRepository;
 import com.example.slagalica.repository.impl.UserProfileRepository;
 import com.example.slagalica.repository.impl.UserStatisticsRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreAsocijacijeContentRepository;
@@ -32,6 +33,7 @@ import com.example.slagalica.repository.impl.firestore.FirestoreSkockoContentRep
 import com.example.slagalica.repository.impl.firestore.FirestoreSpojniceRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreSpojniceSessionRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreTermRepository;
+import com.example.slagalica.repository.impl.firestore.FirestoreTournamentRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreUserProfileRepository;
 import com.example.slagalica.repository.impl.firestore.FirestoreUserStatisticsRepository;
 import dagger.Binds;
@@ -132,5 +134,11 @@ public abstract class RepositoryModule {
     @Singleton
     public abstract RankingRepository bindRankingRepository(
             FirestoreRankingRepository impl
+    );
+
+    @Binds
+    @Singleton
+    public abstract TournamentRepository bindTournamentRepository(
+            FirestoreTournamentRepository impl
     );
 }
