@@ -16,7 +16,7 @@ public class FirebaseModule {
     // same network, or "10.0.2.2" when testing on the Android Studio emulator.
     private static final String EMULATOR_HOST = "10.0.2.2";
     private static final int EMULATOR_PORT = 8080;
-    private static final boolean USE_FIRESTORE_EMULATOR = true; // flip to false to go back to production
+    private static final boolean USE_FIRESTORE_EMULATOR = false; // flip to false to go back to production
 
     @Provides
     @Singleton
